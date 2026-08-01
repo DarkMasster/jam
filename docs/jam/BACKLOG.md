@@ -30,7 +30,7 @@
 | P0 | Создать и закрепить живой roadmap офисного эпизода | ИИ-агент | `feature/office-unity-scene` | Done | Готово |
 | P0 | Офис `M1A`: предмет, бросок и простое разрушение | ИИ-агент | `feature/office-unity-scene` | Done | Готово |
 | P0 | Офис `M1B`: противник, Momentum и быстрый restart | ИИ-агент | `feature/office-m1b-pressure` | Done | Готово |
-| P0 | Офис `M2`: авторский маршрут и обязательные личные вещи | TBD | `feature/office-m2-route` | Todo | После `M1B` |
+| P0 | Офис `M2`: авторский маршрут и обязательные личные вещи | ИИ-агент | `feature/office-m2-route` | Done | Готово |
 | P0 | Добавить победу, поражение и рестарт | TBD | `feature/game-flow` | Todo | Час 24 |
 | P0 | Получить проверенный финальный билд | TBD | `fix/final-build` | Todo | Час 42 |
 | P1 | Добавить ключевую визуальную и звуковую обратную связь | TBD | `polish/game-feel` | Todo | Час 34 |
