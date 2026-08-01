@@ -94,6 +94,7 @@ namespace Jam.Episodes.Photo
             data.mainAct ??= new PhotoActProgress();
             data.finale ??= new PhotoActProgress();
             data.prologue.inspectedMask &= RequiredInspectionMask;
+            data.prologue.introIndex = Math.Clamp(data.prologue.introIndex, 0, 3);
             data.prologue.truth = Math.Max(0, data.prologue.truth);
             data.prologue.reach = Math.Max(0, data.prologue.reach);
 

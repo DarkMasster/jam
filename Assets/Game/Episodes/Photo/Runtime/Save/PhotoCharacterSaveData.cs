@@ -23,6 +23,7 @@ namespace Jam.Episodes.Photo
     public sealed class PhotoPrologueProgress
     {
         public PhotoWhiteboxPhase phase = PhotoWhiteboxPhase.IntroDialogue;
+        public int introIndex;
         public int inspectedMask;
         public PhotoChoice photoChoice = PhotoChoice.None;
         public int truth;

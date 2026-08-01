@@ -34,6 +34,24 @@
 - Эпизод читает свой checkpoint через `TryGetCharacterCheckpoint` и сообщает
   завершение через `CompleteMainStoryLine` либо компонент
   `EpisodeProgressReporter`.
+
+## Глобальный HUD и ручное сохранение
+
+- Persistent `GameEntryPoint` создаёт `GlobalHudController` при запуске любой
+  сцены; отдельные игровые сцены не создают собственное pause-меню.
+- HUD скрыт в `Main` и `CharacterSelect`, а в игровых сценах показывает кнопку
+  `МЕНЮ [ESC]` и overlay: `Продолжить`, `Сохранить`, `Выйти в главное меню`.
+- Открытый overlay ставит `Time.timeScale = 0`, освобождает курсор и обязан
+  восстановить прежние значения при закрытии или смене сцены.
+- Режим, поддерживающий ручное сохранение, предоставляет ровно один активный
+  `IGameModeSaveProvider` в своей сцене. Core не знает структуру payload режима.
+- `GameModeSaveService` находит provider только в активной сцене, вызывает его
+  `TrySave`, затем делает `GameSaveService.Flush`.
+- Выход в `Main` не выполняет неявное сохранение. `GameEntryPoint` не записывает
+  `Main` как Continue-сцену, поэтому «Продолжить» возвращает к последнему явно
+  сохранённому checkpoint.
+- Photo реализует provider через `PhotoCheckpointAdapter`; допустимы checkpoint
+  `photo.intro`, `photo.explore`, `photo.camera`, `photo.published`, `photo.arrival`.
 - `FinaleUnlocked` становится истинным только после завершения всех трёх линий.
 - `CharacterSelect` имеет build index `1`; отсутствующие эпизодные сцены временно
   заменяются `SampleScene`, но выбранный `CharacterId` всё равно сохраняется.

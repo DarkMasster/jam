@@ -28,7 +28,7 @@ namespace Jam.Episodes.Photo
     }
 
     [RequireComponent(typeof(FSMOwner), typeof(Blackboard))]
-    public sealed class PhotoWhiteboxController : MonoBehaviour
+    public sealed class PhotoWhiteboxController : MonoBehaviour, IGameModeSaveProvider
     {
         private const string ExploreCheckpoint = "photo.explore";
         private const string CameraCheckpoint = "photo.camera";
@@ -69,6 +69,9 @@ namespace Jam.Episodes.Photo
         private int _reach;
         private PhotoCharacterSaveData _saveData = PhotoCheckpointAdapter.CreateNew();
 
+        public bool CanSave => isActiveAndEnabled;
+        public string ModeName => "История фотографки";
+
         private void Awake()
         {
             _fsmOwner = GetComponent<FSMOwner>();
@@ -94,6 +97,7 @@ namespace Jam.Episodes.Photo
                     if (PhotoCheckpointAdapter.TryLoad(checkpoint, out var restored))
                     {
                         _saveData = restored;
+                        _introIndex = restored.prologue.introIndex;
                         _inspectedMask = restored.prologue.inspectedMask;
                         _choice = restored.prologue.photoChoice;
                         _truth = restored.prologue.truth;
@@ -308,6 +312,7 @@ namespace Jam.Episodes.Photo
         {
             _saveData.activeAct = PhotoAct.Prologue;
             _saveData.prologue.phase = _phase;
+            _saveData.prologue.introIndex = _introIndex;
             _saveData.prologue.inspectedMask = _inspectedMask;
             _saveData.prologue.photoChoice = _choice;
             _saveData.prologue.truth = _truth;
@@ -318,6 +323,24 @@ namespace Jam.Episodes.Photo
                 gameObject.scene.name,
                 checkpointId,
                 PhotoCheckpointAdapter.Serialize(_saveData, checkpointId));
+        }
+
+        public bool TrySave(out string message)
+        {
+            var checkpointId = _phase switch
+            {
+                PhotoWhiteboxPhase.IntroDialogue => "photo.intro",
+                PhotoWhiteboxPhase.Explore => ExploreCheckpoint,
+                PhotoWhiteboxPhase.Camera => CameraCheckpoint,
+                PhotoWhiteboxPhase.Publish => PublishedCheckpoint,
+                PhotoWhiteboxPhase.ReflectionDialogue => PublishedCheckpoint,
+                PhotoWhiteboxPhase.Arrival => ArrivalCheckpoint,
+                _ => ExploreCheckpoint
+            };
+
+            SaveCheckpoint(checkpointId);
+            message = $"Сохранено: {checkpointId}";
+            return true;
         }
 
         private int CountInspected()
