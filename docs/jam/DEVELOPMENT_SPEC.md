@@ -550,19 +550,91 @@ Three.js. Он не использует Unity-проект и служит пр
 - Выбор сохраняется как `PhotoChoice` и влияет на финальную реплику Пролога.
 - Намёки на эротическую работу читаются, но не содержат explicit-контента.
 
+### Runtime-архитектура Photo
+
+NodeCanvas является режиссёрским слоем эпизода, но не владельцем игровой логики
+или сохранения. Верхний Asset Graph FSM имеет одного владельца и использует фазы:
+
+```text
+Restore -> IntroDialogue -> Explore -> Camera -> Publish
+        -> ReflectionDialogue -> Arrival
+```
+
+- `Restore` читает checkpoint и переводит FSM в устойчивую фазу.
+- `IntroDialogue`, `ReflectionDialogue` и короткие реакции запускают Dialogue Tree.
+- `Explore`, `Camera` и `Publish` ожидают события от типизированных C#-компонентов.
+- Behaviour Tree в фотопрологе не используется.
+- Выход посреди диалога возвращает к началу текущего диалога; позиция отдельной
+  NodeCanvas-ноды не сериализуется.
+
+Blackboard содержит только данные для ветвления графа: `phase`, `choiceId`,
+`truth`, `reach`, `inspectedCount`, `canUseCamera`. Авторитетным runtime-state
+остаётся `PhotoEpisodeController`; Blackboard не создаёт отдельный save-slot.
+
+### C#-компоненты Photo
+
+- `PhotoEpisodeController` — авторитетное состояние, правила фаз и расчёт результата.
+- `PhotoHotspot` — осматриваемая деталь и стабильный идентификатор осмотра.
+- `PhotoTarget` — сюжетная цель `Summons` или `Butterfly` и допустимая область кадра.
+- `PhotoCameraController` — режим камеры, рамка, наведение и подтверждение снимка.
+- `PhotoCheckpointAdapter` — JSON payload и вызовы `GameSaveService`.
+- Custom NodeCanvas Action/Condition Tasks — только тонкие адаптеры к этим компонентам.
+
+Попадание определяется пересечением рамки с областью `PhotoTarget`, а не одним
+пикселем. При одновременном попадании двух целей выбирается цель с большей долей
+пересечения; при почти равном результате UI запрашивает подтверждение.
+
+### Checkpoints Photo
+
+| `checkpointId` | Устойчивая фаза после загрузки | Что уже зафиксировано |
+|---|---|---|
+| `photo.explore` | `Explore` | вводный диалог завершён |
+| `photo.camera` | `Camera` | обязательные детали осмотрены, камера доступна |
+| `photo.published` | `ReflectionDialogue` | снимок, `Truth` и `Reach` уже применены |
+| `photo.arrival` | `Arrival` | публикация завершена, можно открыть гостиничную сцену |
+
+Минимальный versioned payload эпизода:
+
+```json
+{
+  "version": 1,
+  "phase": "Published",
+  "inspectedMask": 7,
+  "choice": "Summons",
+  "truth": 2,
+  "reach": 1
+}
+```
+
+`PhotoCheckpointAdapter` вызывает
+`SaveCharacterCheckpoint(CharacterId.Photo, sceneName, checkpointId, payloadJson)`.
+Существующий `EpisodeProgressReporter.SaveCheckpoint()` без payload не используется
+для промежуточного Photo-state; завершение линии выполняется после `HotelArrival`.
+
+### Обратная связь Photo
+
+После изменения авторитетного состояния `PhotoEpisodeController` вызывает общий
+`GameFeedbackService`. Damage Numbers Pro показывает только GUI-feedback:
+`Охват +N`, `Честность +N`, лайки, платёж или риск. NodeCanvas не обращается к
+DNP-prefab напрямую, а DNP-события не меняют state и не запускают переходы FSM.
+
 ## 8. Общие сюжетные системы
 
 ### Диалоги и cutscenes
 
-Для джем-билда не добавлять Ink/Yarn или другую внешнюю систему без решения
-интегратора. Минимальный вариант:
+Для джем-билда используется установленный NodeCanvas 3.42:
 
-- `DialogueSequence` как ScriptableObject;
-- список реплик: speaker, text, portrait, optional background;
-- общий `DialogueRunner`;
-- продолжение по клику/Enter/Space;
-- Skip всей сцены удержанием клавиши;
+- Dialogue Tree хранит реплики, выборы и короткие cutscenes;
+- общий project-owned dialogue UI используется всеми эпизодами;
+- каждый эпизод владеет своими Dialogue Tree assets, общие фрагменты оформляются
+  как Sub Dialogue;
+- завершение Dialogue Tree возвращается в FSM через callback/сигнал;
+- продолжение, выбор и Skip идут через `Global` action map New Input System;
 - поддержка кириллицы обязательна.
+
+Собственные параллельные `DialogueSequence` и `DialogueRunner` не создаются.
+NodeCanvas не владеет долговременным прогрессом; диалог восстанавливается с
+ближайшего смыслового checkpoint.
 
 ### Переходы
 
@@ -628,6 +700,9 @@ Assets/Game/
 │   ├── Drive/
 │   ├── Office/
 │   └── Photo/
+├── Integrations/
+│   ├── NodeCanvas/
+│   └── DamageNumbersPro/
 ├── Shared/
 │   ├── Art/
 │   ├── Audio/

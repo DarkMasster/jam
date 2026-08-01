@@ -61,6 +61,21 @@
 - `Assets/ParadoxNotion/**` и `Assets/DamageNumbersPro/**` не редактируются; проектные адаптеры размещаются в `Assets/Game/Integrations/**`.
 - Полные паттерны, версии и checklist находятся в `INTEGRATIONS.md`.
 
+### Фотопролог
+
+- Единственный авторитетный runtime-state фотопролога хранит `PhotoEpisodeController`.
+- NodeCanvas FSM использует фазы `Restore`, `IntroDialogue`, `Explore`, `Camera`,
+  `Publish`, `ReflectionDialogue`, `Arrival`; Dialogue Trees не сохраняют прогресс.
+- Стабильные checkpoint ID: `photo.explore`, `photo.camera`, `photo.published`,
+  `photo.arrival`.
+- `PhotoCheckpointAdapter` сериализует versioned payload и вызывает
+  `GameSaveService.SaveCharacterCheckpoint`; Core не интерпретирует payload.
+- `PhotoCameraController` выбирает `PhotoTarget` по пересечению областей кадра.
+- Damage Numbers Pro получает только presentation-события через
+  `GameFeedbackService` после изменения state.
+- Существующий `EpisodeProgressReporter` не сохраняет промежуточный Photo-state
+  без payload; завершение линии происходит после общей сцены `HotelArrival`.
+
 - Интегратор отвечает за `main`, общий билд и разрешение конфликтов общих
   ресурсов.
 - Feature-ветка предоставляет воспроизводимый способ проверки.
