@@ -103,6 +103,11 @@ namespace Jam.Episodes.Office
             _invulnerableUntil = Time.time + invulnerabilityDuration;
             episodeController?.ReportRunState(Integrity, maxIntegrity, Attempt);
 
+            if (player != null)
+            {
+                OfficeFeedback.Instance?.ReportPlayerHit(player.position);
+            }
+
             if (Integrity > 0)
             {
                 episodeController?.ReportPlayerHit(sourceName, Integrity, maxIntegrity);

@@ -48,7 +48,7 @@ namespace Jam.Episodes.Office.Editor
             var gameplayRoot = CreateGroup("Gameplay", sceneRoot);
             var lightingRoot = CreateGroup("Lighting", sceneRoot);
 
-            ConfigureEnvironment(palette, lightingRoot);
+            var keyLight = ConfigureEnvironment(palette, lightingRoot);
             BuildArchitecture(palette, architectureRoot);
             BuildFurniture(palette, furnitureRoot);
             BuildBackgroundScale(palette, backgroundRoot);
@@ -130,6 +130,7 @@ namespace Jam.Episodes.Office.Editor
             CreateItemGuarantee(palette, gameplayRoot, laptop, mug, episodeController, coach);
 
             CreateStoryFrame(sceneRoot, episodeObject, runController, episodeController, playerController, carryController);
+            CreateFeedbackLayer(gameplayRoot, lightingRoot, camera, keyLight, momentum);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -166,6 +167,40 @@ namespace Jam.Episodes.Office.Editor
                 carryController,
                 SetupCutsceneId,
                 AwakeningCutsceneId);
+        }
+
+        /// <summary>
+        /// Слой обратной связи `M6`: дрожь камеры, процедурные SFX с частицами и
+        /// свет, который следует Momentum, не пряча пол и красные телеграфы.
+        /// </summary>
+        private static void CreateFeedbackLayer(
+            Transform gameplayRoot,
+            Transform lightingRoot,
+            Camera camera,
+            Light keyLight,
+            OfficeMomentum momentum)
+        {
+            var shake = camera.gameObject.AddComponent<OfficeCameraShake>();
+            shake.Configure(camera);
+
+            var feedbackObject = new GameObject("Office Feedback", typeof(AudioSource), typeof(OfficeFeedback));
+            feedbackObject.transform.SetParent(gameplayRoot, false);
+            feedbackObject.GetComponent<OfficeFeedback>().Configure(shake, momentum);
+
+            // Красные акценты маршрута: только они реагируют на Momentum.
+            var accentLights = new System.Collections.Generic.List<Light>();
+            foreach (var light in lightingRoot.GetComponentsInChildren<Light>(true))
+            {
+                if (light.type == LightType.Point && light.name.Contains("Red"))
+                {
+                    accentLights.Add(light);
+                }
+            }
+
+            var ambienceObject = new GameObject("Momentum Ambience", typeof(OfficeMomentumAmbience));
+            ambienceObject.transform.SetParent(lightingRoot, false);
+            ambienceObject.GetComponent<OfficeMomentumAmbience>()
+                .Configure(momentum, accentLights.ToArray(), keyLight);
         }
 
         private static StoryboardCutsceneAsset EnsureStoryboard(
@@ -240,7 +275,7 @@ namespace Jam.Episodes.Office.Editor
             };
         }
 
-        private static void ConfigureEnvironment(Palette palette, Transform lightingRoot)
+        private static Light ConfigureEnvironment(Palette palette, Transform lightingRoot)
         {
             RenderSettings.ambientMode = AmbientMode.Trilight;
             RenderSettings.ambientSkyColor = Hex("5C6A84");
@@ -267,6 +302,10 @@ namespace Jam.Episodes.Office.Editor
             CreatePointLight("Server Red Light L", new Vector3(-7f, 2.2f, 14.5f), Hex("D8241D"), 1.2f, 7f, lightingRoot);
             CreatePointLight("Server Red Light R", new Vector3(7f, 2.2f, 14.5f), Hex("D8241D"), 1.2f, 7f, lightingRoot);
             CreatePointLight("Exit Red Light", new Vector3(0f, 2.5f, 39f), Hex("D8241D"), 2.5f, 9f, lightingRoot);
+
+            // Ключевой свет возвращается наружу: Momentum усиливает красные акценты,
+            // но не имеет права опускать его ниже базовой читаемости пола.
+            return keyLight;
         }
 
         private static void BuildArchitecture(Palette p, Transform root)
