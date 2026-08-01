@@ -19,6 +19,7 @@
 | P0 | Утвердить питч и core loop | Продюсер | `feature/game-concept` | Done | Готово |
 | P0 | Выбрать движок, платформу и способ сборки | TBD | `feature/project-bootstrap` | Todo | Час 2 |
 | P0 | Создать вертикальный прототип core loop | TBD | `feature/core-loop` | Todo | Час 12 |
+| P0 | Главное меню, выбор героя и сохранение прогресса | Интегратор | `feature/main-menu` | Done | Готово |
 | P0 | Добавить победу, поражение и рестарт | TBD | `feature/game-flow` | Todo | Час 24 |
 | P0 | Получить проверенный финальный билд | TBD | `fix/final-build` | Todo | Час 42 |
 | P1 | Добавить ключевую визуальную и звуковую обратную связь | TBD | `polish/game-feel` | Todo | Час 34 |
