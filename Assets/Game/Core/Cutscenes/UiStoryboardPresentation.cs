@@ -1,4 +1,6 @@
 using System;
+using Jam.Core.Localization;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -24,21 +26,24 @@ namespace Jam.Core.Cutscenes
         private GameObject _root;
         private Image _background;
         private Image _portrait;
-        private Text _speaker;
-        private Text _body;
-        private Text _progress;
+        private TMP_Text _speaker;
+        private TMP_Text _body;
+        private TMP_Text _progress;
         private Button _skipButton;
         private AudioSource _audioSource;
-        private Font _font;
         private int _frameIndex;
         private float _frameElapsed;
 
         private void Awake()
         {
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             _audioSource = gameObject.AddComponent<AudioSource>();
             _audioSource.playOnAwake = false;
             BuildInterface();
+        }
+
+        private void OnEnable()
+        {
+            Loc.LocaleChanged += RefreshLocalizedFrame;
         }
 
         private void Update()
@@ -65,6 +70,7 @@ namespace Jam.Core.Cutscenes
 
         private void OnDisable()
         {
+            Loc.LocaleChanged -= RefreshLocalizedFrame;
             if (IsPlaying)
             {
                 Finish(CutsceneEndReason.SceneChanged);
@@ -132,9 +138,7 @@ namespace Jam.Core.Cutscenes
             _background.color = frame.background == null ? FallbackBackground : Color.white;
             _portrait.sprite = frame.portrait;
             _portrait.gameObject.SetActive(frame.portrait != null);
-            _speaker.text = string.IsNullOrWhiteSpace(frame.speaker) ? "…" : frame.speaker;
-            _body.text = frame.text ?? string.Empty;
-            _progress.text = $"{_frameIndex + 1} / {sequence.Frames.Length}   •   ПРОБЕЛ / КЛИК";
+            RefreshLocalizedFrame();
 
             _audioSource.Stop();
             _audioSource.clip = frame.voice;
@@ -142,6 +146,31 @@ namespace Jam.Core.Cutscenes
             {
                 _audioSource.Play();
             }
+        }
+
+        private void RefreshLocalizedFrame()
+        {
+            if (!IsPlaying || sequence == null || sequence.Frames == null || sequence.Frames.Length == 0)
+            {
+                return;
+            }
+
+            var frame = sequence.Frames[_frameIndex];
+            var table = string.IsNullOrWhiteSpace(frame.localizationTable)
+                ? LocalizationTables.Photo
+                : frame.localizationTable;
+            _speaker.text = string.IsNullOrWhiteSpace(frame.speakerKey)
+                ? string.IsNullOrWhiteSpace(frame.speaker) ? "…" : frame.speaker
+                : Loc.Get(table, frame.speakerKey, frame.speaker);
+            _body.text = string.IsNullOrWhiteSpace(frame.textKey)
+                ? frame.text ?? string.Empty
+                : Loc.Get(table, frame.textKey, frame.text);
+            _progress.text = Loc.Get(
+                LocalizationTables.Common,
+                "ui.cutscene.progress",
+                "{0} / {1}   •   ПРОБЕЛ / КЛИК",
+                _frameIndex + 1,
+                sequence.Frames.Length);
         }
 
         private void Finish(CutsceneEndReason reason)
@@ -192,16 +221,21 @@ namespace Jam.Core.Cutscenes
                 Vector2.zero,
                 Vector2.zero);
 
-            _speaker = CreateText("Speaker", panel.rectTransform, string.Empty, 24, FontStyle.Bold, Accent, TextAnchor.UpperLeft);
+            _speaker = CreateText("Speaker", panel.rectTransform, string.Empty, 24, FontStyles.Bold, Accent, TextAlignmentOptions.TopLeft);
             SetAnchoredRect(_speaker.rectTransform, new Vector2(0.04f, 0.70f), new Vector2(0.96f, 0.94f), Vector2.zero, Vector2.zero);
-            _body = CreateText("Body", panel.rectTransform, string.Empty, 25, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
+            _body = CreateText("Body", panel.rectTransform, string.Empty, 25, FontStyles.Normal, TextColor, TextAlignmentOptions.TopLeft);
             SetAnchoredRect(_body.rectTransform, new Vector2(0.04f, 0.20f), new Vector2(0.96f, 0.72f), Vector2.zero, Vector2.zero);
-            _progress = CreateText("Progress", panel.rectTransform, string.Empty, 14, FontStyle.Normal, MutedText, TextAnchor.MiddleRight);
+            _progress = CreateText("Progress", panel.rectTransform, string.Empty, 14, FontStyles.Normal, MutedText, TextAlignmentOptions.MidlineRight);
             SetAnchoredRect(_progress.rectTransform, new Vector2(0.50f, 0.02f), new Vector2(0.96f, 0.18f), Vector2.zero, Vector2.zero);
 
             var next = CreateButton("AdvanceFrameButton", _background.rectTransform, string.Empty, Advance, 1, Color.clear);
             Stretch(next.GetComponent<RectTransform>());
             _skipButton = CreateButton("SkipCutsceneButton", _background.rectTransform, "ПРОПУСТИТЬ  [ESC]", Skip, 16, DialoguePanel);
+            LocalizedTextBinding.Attach(
+                _skipButton.transform.Find("Label").GetComponent<TMP_Text>(),
+                LocalizationTables.Common,
+                "ui.cutscene.skip",
+                "ПРОПУСТИТЬ  [ESC]");
             SetAnchoredRect(
                 _skipButton.GetComponent<RectTransform>(),
                 new Vector2(1f, 1f),
@@ -226,31 +260,30 @@ namespace Jam.Core.Cutscenes
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
             button.onClick.AddListener(action);
-            var text = CreateText("Label", buttonObject.GetComponent<RectTransform>(), label, fontSize, FontStyle.Bold, TextColor, TextAnchor.MiddleCenter);
+            var text = CreateText("Label", buttonObject.GetComponent<RectTransform>(), label, fontSize, FontStyles.Bold, TextColor, TextAlignmentOptions.Center);
             Stretch(text.rectTransform, new Vector2(10f, 0f), new Vector2(-10f, 0f));
             return button;
         }
 
-        private Text CreateText(
+        private TMP_Text CreateText(
             string name,
             RectTransform parent,
             string value,
             int fontSize,
-            FontStyle style,
+            FontStyles style,
             Color color,
-            TextAnchor alignment)
+            TextAlignmentOptions alignment)
         {
-            var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
+            var textObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
             textObject.transform.SetParent(parent, false);
-            var text = textObject.GetComponent<Text>();
-            text.font = _font;
+            var text = textObject.GetComponent<TextMeshProUGUI>();
             text.text = value;
             text.fontSize = fontSize;
             text.fontStyle = style;
             text.color = color;
             text.alignment = alignment;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Ellipsis;
             text.raycastTarget = false;
             return text;
         }

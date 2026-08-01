@@ -12,6 +12,8 @@
 - Для всей игры утверждён Unity New Input System; фактически установлен пакет
   1.20.0, legacy Input Manager не используется.
 - Установлены и загружаются без ошибок NodeCanvas 3.42 и Damage Numbers Pro 4.55; паттерны использования зафиксированы в `INTEGRATIONS.md`.
+- Подключены Unity Localization 1.5.12, Addressables и TextMeshPro; `ru`, `en` и
+  `qps-ploc` используют таблицы `Common`, `Photo`, `Office`.
 - Командный пайплайн развёрнут в docs/jam/.
 - Зафиксированы тема `Reflection + Momentum`, свободный порядок героев, цель
   Пролога и структура всех трёх актов.
@@ -105,6 +107,9 @@
 - Вступление Photo подключено как реальный UI-сториборд `photo.prologue.intro`:
   четыре кадра запускаются из общего Director, а `Completed` и `Skipped`
   одинаково переводят FSM в `Explore` и сохраняют `photo.explore`.
+- Главное меню переключает русский и английский без перезапуска. Общий UI,
+  CharacterSelect, storyboard, Photo white-box и Office HUD/state используют TMP
+  и локализованные ключи; проверенные runtime-сцены содержат `legacy Text = 0`.
 - Веб-демо [office](../../web-demos/office/) запускается через локальный статический
   сервер: проверены стартовая сцена, переход в забег, HUD и restart клавишей `R`.
 - Индекс `ccc` пересоздан и успешно обрабатывает все 555 индексируемых файлов

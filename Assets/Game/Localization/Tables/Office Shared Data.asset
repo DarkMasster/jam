@@ -1,0 +1,164 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Office Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Office
+  m_TableCollectionNameGuidString: b09f00d54e4df8c44aec6ce2221dcd32
+  m_Entries:
+  - m_Id: 766500864
+    m_Key: hud.empty_hands
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832512
+    m_Key: zone.start
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832513
+    m_Key: objective.collect
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832514
+    m_Key: objective.laptop.empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832515
+    m_Key: objective.laptop.done
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832516
+    m_Key: objective.mug.empty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832517
+    m_Key: objective.mug.done
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832518
+    m_Key: momentum.idle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832519
+    m_Key: momentum.moving
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832520
+    m_Key: momentum.label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832521
+    m_Key: item.keyboard
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832522
+    m_Key: item.printer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832523
+    m_Key: enemy.chair
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088472702976
+    m_Key: hud.start_hint
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840320
+    m_Key: hud.carrying
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840321
+    m_Key: hud.integrity
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840322
+    m_Key: hud.down
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840323
+    m_Key: status.laptop_collected
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840324
+    m_Key: status.mug_collected
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840325
+    m_Key: status.items_collected
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840326
+    m_Key: status.destroyed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840327
+    m_Key: status.wrecked
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840328
+    m_Key: status.chaser_missed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840329
+    m_Key: status.picked_up
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840330
+    m_Key: status.thrown
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840331
+    m_Key: status.hit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840332
+    m_Key: status.failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840333
+    m_Key: status.restarted
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840334
+    m_Key: status.missing_both
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840335
+    m_Key: status.missing_laptop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840336
+    m_Key: status.missing_mug
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840337
+    m_Key: status.access_denied
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840338
+    m_Key: objective.false_exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840339
+    m_Key: status.access_revoked
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 6291441844040499582
+  references:
+    version: 2
+    RefIds:
+    - rid: 6291441844040499582
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1785587939420

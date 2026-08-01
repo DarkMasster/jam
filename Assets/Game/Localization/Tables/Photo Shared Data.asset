@@ -1,0 +1,252 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Photo Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Photo
+  m_TableCollectionNameGuidString: a58f5a9cf36e42a4d9d792f24037f8cb
+  m_Entries:
+  - m_Id: 728752128
+    m_Key: prologue.intro.001.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083776
+    m_Key: prologue.intro.001.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083777
+    m_Key: prologue.intro.002.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083778
+    m_Key: prologue.intro.002.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083779
+    m_Key: prologue.intro.003.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083780
+    m_Key: prologue.intro.003.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083781
+    m_Key: prologue.intro.004.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083782
+    m_Key: prologue.intro.004.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108535824384
+    m_Key: mode.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738944
+    m_Key: phase.intro
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738945
+    m_Key: phase.explore
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738946
+    m_Key: phase.camera
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738947
+    m_Key: phase.publish
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738948
+    m_Key: phase.reflection
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738949
+    m_Key: phase.arrival
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738950
+    m_Key: speaker.whitebox
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738951
+    m_Key: speaker.viewfinder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738952
+    m_Key: speaker.honest_shot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738953
+    m_Key: speaker.safe_shot
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738954
+    m_Key: speaker.prologue_finale
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738955
+    m_Key: status.continue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738956
+    m_Key: status.exposition
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738957
+    m_Key: status.inspected
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738958
+    m_Key: status.no_target
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738959
+    m_Key: status.focus
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738960
+    m_Key: status.published
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738961
+    m_Key: status.saved_choice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738962
+    m_Key: status.arrival_saved
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738963
+    m_Key: status.saved
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738964
+    m_Key: action.next
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738965
+    m_Key: action.enter_courtyard
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738966
+    m_Key: action.take_camera
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738967
+    m_Key: action.summons
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738968
+    m_Key: action.butterfly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738969
+    m_Key: action.shutter
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738970
+    m_Key: action.reflect
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738971
+    m_Key: action.airport
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738972
+    m_Key: action.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738973
+    m_Key: explore.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738974
+    m_Key: inspect.phone.label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738975
+    m_Key: inspect.phone.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738976
+    m_Key: inspect.suitcase.label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738977
+    m_Key: inspect.suitcase.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738978
+    m_Key: inspect.mailbox.label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738979
+    m_Key: inspect.mailbox.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738980
+    m_Key: camera.summons
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738981
+    m_Key: camera.butterfly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738982
+    m_Key: camera.none
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738983
+    m_Key: publish.summons
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738984
+    m_Key: publish.butterfly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738985
+    m_Key: reflection.summons
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738986
+    m_Key: reflection.butterfly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738987
+    m_Key: arrival.description
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738988
+    m_Key: choice.none
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738989
+    m_Key: choice.summons
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738990
+    m_Key: choice.butterfly
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 6291441844040499581
+  references:
+    version: 2
+    RefIds:
+    - rid: 6291441844040499581
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1785587939233

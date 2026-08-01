@@ -159,6 +159,9 @@ namespace Jam.Episodes.Photo.Editor
             for (var index = 0; index < IntroFrames.Length; index++)
             {
                 var frame = frames.GetArrayElementAtIndex(index);
+                frame.FindPropertyRelative("localizationTable").stringValue = "Photo";
+                frame.FindPropertyRelative("speakerKey").stringValue = $"prologue.intro.{index + 1:000}.speaker";
+                frame.FindPropertyRelative("textKey").stringValue = $"prologue.intro.{index + 1:000}.text";
                 frame.FindPropertyRelative("speaker").stringValue = IntroFrames[index].speaker;
                 frame.FindPropertyRelative("text").stringValue = IntroFrames[index].text;
                 frame.FindPropertyRelative("autoAdvanceSeconds").floatValue = 0f;

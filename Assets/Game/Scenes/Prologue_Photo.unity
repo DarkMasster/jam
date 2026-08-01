@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6f9ad0d190298304ab36184fca9837ce, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Jam.Episodes.Photo.PhotoWhiteboxController
 --- !u!114 &903484229
 MonoBehaviour:

@@ -116,6 +116,19 @@
   `PlayerInput` или общий адаптер ввода.
 - Игровой код не привязывается напрямую к конкретной клавиатуре, мыши или геймпаду.
 
+## Локализация и текст
+
+- Единственный runtime API — `Jam.Core.Localization.Loc`; прямое чтение String
+  Tables игровыми системами не допускается.
+- Язык хранится в `jam.settings.locale` отдельно от `jam.save.v1`; новая игра не
+  сбрасывает пользовательский язык.
+- Общий UI принадлежит таблице `Common`, episode-local строки — таблице эпизода.
+- Новый UI использует TextMeshPro. `UnityEngine.UI.Text` и legacy `TextMesh`
+  запрещены; fallback-строка обязательна для критического UI.
+- Статические TMP-элементы используют `LocalizedTextBinding`, динамические
+  подписываются на `Loc.LocaleChanged` и пересобирают видимое состояние.
+- Полный процесс и naming находятся в `localization/README.md` и `KEY_NAMING.md`.
+
 ## Интеграция
 
 ### NodeCanvas и Damage Numbers Pro

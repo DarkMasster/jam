@@ -1,0 +1,188 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Common_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 5acd4044001ca8249a7b3d4c5cb011b7, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 1726996480
+    m_Localized: REFLECTION / MOMENTUM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1815076864
+    m_Localized: REFLECTION + MOMENTUM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1815076865
+    m_Localized: NEW GAME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1815076866
+    m_Localized: CONTINUE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271168
+    m_Localized: QUIT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271169
+    m_Localized: "THREE STORIES \u2022 ONE MOMENT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271170
+    m_Localized: 'LANGUAGE: ENGLISH'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271171
+    m_Localized: No save found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271172
+    m_Localized: 'Last checkpoint: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271173
+    m_Localized: "Loading\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271174
+    m_Localized: Could not find the starting scene.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271175
+    m_Localized: The save is missing or outdated.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271176
+    m_Localized: CHOOSE A STORY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271177
+    m_Localized: "THREE ROUTES \u2022 ONE DAY"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271178
+    m_Localized: 'STORIES COMPLETED: {0} / 3'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271179
+    m_Localized: "MOSCOW \u2192 TBILISI"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271180
+    m_Localized: "EXECUTIVE \u2022 THE ROAD"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271181
+    m_Localized: "YEKATERINBURG \u2192 ALMATY"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271182
+    m_Localized: "DEVELOPER \u2022 OFFICE NIGHTMARE"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271183
+    m_Localized: "SAINT PETERSBURG \u2192 BALI"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271184
+    m_Localized: "PHOTOGRAPHER \u2022 AN HONEST SHOT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271185
+    m_Localized: "\u2713 COMPLETED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271186
+    m_Localized: "\u2022 CURRENT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271187
+    m_Localized: "FINALE \u2022 LOCKED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271188
+    m_Localized: "FINALE \u2022 UNLOCKED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271189
+    m_Localized: BACK TO MAIN MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271190
+    m_Localized: Stories can be played in any order. Progress is saved automatically.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271191
+    m_Localized: All three stories are complete. The finale is unlocked.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271192
+    m_Localized: "Saving\u2026 Loading\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271193
+    m_Localized: 'MENU  [ESC]'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271194
+    m_Localized: MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271195
+    m_Localized: GAME PAUSED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271196
+    m_Localized: RESUME
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271197
+    m_Localized: SAVE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271198
+    m_Localized: EXIT TO MAIN MENU
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271199
+    m_Localized: Save the current game mode state.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271200
+    m_Localized: This mode does not support manual saving yet.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271201
+    m_Localized: "{0} / {1}   \u2022   SPACE / CLICK"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1819271202
+    m_Localized: 'SKIP  [ESC]'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9091001868288
+    m_Localized: The finale is unlocked, but the Finale scene is not in Build Settings
+      yet.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9091073171456
+    m_Localized: No gameplay scene was found for story {0}.
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

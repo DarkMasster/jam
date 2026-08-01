@@ -1,10 +1,14 @@
 using System.IO;
+using System.Collections;
+using Jam.Core.Localization;
 using Jam.Core.Save;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Localization.Settings;
 
 namespace Jam.Core.UI
 {
@@ -22,14 +26,13 @@ namespace Jam.Core.UI
 
         private Button _newGameButton;
         private Button _continueButton;
+        private Button _languageButton;
         private Button _quitButton;
-        private Text _statusText;
+        private TMP_Text _statusText;
         private bool _isLoading;
-        private Font _font;
 
         private void Awake()
         {
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             EnsureEventSystem();
             BuildInterface();
             RefreshState();
@@ -37,10 +40,23 @@ namespace Jam.Core.UI
 
         private void OnEnable()
         {
+            Loc.LocaleChanged += RefreshState;
             if (_continueButton != null)
             {
                 RefreshState();
             }
+        }
+
+        private void OnDisable()
+        {
+            Loc.LocaleChanged -= RefreshState;
+        }
+
+        private IEnumerator Start()
+        {
+            yield return LocalizationSettings.InitializationOperation;
+            yield return null;
+            RefreshState();
         }
 
         public void StartNewGame()
@@ -53,7 +69,7 @@ namespace Jam.Core.UI
             var sceneName = ResolveNewGameScene();
             if (string.IsNullOrEmpty(sceneName))
             {
-                SetStatus("Не найдена сцена начала игры.");
+                SetStatus(Loc.Get(LocalizationTables.Common, "ui.main.error.no_start", "Не найдена сцена начала игры."));
                 Debug.LogError("Main menu could not find CharacterSelect in Build Settings.");
                 return;
             }
@@ -71,7 +87,7 @@ namespace Jam.Core.UI
 
             if (!GameSaveService.TryGetContinueScene(out var sceneName) || !IsSceneInBuild(sceneName))
             {
-                SetStatus("Сохранение не найдено или устарело.");
+                SetStatus(Loc.Get(LocalizationTables.Common, "ui.main.error.invalid_save", "Сохранение не найдено или устарело."));
                 GameSaveService.Clear();
                 RefreshState();
                 return;
@@ -93,7 +109,7 @@ namespace Jam.Core.UI
         {
             _isLoading = true;
             SetButtonsInteractable(false);
-            SetStatus("Загрузка…");
+            SetStatus(Loc.Get(LocalizationTables.Common, "ui.main.loading", "Загрузка…"));
             SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
         }
 
@@ -129,13 +145,21 @@ namespace Jam.Core.UI
             _continueButton.interactable = canContinue;
             _quitButton.interactable = true;
 
-            SetStatus(canContinue ? $"Последняя точка: {sceneName}" : "Сохранение не найдено");
+            SetStatus(canContinue
+                ? Loc.Get(LocalizationTables.Common, "ui.main.last_scene", "Последняя точка: {0}", sceneName)
+                : Loc.Get(LocalizationTables.Common, "ui.main.no_save", "Сохранение не найдено"));
+        }
+
+        public void ToggleLanguage()
+        {
+            Loc.ToggleRussianEnglish();
         }
 
         private void SetButtonsInteractable(bool value)
         {
             _newGameButton.interactable = value;
             _continueButton.interactable = value;
+            _languageButton.interactable = value;
             _quitButton.interactable = value;
         }
 
@@ -149,7 +173,7 @@ namespace Jam.Core.UI
 
         private void EnsureEventSystem()
         {
-            if (FindFirstObjectByType<EventSystem>() != null)
+            if (FindAnyObjectByType<EventSystem>() != null)
             {
                 return;
             }
@@ -191,7 +215,7 @@ namespace Jam.Core.UI
             SetAnchoredRect(accent.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(0f, 8f));
 
             var panel = CreateImage("MenuPanel", background.rectTransform, PanelColor);
-            SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 610f));
+            SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 690f));
 
             var panelLayout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
             panelLayout.padding = new RectOffset(54, 54, 48, 42);
@@ -202,23 +226,29 @@ namespace Jam.Core.UI
             panelLayout.childForceExpandWidth = true;
             panelLayout.childForceExpandHeight = false;
 
-            CreateLabel("Title", panel.rectTransform, "ОТРАЖЕНИЕ / ИМПУЛЬС", 42, FontStyle.Bold, TextColor, 72f);
-            CreateLabel("Subtitle", panel.rectTransform, "REFLECTION + MOMENTUM", 19, FontStyle.Normal, AccentColor, 34f);
+            CreateLabel("Title", panel.rectTransform, "ОТРАЖЕНИЕ / ИМПУЛЬС", 42, FontStyles.Bold, TextColor, 72f, "ui.main.title");
+            CreateLabel("Subtitle", panel.rectTransform, "REFLECTION + MOMENTUM", 19, FontStyles.Normal, AccentColor, 34f, "ui.main.subtitle");
             CreateSpacer(panel.rectTransform, 30f);
 
-            _newGameButton = CreateButton("NewGameButton", panel.rectTransform, "НАЧАТЬ НОВУЮ ИГРУ", StartNewGame);
-            _continueButton = CreateButton("ContinueButton", panel.rectTransform, "ПРОДОЛЖИТЬ", ContinueGame);
-            _quitButton = CreateButton("QuitButton", panel.rectTransform, "ВЫХОД", QuitGame);
+            _newGameButton = CreateButton("NewGameButton", panel.rectTransform, "НАЧАТЬ НОВУЮ ИГРУ", StartNewGame, "ui.main.new_game");
+            _continueButton = CreateButton("ContinueButton", panel.rectTransform, "ПРОДОЛЖИТЬ", ContinueGame, "ui.main.continue");
+            _languageButton = CreateButton("LanguageButton", panel.rectTransform, "ЯЗЫК: РУССКИЙ", ToggleLanguage, "ui.main.language");
+            _quitButton = CreateButton("QuitButton", panel.rectTransform, "ВЫХОД", QuitGame, "ui.main.quit");
 
             CreateSpacer(panel.rectTransform, 22f);
-            _statusText = CreateLabel("SaveStatus", panel.rectTransform, string.Empty, 18, FontStyle.Normal, MutedTextColor, 30f);
+            _statusText = CreateLabel("SaveStatus", panel.rectTransform, string.Empty, 18, FontStyles.Normal, MutedTextColor, 30f);
             CreateSpacer(panel.rectTransform, 12f);
-            CreateLabel("Footer", panel.rectTransform, "ТРИ ИСТОРИИ • ОДИН МОМЕНТ", 15, FontStyle.Normal, MutedTextColor, 24f);
+            CreateLabel("Footer", panel.rectTransform, "ТРИ ИСТОРИИ • ОДИН МОМЕНТ", 15, FontStyles.Normal, MutedTextColor, 24f, "ui.main.footer");
 
             _newGameButton.Select();
         }
 
-        private Button CreateButton(string name, RectTransform parent, string label, UnityEngine.Events.UnityAction action)
+        private Button CreateButton(
+            string name,
+            RectTransform parent,
+            string label,
+            UnityEngine.Events.UnityAction action,
+            string localizationKey = null)
         {
             var buttonObject = new GameObject(
                 name,
@@ -249,47 +279,55 @@ namespace Jam.Core.UI
             button.colors = colors;
             button.onClick.AddListener(action);
 
-            var text = CreateTextObject("Label", buttonObject.GetComponent<RectTransform>(), label, 21, FontStyle.Bold, TextColor);
+            var text = CreateTextObject("Label", buttonObject.GetComponent<RectTransform>(), label, 21, FontStyles.Bold, TextColor);
+            if (!string.IsNullOrWhiteSpace(localizationKey))
+            {
+                LocalizedTextBinding.Attach(text, LocalizationTables.Common, localizationKey, label);
+            }
             Stretch(text.rectTransform, new Vector2(20f, 0f), new Vector2(-20f, 0f));
 
             return button;
         }
 
-        private Text CreateLabel(
+        private TMP_Text CreateLabel(
             string name,
             RectTransform parent,
             string value,
             int fontSize,
-            FontStyle fontStyle,
+            FontStyles fontStyle,
             Color color,
-            float preferredHeight)
+            float preferredHeight,
+            string localizationKey = null)
         {
             var text = CreateTextObject(name, parent, value, fontSize, fontStyle, color);
+            if (!string.IsNullOrWhiteSpace(localizationKey))
+            {
+                LocalizedTextBinding.Attach(text, LocalizationTables.Common, localizationKey, value);
+            }
             var layout = text.gameObject.AddComponent<LayoutElement>();
             layout.preferredHeight = preferredHeight;
             return text;
         }
 
-        private Text CreateTextObject(
+        private TMP_Text CreateTextObject(
             string name,
             RectTransform parent,
             string value,
             int fontSize,
-            FontStyle fontStyle,
+            FontStyles fontStyle,
             Color color)
         {
-            var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
+            var textObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
             textObject.transform.SetParent(parent, false);
 
-            var text = textObject.GetComponent<Text>();
-            text.font = _font;
+            var text = textObject.GetComponent<TextMeshProUGUI>();
             text.text = value;
             text.fontSize = fontSize;
             text.fontStyle = fontStyle;
             text.color = color;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.alignment = TextAlignmentOptions.Center;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Ellipsis;
             text.raycastTarget = false;
 
             return text;

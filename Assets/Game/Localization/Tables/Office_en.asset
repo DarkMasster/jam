@@ -1,0 +1,161 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Office_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: b09f00d54e4df8c44aec6ce2221dcd32, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 766500864
+    m_Localized: "HANDS FREE \u2022 APPROACH A HIGHLIGHTED ITEM"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832512
+    m_Localized: STARTING OFFICE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832513
+    m_Localized: COLLECT PERSONAL ITEMS   {0}   {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832514
+    m_Localized: '[ ] LAPTOP'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832515
+    m_Localized: '[X] LAPTOP'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832516
+    m_Localized: '[ ] MUG'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832517
+    m_Localized: '[X] MUG'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832518
+    m_Localized: IDLE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832519
+    m_Localized: MOVING
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832520
+    m_Localized: MOMENTUM {0}%   {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832521
+    m_Localized: KEYBOARD
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832522
+    m_Localized: PRINTER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 816832523
+    m_Localized: OFFICE CHAIR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088472702976
+    m_Localized: "WASD / ARROWS \u2022 MOVE TOWARD EXIT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840320
+    m_Localized: "CARRYING: {0} \u2022 PRIMARY \u2014 THROW"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840321
+    m_Localized: CAPACITY {0}   ATTEMPT {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840322
+    m_Localized: 'PERFORMANCE UNSATISFACTORY
+
+      ATTEMPT {0} IS STARTING'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840323
+    m_Localized: "LAPTOP COLLECTED \u2022 MUG REMAINS"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840324
+    m_Localized: "MUG COLLECTED \u2022 LAPTOP REMAINS"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840325
+    m_Localized: "PERSONAL ITEMS COLLECTED \u2022 REACH EXIT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840326
+    m_Localized: "DESTROYED: {0} \u2022 {1}/{2} \u2022 MOMENTUM RISING"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840327
+    m_Localized: "WRITTEN OFF: {0} \u2022 {1}/{2} \u2022 MOMENTUM RISING"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840328
+    m_Localized: "{0} MISSED \u2022 THROW WINDOW OPEN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840329
+    m_Localized: "PICKED UP: {0} \u2022 HANDS OCCUPIED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840330
+    m_Localized: 'THROWN: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840331
+    m_Localized: "HIT: {0} \u2022 CAPACITY {1}/{2}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840332
+    m_Localized: "BURNOUT \u2022 CAUSE: {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840333
+    m_Localized: "WORKDAY RESTARTED \u2022 ATTEMPT {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840334
+    m_Localized: LAPTOP AND MUG REQUIRED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840335
+    m_Localized: LAPTOP REQUIRED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840336
+    m_Localized: MUG REQUIRED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840337
+    m_Localized: "ACCESS DENIED \u2022 {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840338
+    m_Localized: "EXIT IS A FALSE GOAL \u2022 SERVER BOSS AHEAD"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 9088518840339
+    m_Localized: "ACCESS REVOKED \u2022 BOSS ZONE READY FOR THE NEXT SLICE"
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []
