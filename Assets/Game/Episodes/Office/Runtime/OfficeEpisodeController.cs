@@ -42,6 +42,11 @@ namespace Jam.Episodes.Office
         public bool HasMug { get; private set; }
         public bool BossEncounterReady => HasLaptop && HasMug;
 
+        /// <summary>Счётчики забега для итога эпизода.</summary>
+        public int BreakablesDestroyed => _breakableDestroyed;
+
+        public int ChasersWrecked => _chaserWrecked;
+
         private void Awake()
         {
             if (zoneText == null || objectiveText == null || carryText == null || statusText == null || exitGate == null)

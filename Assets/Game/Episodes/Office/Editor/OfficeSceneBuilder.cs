@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using Jam.Core.Cutscenes;
 using Jam.Core.Localization;
 using Jam.Episodes.Office;
 using TMPro;
@@ -21,6 +22,11 @@ namespace Jam.Episodes.Office.Editor
         private const string ArtPath = "Assets/Game/Episodes/Office/Art";
         private const string MaterialPath = ArtPath + "/Materials";
         private const string PrefabPath = "Assets/Game/Episodes/Office/Prefabs";
+        private const string CutscenePath = "Assets/Game/Episodes/Office/Cutscenes";
+        private const string SetupCutscenePath = CutscenePath + "/OfficeSetupStoryboard.asset";
+        private const string AwakeningCutscenePath = CutscenePath + "/OfficeAwakeningStoryboard.asset";
+        private const string SetupCutsceneId = "office.prologue.setup";
+        private const string AwakeningCutsceneId = "office.prologue.awakening";
 
         [MenuItem("Jam/Office/Rebuild Prologue Office")]
         public static void Build()
@@ -28,6 +34,7 @@ namespace Jam.Episodes.Office.Editor
             EnsureFolder(ArtPath);
             EnsureFolder(MaterialPath);
             EnsureFolder(PrefabPath);
+            EnsureFolder(CutscenePath);
             EnsureBossLocalization();
 
             var palette = CreatePalette();
@@ -56,13 +63,11 @@ namespace Jam.Episodes.Office.Editor
             var camera = CreateCamera(player.transform, lightingRoot);
             var inputActions = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/InputSystem_Actions.inputactions");
             var playerController = player.GetComponent<OfficePlayerController>();
-            playerController.Configure(inputActions, camera, "Player", "Move", momentum);
+            playerController.Configure(inputActions, camera, "Office", "Move", momentum);
 
-            // Карта `Office` ещё не создана интегратором: `Primary` временно берётся из
-            // существующего `Player/Attack`, общий input asset не изменяется.
             var handAnchor = player.transform.Find("Hand Anchor");
             var carryController = player.GetComponent<OfficeCarryController>();
-            carryController.Configure(inputActions, "Player", "Attack", handAnchor, episodeController, momentum);
+            carryController.Configure(inputActions, "Office", "Primary", handAnchor, episodeController, momentum);
 
             runController.Configure(
                 player.transform,
@@ -124,12 +129,94 @@ namespace Jam.Episodes.Office.Editor
             CreateReflectionBeat(palette, gameplayRoot, player.transform, episodeController, coach);
             CreateItemGuarantee(palette, gameplayRoot, laptop, mug, episodeController, coach);
 
+            CreateStoryFrame(sceneRoot, episodeObject, runController, episodeController, playerController, carryController);
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
             AssetDatabase.SaveAssets();
             Selection.activeGameObject = player;
 
             Debug.Log($"Built office vertical slice at {ScenePath}");
+        }
+
+        /// <summary>
+        /// Сюжетная рамка эпизода: короткий Setup сна, пробуждение после финального
+        /// удара и передача результата в общий flow.
+        /// </summary>
+        private static void CreateStoryFrame(
+            Transform sceneRoot,
+            GameObject episodeObject,
+            OfficeRunController runController,
+            OfficeEpisodeController episodeController,
+            OfficePlayerController playerController,
+            OfficeCarryController carryController)
+        {
+            var setupSequence = EnsureStoryboard(SetupCutscenePath, "OfficeSetupStoryboard", "setup", SetupFrames);
+            var awakeningSequence = EnsureStoryboard(AwakeningCutscenePath, "OfficeAwakeningStoryboard", "awakening", AwakeningFrames);
+
+            var storyRoot = CreateGroup("Story", sceneRoot);
+            ConfigurePresentation(storyRoot, "Setup Cutscene", SetupCutsceneId, setupSequence);
+            ConfigurePresentation(storyRoot, "Awakening Cutscene", AwakeningCutsceneId, awakeningSequence);
+
+            var storyDirector = episodeObject.AddComponent<OfficeStoryDirector>();
+            storyDirector.Configure(
+                runController,
+                episodeController,
+                playerController,
+                carryController,
+                SetupCutsceneId,
+                AwakeningCutsceneId);
+        }
+
+        private static StoryboardCutsceneAsset EnsureStoryboard(
+            string assetPath,
+            string assetName,
+            string keyPrefix,
+            (string speaker, string text)[] frames)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<StoryboardCutsceneAsset>(assetPath);
+            if (asset == null)
+            {
+                asset = ScriptableObject.CreateInstance<StoryboardCutsceneAsset>();
+                asset.name = assetName;
+                AssetDatabase.CreateAsset(asset, assetPath);
+            }
+
+            var serialized = new SerializedObject(asset);
+            serialized.FindProperty("skippable").boolValue = true;
+            var serializedFrames = serialized.FindProperty("frames");
+            serializedFrames.arraySize = frames.Length;
+            for (var index = 0; index < frames.Length; index++)
+            {
+                var frame = serializedFrames.GetArrayElementAtIndex(index);
+                frame.FindPropertyRelative("localizationTable").stringValue = LocalizationTables.Office;
+                frame.FindPropertyRelative("speakerKey").stringValue = $"{keyPrefix}.{index + 1:00}.speaker";
+                frame.FindPropertyRelative("textKey").stringValue = $"{keyPrefix}.{index + 1:00}.text";
+                frame.FindPropertyRelative("speaker").stringValue = frames[index].speaker;
+                frame.FindPropertyRelative("text").stringValue = frames[index].text;
+                frame.FindPropertyRelative("autoAdvanceSeconds").floatValue = 0f;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        private static void ConfigurePresentation(
+            Transform parent,
+            string name,
+            string cutsceneId,
+            StoryboardCutsceneAsset sequence)
+        {
+            var presentationObject = new GameObject(name, typeof(UiStoryboardPresentation));
+            presentationObject.transform.SetParent(parent, false);
+
+            var presentation = presentationObject.GetComponent<UiStoryboardPresentation>();
+            var serialized = new SerializedObject(presentation);
+            serialized.FindProperty("cutsceneId").stringValue = cutsceneId;
+            serialized.FindProperty("sequence").objectReferenceValue = sequence;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(presentation);
         }
 
         private static Palette CreatePalette()
@@ -1335,6 +1422,24 @@ namespace Jam.Episodes.Office.Editor
             public string Russian { get; }
             public string English { get; }
         }
+
+        /// <summary>
+        /// Короткий Setup: сон в машине объясняется тремя пропускаемыми кадрами, а не
+        /// длинной непрерываемой cutscene. Текст здесь — только RU-fallback.
+        /// </summary>
+        private static readonly (string speaker, string text)[] SetupFrames =
+        {
+            ("ДРУГ ЗА РУЛЁМ", "Очередь стоит четвёртый час. Спи, разбужу на границе."),
+            ("ОН", "В рюкзаке ноутбук и кружка из офиса — всё, что он успел забрать с последней работы. Глаза закрываются сами."),
+            ("СОН", "Лампы дневного света, ряды столов до темноты и красная табличка EXIT в конце этажа.")
+        };
+
+        private static readonly (string speaker, string text)[] AwakeningFrames =
+        {
+            ("СЕРВЕРНОЕ КОЛЬЦО", "Стойки смыкаются. Свет уходит, и офис наконец отпускает."),
+            ("ОН", "Он просыпается в чужой машине от стука по крыше. Ладони мокрые, во рту привкус тонера."),
+            ("ДРУГ ЗА РУЛЁМ", "Очередь пошла. Готовь паспорт — граница через двадцать минут.")
+        };
 
         private static readonly OfficeLocalizationEntry[] BossLocalization =
         {

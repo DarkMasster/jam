@@ -302,6 +302,134 @@ MonoBehaviour:
     m_Localized: "OFFBOARDING COMPLETE \u2022 DREAM ENDED"
     m_Metadata:
       m_Items: []
+  - m_Id: 58018430443520
+    m_Localized: Office nightmare
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443521
+    m_Localized: FRIEND AT THE WHEEL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443522
+    m_Localized: The queue has not moved for four hours. Sleep, I will wake you at
+      the border.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443523
+    m_Localized: HIM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443524
+    m_Localized: "His backpack holds a laptop and a mug from the office\u2014everything
+      he managed to take from his last job. His eyes close on their own."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443525
+    m_Localized: THE DREAM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443526
+    m_Localized: Fluorescent lamps, rows of desks fading into darkness, and a red
+      EXIT sign at the end of the floor.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443527
+    m_Localized: THE SERVER RING
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443528
+    m_Localized: The racks close in. The light fades away, and the office finally
+      lets go.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443529
+    m_Localized: HIM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443530
+    m_Localized: He wakes in someone else's car to a knock on the roof. His palms
+      are damp, and his mouth tastes of toner.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443531
+    m_Localized: FRIEND AT THE WHEEL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443532
+    m_Localized: "The queue is moving. Get your passport ready\u2014the border is
+      twenty minutes away."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443533
+    m_Localized: "BORDER QUEUE \u2022 THE HERO FALLS ASLEEP IN THE CAR"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443534
+    m_Localized: "THE DREAM BEGINS \u2022 THE OFFICE HE HAS JUST LOST"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443535
+    m_Localized: COLLECT PERSONAL ITEMS AND REACH EXIT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443536
+    m_Localized: "WAKING UP IN THE CAR \u2022 THE QUEUE IS MOVING"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443537
+    m_Localized: He wakes up in the border queue. The office stayed behind in the
+      dream; the laptop and the mug are on his lap. The hotel-room door in Almaty
+      will not close until evening.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443538
+    m_Localized: RUN RESTARTS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443539
+    m_Localized: LAPTOP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443540
+    m_Localized: MUG
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443541
+    m_Localized: EQUIPMENT DESTROYED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443542
+    m_Localized: CHAIRS WRITTEN OFF
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443543
+    m_Localized: YES
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443544
+    m_Localized: NO
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443545
+    m_Localized: THE DREAM BEGINS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443546
+    m_Localized: "WAKING UP \u2022 THE QUEUE IS MOVING"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443547
+    m_Localized: "PROGRESS SAVED \u2022 ATTEMPT {0}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443548
+    m_Localized: Office run saved.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443549
+    m_Localized: Saving is unavailable right now.
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

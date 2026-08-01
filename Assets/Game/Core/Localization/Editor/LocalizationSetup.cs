@@ -71,7 +71,15 @@ namespace Jam.Core.Localization.Editor
             new("ui.hud.save.available", "Сохранение запишет состояние текущего режима.", "Save the current game mode state."),
             new("ui.hud.save.unavailable", "Этот режим пока не поддерживает ручное сохранение.", "This mode does not support manual saving yet."),
             new("ui.cutscene.progress", "{0} / {1}   •   ПРОБЕЛ / КЛИК", "{0} / {1}   •   SPACE / CLICK"),
-            new("ui.cutscene.skip", "ПРОПУСТИТЬ  [ESC]", "SKIP  [ESC]")
+            new("ui.cutscene.skip", "ПРОПУСТИТЬ  [ESC]", "SKIP  [ESC]"),
+            new("ui.arrival.title", "ТРАНЗИТНАЯ ГОСТИНИЦА", "TRANSIT HOTEL"),
+            new("ui.arrival.status", "Прогресс сохранён. Оставшиеся истории доступны в любом порядке.", "Progress is saved. The remaining stories are available in any order."),
+            new("ui.arrival.continue", "ВЕРНУТЬСЯ К ВЫБОРУ ИСТОРИИ", "BACK TO STORY SELECT"),
+            new("ui.arrival.route.unknown", "МАРШРУТ ПРОДОЛЖАЕТСЯ", "THE ROUTE CONTINUES"),
+            new("ui.arrival.default", "Дверь номера закрывается. Первая относительная тишина за весь день.", "The hotel-room door closes. The first relative silence of the whole day."),
+            new("ui.arrival.drive", "Дверь номера закрывается. Семья наконец спит, а очередь на границе осталась позади.", "The hotel-room door closes. The family is finally asleep, and the border queue is behind them."),
+            new("ui.arrival.office", "Дверь номера закрывается. Ноутбук и кружка лежат на столе, офис остался во сне.", "The hotel-room door closes. The laptop and the mug lie on the desk; the office stayed behind in the dream."),
+            new("ui.arrival.photo", "Дверь номера закрывается. На экране телефона остаётся опубликованный кадр.", "The hotel-room door closes. The published photograph remains on the phone screen.")
         };
 
         private static readonly Entry[] PhotoEntries =
@@ -180,7 +188,37 @@ namespace Jam.Core.Localization.Editor
             new("coach.fallback_items", "ЗАБЫТОЕ ЖДЁТ У EXIT: {0}", "FORGOTTEN ITEMS WAIT AT EXIT: {0}"),
             new("item.laptop", "НОУТБУК", "LAPTOP"),
             new("item.mug", "КРУЖКА", "MUG"),
-            new("item.list_pair", "{0} И {1}", "{0} AND {1}")
+            new("item.list_pair", "{0} И {1}", "{0} AND {1}"),
+            new("mode.name", "Офисный кошмар", "Office nightmare"),
+            new("setup.01.speaker", "ДРУГ ЗА РУЛЁМ", "FRIEND AT THE WHEEL"),
+            new("setup.01.text", "Очередь стоит четвёртый час. Спи, разбужу на границе.", "The queue has not moved for four hours. Sleep, I will wake you at the border."),
+            new("setup.02.speaker", "ОН", "HIM"),
+            new("setup.02.text", "В рюкзаке ноутбук и кружка из офиса — всё, что он успел забрать с последней работы. Глаза закрываются сами.", "His backpack holds a laptop and a mug from the office—everything he managed to take from his last job. His eyes close on their own."),
+            new("setup.03.speaker", "СОН", "THE DREAM"),
+            new("setup.03.text", "Лампы дневного света, ряды столов до темноты и красная табличка EXIT в конце этажа.", "Fluorescent lamps, rows of desks fading into darkness, and a red EXIT sign at the end of the floor."),
+            new("awakening.01.speaker", "СЕРВЕРНОЕ КОЛЬЦО", "THE SERVER RING"),
+            new("awakening.01.text", "Стойки смыкаются. Свет уходит, и офис наконец отпускает.", "The racks close in. The light fades away, and the office finally lets go."),
+            new("awakening.02.speaker", "ОН", "HIM"),
+            new("awakening.02.text", "Он просыпается в чужой машине от стука по крыше. Ладони мокрые, во рту привкус тонера.", "He wakes in someone else's car to a knock on the roof. His palms are damp, and his mouth tastes of toner."),
+            new("awakening.03.speaker", "ДРУГ ЗА РУЛЁМ", "FRIEND AT THE WHEEL"),
+            new("awakening.03.text", "Очередь пошла. Готовь паспорт — граница через двадцать минут.", "The queue is moving. Get your passport ready—the border is twenty minutes away."),
+            new("setup.fallback.01", "ОЧЕРЕДЬ НА ГРАНИЦЕ • ГЕРОЙ ЗАСЫПАЕТ В МАШИНЕ", "BORDER QUEUE • THE HERO FALLS ASLEEP IN THE CAR"),
+            new("setup.fallback.02", "СОН НАЧИНАЕТСЯ • ОФИС, КОТОРЫЙ ОН ТОЛЬКО ЧТО ПОТЕРЯЛ", "THE DREAM BEGINS • THE OFFICE HE HAS JUST LOST"),
+            new("setup.fallback.03", "СОБЕРИ ЛИЧНЫЕ ВЕЩИ И ДОБЕРИСЬ ДО EXIT", "COLLECT PERSONAL ITEMS AND REACH EXIT"),
+            new("awakening.fallback", "ПРОБУЖДЕНИЕ В МАШИНЕ • ОЧЕРЕДЬ ПОШЛА", "WAKING UP IN THE CAR • THE QUEUE IS MOVING"),
+            new("arrival.body", "Он просыпается в очереди на границе. Офис остался во сне, ноутбук и кружка — на коленях. Дверь гостиничного номера в Алматы закроется только вечером.", "He wakes up in the border queue. The office stayed behind in the dream; the laptop and the mug are on his lap. The hotel-room door in Almaty will not close until evening."),
+            new("result.retries", "ПЕРЕЗАПУСКОВ ЗАБЕГА", "RUN RESTARTS"),
+            new("result.laptop", "НОУТБУК", "LAPTOP"),
+            new("result.mug", "КРУЖКА", "MUG"),
+            new("result.destroyed", "РАЗРУШЕНО ТЕХНИКИ", "EQUIPMENT DESTROYED"),
+            new("result.wrecked", "СПИСАНО КРЕСЕЛ", "CHAIRS WRITTEN OFF"),
+            new("result.yes", "ЕСТЬ", "YES"),
+            new("result.no", "НЕТ", "NO"),
+            new("status.setup", "СОН НАЧИНАЕТСЯ", "THE DREAM BEGINS"),
+            new("status.awakening", "ПРОБУЖДЕНИЕ • ОЧЕРЕДЬ ПОШЛА", "WAKING UP • THE QUEUE IS MOVING"),
+            new("status.saved", "ПРОГРЕСС СОХРАНЁН • ПОПЫТКА {0}", "PROGRESS SAVED • ATTEMPT {0}"),
+            new("save.ok", "Офисный забег сохранён.", "Office run saved."),
+            new("save.blocked", "Сейчас сохранение недоступно.", "Saving is unavailable right now.")
         };
 
         [MenuItem("Jam/Localization/Create or Update Localization")]

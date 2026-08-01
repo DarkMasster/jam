@@ -4,7 +4,7 @@
 - Статус: активен
 - Последнее обновление: 2026-08-01
 - Владелец актуальности: исполнитель текущей офисной задачи
-- Текущая контрольная точка: `M3 — составной серверный босс` завершена; далее `M4 — сюжет, сохранение и общий flow`
+- Текущая контрольная точка: `M4 — сюжет, сохранение и общий flow` завершена; далее `M5 — build-ready`
 
 Документ переводит утверждённый офисный эпизод в последовательность небольших
 проверяемых срезов. Он не заменяет `DEVELOPMENT_SPEC.md`, `STORY.md`,
@@ -79,13 +79,13 @@ Setup: герой засыпает в машине у границы
 | Область | Статус | Проверенный результат | Условие перехода дальше |
 |---|---|---|---|
 | `M0` Playable greybox | Done | Пять зон, top-down движение и камера, pickups, HUD, закрытый `EXIT` | Сохранить как стабильную тестовую основу |
-| Общая интеграция | Зависимость | Сцена запускается напрямую; временно используются `Player/Move` и `Player/Attack` | Интегратор добавляет карту `Office`, Build Settings и переход из `CharacterSelect` |
+| Общая интеграция | Done | Карта `Office` в общем input asset, `Prologue_Office` и `HotelArrival` в Build Settings, переход из `CharacterSelect` работает | Сохранить как основу сборки `M5` |
 | `M1A` Предмет и разрушение | Done | Клавиатура с подсветкой цели, автоподбор, бросок, lockout и принтер `Intact → Broken` со счётчиком в HUD | Сохранить как основу боевого цикла для `M1B` |
 | `M1B` Давление и restart | Done | Ожившее офисное кресло с телеграфом и рывком, Momentum со шкалой в HUD, работоспособность из трёх делений и мягкий restart за 1,1 с | Сохранить как источник давления для маршрута `M2` |
 | `M2` Полный офисный маршрут | Done | Последовательные HUD-подсказки, Reflection beat и физически обязательный fallback ноутбука/кружки доводят пять зон до `EXIT` | Сохранить маршрут как основу постановки `M3` |
 | `M3` Финальный босс | Done | 12 стоек собираются у ложного `EXIT`, принимают три броска, замыкают физическое кольцо и завершают забег неизбежным сюжетным ударом | Сохранить episode-local финал как основу `M4` |
-| `M4` Сюжет и общий flow | Todo | Episode-local controller не подключён к Core | Setup, Reflection, Hotel Arrival, checkpoint и `EpisodeResult` |
-| `M5` Build-ready | Todo | Прямой Play Mode проверен; Windows build отсутствует | Полный путь из `Main`, чистая Console и Windows x64 smoke test |
+| `M4` Сюжет и общий flow | Done | Setup сна, пробуждение, checkpoint `office.setup/run/arrival`, `EpisodeResult` и переход в `HotelArrival` через общий flow | Сохранить как основу сборки `M5` |
+| `M5` Build-ready | В работе | Полный путь `Main → CharacterSelect → Prologue_Office → HotelArrival` проходит в Play Mode, Console чиста; Windows build отсутствует | Windows x64 smoke test и баланс длительности 5–10 минут |
 | `M6` Polish | Todo / P1 | Только базовая палитра и свет | SFX, телеграфы, feedback, частицы, camera shake и баланс после всех P0 |
 
 ## Milestones и критерии приёмки
@@ -191,14 +191,33 @@ Assembling → Assembled → Encircling → RingFight → FinalTelegraph → Com
 Жужжание и щелчки создаются episode-local процедурно, а RU/EN реплики и HUD-состояния
 добавлены в таблицу `Office`.
 
-### M4 — Сюжет, сохранение и общий flow — P0
+### M4 — Сюжет, сохранение и общий flow — Done
 
-- [ ] Setup объясняет сон в машине без длинной непрерываемой cutscene.
-- [ ] После финального удара герой просыпается и переходит в `HotelArrival`.
-- [ ] Checkpoint хранит только устойчивую фазу и episode-owned payload.
-- [ ] Результат содержит как минимум retries, `hasLaptop` и `hasMug`.
-- [ ] Эпизод сообщает завершение через общий flow и не загружает чужую сцену
+- [x] Setup объясняет сон в машине без длинной непрерываемой cutscene.
+- [x] После финального удара герой просыпается и переходит в `HotelArrival`.
+- [x] Checkpoint хранит только устойчивую фазу и episode-owned payload.
+- [x] Результат содержит как минимум retries, `hasLaptop` и `hasMug`.
+- [x] Эпизод сообщает завершение через общий flow и не загружает чужую сцену
       напрямую.
+
+Реализация: `OfficeStoryDirector` владеет фазами `Setup → Run → Awakening →
+Arrival`. Setup и пробуждение показываются storyboard-катсценами
+`office.prologue.setup` и `office.prologue.awakening` через общий
+`CutsceneDirector`; обе пропускаются, а при отсутствии director'а срез
+переключается на короткие HUD-биты и не блокирует управление.
+`OfficeCheckpointAdapter` сериализует единственный episode-owned payload схемы `1`
+и чинит несогласованные состояния: пробуждение не является границей сохранения, а
+`office.arrival` без обеих личных вещей откатывается к `office.run`. Директор также
+реализует `IGameModeSaveProvider`, поэтому общий pause-overlay сохраняет офисный
+забег только внутри управляемого забега.
+
+Общий слой flow вынесен в Core: `EpisodeResult` с retries, ноутбуком, кружкой,
+разрушенной техникой и списанными креслами, `GameFlowService.CompleteEpisode`,
+параметризованная сцена `HotelArrival` и `HotelArrivalController`. Офис не знает
+имени сцены прибытия. Загрузка `HotelArrival` перезаписывала сцену линии в
+сохранении, поэтому `FinishArrival` возвращает checkpoint на сцену эпизода —
+иначе повторный выбор героя открывал бы экран прибытия вместо забега. Пройденный
+сон при повторном заходе начинается с `Setup` и чистого счёта.
 
 ### M5 — Build-ready — P0
 
@@ -220,9 +239,9 @@ Assembling → Assembled → Encircling → RingFight → FinalTelegraph → Com
 
 | Решение или ресурс | Владелец | Нужно для |
 |---|---|---|
-| Карта `Office` в общем input asset | Интегратор | Интеграция управления: сейчас срез временно читает `Player/Move` и `Player/Attack`, после появления карты ссылки переключаются на `Office/Move` и `Office/Primary` |
-| Build Settings и переход из `CharacterSelect` | Интегратор | `M4–M5` |
-| Save/Flow API и `EpisodeProgressReporter` | Интегратор | `M4` |
+| Карта `Office` в общем input asset | Интегратор | Закрыто в `M4`: карта `Office` (Move, Aim, Primary, Secondary, Interact) добавлена, офис читает `Office/Move` и `Office/Primary` |
+| Build Settings и переход из `CharacterSelect` | Интегратор | Закрыто в `M4`: `Prologue_Office` (index 4) и `HotelArrival` (index 5) в Build Settings |
+| Save/Flow API и `EpisodeProgressReporter` | Интегратор | Закрыто в `M4`: добавлены `EpisodeResult` и `GameFlowService`; `EpisodeProgressReporter` офисом не используется |
 | Набор противников и тон кошмара, P0 №7–8 | Продюсер | Закрыто: офисное кресло и смешанный тон; дополнительные виды техники — только через новое решение |
 | Episode-local сцена, механики и prefabs | Владелец Office | `M1–M3` |
 | Setup, Reflection и Arrival | Нарратив + Office | `M2–M4` |
@@ -247,12 +266,10 @@ placeholder и оставляет точную инструкцию интегр
 
 ## Следующий офисный срез
 
-Создать отдельную задачу `M4`: после episode-local состояния `Completed` показать
-короткое пробуждение в машине, передать результат с retries, ноутбуком и кружкой
-через общий flow, сохранить устойчивый checkpoint и перейти в `HotelArrival` без
-прямой загрузки чужой сцены из Office-кода. В том же срезе добавить короткий Setup
-сна. Не смешивать с Build Settings/Windows smoke test `M5`, новой картой input,
-полировкой эффектов или дополнительными противниками.
+Закончить `M5`: собрать Windows x64 build, пройти в нём полный путь
+`Main → CharacterSelect → Prologue_Office → HotelArrival`, замерить длительность
+цикла и подогнать её к 5–10 минутам без soft lock, записать результат smoke test.
+Не смешивать с полировкой `M6`, новыми противниками или изменениями сюжета.
 
 ## История изменений
 
@@ -266,4 +283,5 @@ placeholder и оставляет точную инструкцию интегр
 | 2026-08-01 | `feature/office-m1b-pressure` / `M1B` | `M1B` переведён в `Done`; `M2` стал следующей контрольной точкой. Продюсер закрыл `QUESTIONS.md` P0 №7–8 (офисное кресло, смешанный тон) и разрешил считать набор техники заменяемым placeholder. Добавлены `OfficeChaser` (prefab `HostileChair`), `OfficeMomentum`, `OfficeRunController`, реестр `OfficeRunReset` и общий `IOfficeImpactTarget`; HUD получил работоспособность с номером попытки, шкалу `ТЕМП` и overlay поражения. Тело противника сделано триггером после того, как таран выталкивал героя наверх; красный акцент продублирован на сиденье ради читаемости с top-down камеры | Rebuild через `Jam/Office/Rebuild Prologue Office`, `manage_scene validate` — 0 issues/missing scripts/broken prefabs, Console — 0 errors; controlled Play Mode: активация только по прямой видимости, телеграф 7,7 м, промах о мебель, три попадания `3 → 0` при неизменной координате Y героя 0,040, бросок списывает кресло и ломает принтер (Momentum 0,34 + 0,26 = 0,60), падение шкалы 0,055/с в движении против 0,260/с на простое, задержка restart 1,100 с, после restart восстановлены герой, предметы, принтеры, кресла, цели и Momentum; `M0`/`M1A` без регрессий |
 | 2026-08-01 | `feature/office-m2-route` / `M2` | `M2` переведён в `Done`; `M3` стал следующей контрольной точкой. Добавлены последовательные подсказки `OfficeCoach`, задержанное визуальное эхо `OfficeReflectionBeat` за правым стеклом и `OfficeItemGuarantee`: пропущенные вещи вместе с маркерами переносятся перед `EXIT`, а полноширинный `Access Hold` физически не выпускает игрока до их сбора. Restart восстанавливает все новые состояния | `Jam/Office/Rebuild Prologue Office`; script validation — 0 compile errors; scene validation — 0 issues/missing scripts/broken prefabs; controlled Play Mode подтвердил всю цепочку подсказок, видимые 2 renderer эха, fallback-позиции ноутбука `(-0.72, 0.78, 33.80)` и кружки `(0.72, 0.72, 33.80)`, активный блокер до сбора, `BossEncounterReady=true` после сбора и возврат игрока/вещей/маркеров/Reflection после restart; финальный прогон — Console 0 errors, визуал проверен captures `office-m2-reflection-readable.png` и `office-m2-item-fallback.png` |
 | 2026-08-01 | `feature/localization-tmp` | Office HUD и runtime-сообщения переведены на TMP и таблицу `Office`; при разрешении merge M2 новые подсказки Coach, Reflection и fallback-вещей также получили RU/EN ключи | `Prologue_Office` пересобирается из объединённого builder; Play Mode проверяет missing keys, legacy Text и Console |
+| 2026-08-01 | `feature/office-m4-flow` / `M4` | `M4` переведён в `Done`; `M5` стал текущей контрольной точкой. Добавлены общий слой flow (`EpisodeResult`, `GameFlowService`, сцена `HotelArrival` и `HotelArrivalController`), episode-owned payload (`OfficeCharacterSaveData`, `OfficeCheckpointAdapter`, checkpoints `office.setup/run/arrival`) и `OfficeStoryDirector` с пропускаемым Setup, пробуждением и ручным сохранением через `IGameModeSaveProvider`. Закрыты три зависимости интегратора: карта `Office` в общем input asset, Build Settings и переход из `CharacterSelect`. Найдена и исправлена ошибка: загрузка `HotelArrival` перезаписывала сцену линии, из-за чего повторный выбор офиса открывал экран прибытия | `Jam/Localization/Create or Update Localization`, `Jam/Flow/Rebuild Hotel Arrival`, `Jam/Office/Rebuild Prologue Office`; scene validation — 0 issues/missing scripts/broken prefabs; controlled Play Mode из `Main`: `Новая игра → CharacterSelect → Prologue_Office`, Setup играет и пропускается, checkpoint `office.run` с payload `retries=0`, карта `Office` активна, финальный удар → пробуждение → `HotelArrival` со строками `ПЕРЕЗАПУСКОВ ЗАБЕГА 2`, `НОУТБУК ЕСТЬ`, `КРУЖКА ЕСТЬ`, `РАЗРУШЕНО ТЕХНИКИ 1`; возврат восстанавливает checkpoint на `Prologue_Office`, повторный выбор офиса стартует с `Setup` и попытки 1; Console — 0 ошибок |
 | 2026-08-01 | `feature/office-m3-boss` / `M3` | `M3` переведён в `Done`; `M4` стал следующей контрольной точкой. Добавлен `OfficeBossEncounter`: сборка 12 стоек, три попадания по единому корпусу, ложная победа, плавное кольцо с физическими соединителями, краткий возврат управления, общий телеграф и episode-local завершение без restart. Добавлены три клавиатуры арены, процедурные механические SFX и RU/EN голограммы/HUD | `Jam/Office/Rebuild Prologue Office`; script validation — 0 compile errors; scene validation — 0 issues/missing scripts/broken prefabs; controlled Play Mode подтвердил `Assembling → Assembled → Encircling → RingFight → FinalTelegraph → Completed`, 12/12 collider стоек и 12/12 collider соединителей, восемь клавиатур, центрирование героя `(0.00, 0.04, 37.00)`, финальный радиус `3.65`, `IsStoryCompleted=true` и отказ от restart; отдельный ранний fail вернул `Dormant`, 3/3 integrity, предметы и управление на попытке 2; Console — 0 ошибок Office, только служебные предупреждения MCP о порте |

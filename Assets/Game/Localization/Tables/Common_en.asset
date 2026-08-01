@@ -183,6 +183,42 @@ MonoBehaviour:
     m_Localized: No gameplay scene was found for story {0}.
     m_Metadata:
       m_Items: []
+  - m_Id: 58021009940480
+    m_Localized: TRANSIT HOTEL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106304
+    m_Localized: Progress is saved. The remaining stories are available in any order.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106305
+    m_Localized: BACK TO STORY SELECT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106306
+    m_Localized: THE ROUTE CONTINUES
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106307
+    m_Localized: The hotel-room door closes. The first relative silence of the whole
+      day.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106308
+    m_Localized: The hotel-room door closes. The family is finally asleep, and the
+      border queue is behind them.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106309
+    m_Localized: The hotel-room door closes. The laptop and the mug lie on the desk;
+      the office stayed behind in the dream.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106310
+    m_Localized: The hotel-room door closes. The published photograph remains on
+      the phone screen.
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

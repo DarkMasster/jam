@@ -295,6 +295,126 @@ MonoBehaviour:
     m_Key: boss.objective.complete
     m_Metadata:
       m_Items: []
+  - m_Id: 58018430443520
+    m_Key: mode.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443521
+    m_Key: setup.01.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443522
+    m_Key: setup.01.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443523
+    m_Key: setup.02.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443524
+    m_Key: setup.02.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443525
+    m_Key: setup.03.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443526
+    m_Key: setup.03.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443527
+    m_Key: awakening.01.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443528
+    m_Key: awakening.01.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443529
+    m_Key: awakening.02.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443530
+    m_Key: awakening.02.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443531
+    m_Key: awakening.03.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443532
+    m_Key: awakening.03.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443533
+    m_Key: setup.fallback.01
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443534
+    m_Key: setup.fallback.02
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443535
+    m_Key: setup.fallback.03
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443536
+    m_Key: awakening.fallback
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443537
+    m_Key: arrival.body
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443538
+    m_Key: result.retries
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443539
+    m_Key: result.laptop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443540
+    m_Key: result.mug
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443541
+    m_Key: result.destroyed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443542
+    m_Key: result.wrecked
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443543
+    m_Key: result.yes
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443544
+    m_Key: result.no
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443545
+    m_Key: status.setup
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443546
+    m_Key: status.awakening
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443547
+    m_Key: status.saved
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443548
+    m_Key: save.ok
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58018430443549
+    m_Key: save.blocked
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
