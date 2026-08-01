@@ -63,6 +63,11 @@
 
 ### Фотопролог
 
+- `Assets/Game/Scenes/Prologue_Photo.unity` имеет build index `3`; выбор
+  `CharacterId.Photo` в `CharacterSelect` загружает эту сцену без fallback.
+- White-box использует Asset Graph
+  `Assets/Game/Episodes/Photo/Graphs/PhotoPrologueWhitebox.asset`; его фазы
+  синхронизирует `PhotoWhiteboxController` через `FSMOwner.TriggerState`.
 - Единственный авторитетный runtime-state фотопролога хранит `PhotoEpisodeController`.
 - NodeCanvas FSM использует фазы `Restore`, `IntroDialogue`, `Explore`, `Camera`,
   `Publish`, `ReflectionDialogue`, `Arrival`; Dialogue Trees не сохраняют прогресс.
@@ -75,6 +80,8 @@
   `GameFeedbackService` после изменения state.
 - Существующий `EpisodeProgressReporter` не сохраняет промежуточный Photo-state
   без payload; завершение линии происходит после общей сцены `HotelArrival`.
+- До реализации production-компонентов white-box контроллер временно владеет
+  Photo-state и UI, но сохраняет те же checkpoint ID и JSON payload версии `1`.
 
 - Интегратор отвечает за `main`, общий билд и разрешение конфликтов общих
   ресурсов.
