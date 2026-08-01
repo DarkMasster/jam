@@ -75,8 +75,26 @@
 - На ветке `feature/office-m3-boss` завершён `M3`: 12 серверных стоек у ложного
   `EXIT` собираются в единый корпус, принимают три броска, перестраиваются в
   физически замкнутое кольцо и проводят неизбежный сюжетный удар. Раннее поражение
-  по-прежнему перезапускает маршрут, финальный удар фиксирует episode-local
-  завершение без restart; пробуждение и общий flow остаются отдельным `M4`.
+  по-прежнему перезапускает маршрут, а финальный удар фиксирует episode-local
+  завершение без restart.
+- На ветке `feature/office-m4-flow` завершён `M4`: в Core появился общий слой flow
+  `Assets/Game/Core/Flow/` — `EpisodeResult` с checkpoint эпизода, непрозрачным
+  payload, ключами текста прибытия и читаемыми строками итога, `GameFlowService` и
+  параметризованная сцена `HotelArrival`, единая для всех трёх героев. Эпизод
+  больше не загружает чужую сцену или меню сам, а отдаёт один результат.
+- На той же ветке офис получил `OfficeStoryDirector` с фазами
+  `Setup → Run → Awakening → Arrival`, пропускаемые сториборды
+  `office.prologue.setup` и `office.prologue.awakening` через общий
+  `CutsceneDirector`, checkpoint `office.setup`, `office.run`, `office.arrival` с
+  episode-owned payload схемы `1` и ручное сохранение через `IGameModeSaveProvider`.
+- В том же срезе закрыты зависимости интегратора: в общий
+  `InputSystem_Actions.inputactions` добавлена карта `Office`
+  (Move, Aim, Primary, Secondary, Interact), офис перешёл с временных
+  `Player/Move` и `Player/Attack` на `Office/Move` и `Office/Primary`, а Build
+  Settings содержат `Main` (0), `CharacterSelect` (1), `SampleScene` (2),
+  `Prologue_Photo` (3), `Prologue_Office` (4) и `HotelArrival` (5).
+- `CharacterSelect` благодаря этому загружает для офисной линии `Prologue_Office`
+  вместо `SampleScene`.
 - Создан живой `OFFICE_ROADMAP.md`: он фиксирует milestones, зависимости,
   сокращения и следующий офисный срез. Для любой работы с офисом его чтение и
   редактирование перед `Handoff` обязательны.
@@ -93,8 +111,8 @@
 - Регламент feature-веток и интеграции в `main`.
 - `Main` запускается первой, создаёт UI и Input System EventSystem; доступны
   «Новая игра», «Продолжить» и «Выход».
-- «Новая игра» открывает `CharacterSelect`; выбор героя временно ведёт в
-  `SampleScene`, пока соответствующая эпизодная сцена отсутствует.
+- «Новая игра» открывает `CharacterSelect`; выбор линии Drive временно ведёт в
+  `SampleScene`, пока её эпизодная сцена отсутствует.
 - «Продолжить» восстанавливает последнюю сцену и активного героя после остановки
   игровой сессии.
 - Финал блокируется до завершения линий Drive, Office и Photo.
@@ -123,6 +141,14 @@
   Босс собирается из 12 стоек, принимает три броска, замыкает героя в кольце и
   завершает забег только общим финальным ударом; для боя внутри арены доступны три
   дополнительные клавиатуры.
+- Полный путь `Main → CharacterSelect → Prologue_Office → HotelArrival →
+  CharacterSelect` проходится в Play Mode: Setup играет и пропускается, забег
+  сохраняется в `office.run`, финальный удар ведёт к пробуждению и экрану прибытия
+  с retries, ноутбуком, кружкой и разрушенной техникой, а возврат восстанавливает
+  checkpoint офиса на `Prologue_Office`, поэтому повторный выбор героя снова
+  начинает забег с `Setup`.
+- Ручное сохранение работает и в офисе: общий pause-overlay сохраняет забег через
+  `OfficeStoryDirector`, но только пока забег действительно идёт.
 - Базовая гибридная система катсцен включает persistent `CutsceneDirector`,
   UI-сториборды, Timeline-адаптер и ожидающую NodeCanvas task по стабильному ID.
 - `GameEntryPoint` создаёт один `AudioService`; pause и cutscene согласованно
@@ -148,10 +174,13 @@
   иллюстрации для вступительного storyboard и DNP-feedback ещё не созданы.
 - Веб-демо не связано с `Assets/` и не является Unity-сборкой. Его Three.js-модули
   загружаются локально, а Three.js и bloom при первом запуске запрашиваются с unpkg.
-- `Prologue_Office` ещё не добавлена владельцем в Build Settings, поэтому
-  `CharacterSelect` продолжает использовать `SampleScene`. Episode-local срезы
-  `M0–M3` готовы, но пробуждение, сохранение результата и общий переход через
-  `HotelArrival` ещё не реализованы.
+- Сцена `HotelArrival` работает, но остаётся текстовой заглушкой: она читает
+  `EpisodeResult` и показывает строки итога, без арта и звука.
+- Офисный путь проверен только в Play Mode: Windows-сборка ещё не собиралась, а
+  длительность цикла 5–10 минут ещё не замерена.
+- `GameSaveService.LeaveCharacterLine` не выставляет `CompletedCharacters`, поэтому
+  счётчик `0/3` в `CharacterSelect` по-прежнему растёт только после завершения
+  полной линии — то же поведение, что у Photo.
 - Production-аудиоконтент, `AudioMixer`/snapshot asset и экран настроек громкости
   ещё не созданы. Runtime уже работает без конфигурационного ассета и сохраняет
   значения через публичный API.
@@ -173,11 +202,11 @@
 временные экраны `PhotoWhiteboxController` на production Dialogue Trees и
 компоненты `PhotoEpisodeController`/`PhotoCheckpointAdapter`, сохранив работающий
 FSM, checkpoint ID и маршрут из главного меню.
-Следующий офисный срез `M4` подключает к episode-local завершению короткое
-пробуждение, результат с retries/ноутбуком/кружкой, checkpoint и переход через
-общий flow в `HotelArrival`.
-Интегратор параллельно добавляет карту `Office` и подключает `Prologue_Office` к
-Build Settings; общий save/flow и `HotelArrival` остаются отдельным `M4`.
+Следующий офисный срез `M5` собирает Windows x64 build, проходит в нём полный путь
+`Main → CharacterSelect → Prologue_Office → HotelArrival`, замеряет длительность
+цикла и подгоняет её к 5–10 минутам без soft lock, после чего записывает результат
+smoke test. Затем идёт полировка `M6`: SFX, попадания, частицы, дрожь камеры и свет
+по Momentum.
 
 ## Следующая контрольная точка
 
