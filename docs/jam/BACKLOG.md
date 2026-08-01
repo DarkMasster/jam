@@ -23,6 +23,7 @@
 | P0 | Добавить победу, поражение и рестарт | TBD | `feature/game-flow` | Todo | Час 24 |
 | P0 | Получить проверенный финальный билд | TBD | `fix/final-build` | Todo | Час 42 |
 | P1 | Добавить ключевую визуальную и звуковую обратную связь | TBD | `polish/game-feel` | Todo | Час 34 |
+| P1 | Зафиксировать паттерны NodeCanvas и Damage Numbers Pro | ИИ/интегратор | `feature/integration-patterns` | Done | Готово |
 | P1 | Провести три коротких build review | TBD | `feature/build-review` | Todo | 12/24/42 |
 | P1 | Подготовить страницу, описание и скриншоты | TBD | `feature/submission` | Todo | Час 46 |
 | P2 | Дополнительный контент | TBD | TBD | Todo | Только после P0 |

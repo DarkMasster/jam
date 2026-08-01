@@ -15,8 +15,9 @@
 6. `docs/jam/STATE.md`
 7. `docs/jam/BACKLOG.md`
 8. `docs/jam/CONTRACTS.md`
-9. `docs/jam/GIT.md`
-10. назначенный файл из `docs/jam/tasks/`
+9. `docs/jam/INTEGRATIONS.md`
+10. `docs/jam/GIT.md`
+11. назначенный файл из `docs/jam/tasks/`
 
 Если задача противоречит этим документам, остановись и явно опиши конфликт.
 

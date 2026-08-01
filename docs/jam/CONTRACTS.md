@@ -52,6 +52,15 @@
 
 ## Интеграция
 
+### NodeCanvas и Damage Numbers Pro
+
+- NodeCanvas FSM управляет фазами эпизода, Dialogue Tree — диалогами и выборами, Behaviour Tree — только поведением NPC/противников.
+- Blackboard хранит временное состояние. Долговременный прогресс записывает только `GameSaveService` через смысловые checkpoint эпизода.
+- Custom NodeCanvas tasks обращаются к проектным C#-сервисам и не копируют игровую логику в graph.
+- Damage Numbers Pro — presentation-слой. Игровые системы и NodeCanvas вызывают проектный feedback-интерфейс, который выбирает DNP-prefab/preset.
+- `Assets/ParadoxNotion/**` и `Assets/DamageNumbersPro/**` не редактируются; проектные адаптеры размещаются в `Assets/Game/Integrations/**`.
+- Полные паттерны, версии и checklist находятся в `INTEGRATIONS.md`.
+
 - Интегратор отвечает за `main`, общий билд и разрешение конфликтов общих
   ресурсов.
 - Feature-ветка предоставляет воспроизводимый способ проверки.
