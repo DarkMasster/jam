@@ -1,4 +1,5 @@
 using Jam.Core.Save;
+using Jam.Core.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -15,6 +16,15 @@ namespace Jam.Core.EntryPoint
             Instance = null;
         }
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void EnsureRuntimeEntryPoint()
+        {
+            if (FindAnyObjectByType<GameEntryPoint>() == null)
+            {
+                new GameObject("GameEntryPoint").AddComponent<GameEntryPoint>();
+            }
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -25,6 +35,10 @@ namespace Jam.Core.EntryPoint
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            if (GetComponent<GlobalHudController>() == null)
+            {
+                gameObject.AddComponent<GlobalHudController>();
+            }
             Application.targetFrameRate = 60;
         }
 
