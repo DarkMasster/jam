@@ -171,6 +171,18 @@ namespace Jam.Core.Save
             Save(data);
         }
 
+        public static void LeaveCharacterLine(CharacterId characterId, string returnSceneName = "CharacterSelect")
+        {
+            ValidateCharacter(characterId);
+            ValidateSceneName(returnSceneName);
+
+            var data = LoadOrCreate();
+            data.hasProgress = true;
+            data.activeCharacter = CharacterId.None;
+            data.lastSceneName = returnSceneName;
+            Save(data);
+        }
+
         public static bool IsCharacterCompleted(CharacterId characterId)
         {
             if (characterId == CharacterId.None)
