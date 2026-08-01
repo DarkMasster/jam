@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OFFBOARDING — web prototype</title>
+<link rel="stylesheet" href="style.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <div id="hud">
+    <div id="hud-title">
+      <span class="black">OFFBOARDING</span>
+      <span class="sub">a Hẹngặ Plạy jam prototype</span>
+      <span class="hint">click the laptop · or press ENTER</span>
+    </div>
+
+    <div id="hud-game" class="hidden">
+      <div class="hud-row">
+        <span class="hud-label">MOMENTUM</span>
+        <div class="meter"><div id="momentum-fill"></div></div>
+      </div>
+      <div class="hud-row small">
+        <span id="hud-timer">00:00</span>
+        <span id="hud-destroyed">DESTROYED: 0</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="prompt" class="hidden"></div>
+
+  <div id="overlay-handbook" class="overlay hidden">
+    <div class="panel">
+      <h2>EMPLOYEE HANDBOOK</h2>
+      <p class="red">EFFECTIVE IMMEDIATELY</p>
+      <ul>
+        <li><b>WASD / ARROWS</b> — move. Keep moving to build momentum.</li>
+        <li><b>COLLIDE</b> with furniture at speed to break it.</li>
+        <li><b>CHAIN BREAKS</b> to stay fast.</li>
+        <li><b>REACH THE EXIT</b> before they change the locks.</li>
+        <li><b>R</b> — restart. <b>ESC</b> — close this.</li>
+      </ul>
+      <button class="btn" id="handbook-close">CLOSE</button>
+    </div>
+  </div>
+
+  <div id="overlay-quit" class="overlay hidden">
+    <div class="panel">
+      <h2>EXIT</h2>
+      <p>Thanks for playing the prototype.<br/>Your access badge has been deactivated.</p>
+      <button class="btn" id="quit-close">STAY A WHILE LONGER</button>
+    </div>
+  </div>
+
+  <div id="overlay-win" class="overlay hidden">
+    <div class="panel">
+      <h2 class="red">YOU'RE OUT</h2>
+      <p id="win-stats"></p>
+      <p class="dim">Reflect, and go again.</p>
+      <button class="btn" id="win-restart">RESTART</button>
+    </div>
+  </div>
+
+  <div id="flash"></div>
+  <div id="credit">Hẹngặ Plạy — jam prototype</div>
+
+  <script type="module" src="main.js"></script>
+</body>
+</html>

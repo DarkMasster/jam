@@ -1,0 +1,218 @@
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #e9e9e6;
+  overflow: hidden;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #111;
+}
+
+#scene {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  cursor: default;
+}
+
+#scene.pointer { cursor: pointer; }
+
+/* ---------- HUD ---------- */
+
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 22px 28px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#hud-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: opacity 0.4s ease;
+}
+
+#hud-title .black {
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 3px;
+  color: #111;
+}
+
+#hud-title .hint {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #6f6f6a;
+}
+
+#hud-title .sub {
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #b3241d;
+  font-weight: 700;
+}
+
+.hidden { display: none !important; }
+
+#hud-game {
+  max-width: 320px;
+}
+
+.hud-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.hud-row.small {
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #333;
+}
+
+.hud-label {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #111;
+  width: 90px;
+}
+
+.meter {
+  flex: 1;
+  height: 10px;
+  background: rgba(17,17,17,0.12);
+  border: 1px solid #111;
+  position: relative;
+  overflow: hidden;
+}
+
+#momentum-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 0%;
+  background: #b3241d;
+  transition: width 0.08s linear;
+}
+
+/* ---------- interaction prompt ---------- */
+
+#prompt {
+  position: fixed;
+  left: 50%;
+  bottom: 64px;
+  transform: translateX(-50%);
+  background: #111;
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  z-index: 10;
+  border: 2px solid #b3241d;
+  pointer-events: none;
+}
+
+/* ---------- overlays ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(233,233,230,0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.overlay .panel {
+  background: #fff;
+  border: 3px solid #111;
+  padding: 32px 40px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+}
+
+.overlay h2 {
+  margin: 0 0 12px;
+  font-size: 26px;
+  letter-spacing: 2px;
+  font-weight: 900;
+}
+
+.overlay p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+
+.overlay ul {
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.9;
+  margin: 16px 0;
+  padding-left: 18px;
+}
+
+.overlay .red { color: #b3241d; font-weight: 800; letter-spacing: 1px; }
+.overlay .dim { color: #777; font-size: 12px; }
+
+.btn {
+  margin-top: 14px;
+  background: #111;
+  color: #fff;
+  border: none;
+  padding: 12px 22px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.btn:hover { background: #b3241d; }
+
+/* ---------- damage flash ---------- */
+
+#flash {
+  position: fixed;
+  inset: 0;
+  background: #b3241d;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+#flash.hit {
+  animation: flash-anim 0.35s ease-out;
+}
+
+@keyframes flash-anim {
+  0% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+/* ---------- footer credit ---------- */
+
+#credit {
+  position: fixed;
+  bottom: 10px;
+  right: 14px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #999;
+  z-index: 10;
+}
