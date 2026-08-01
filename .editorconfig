@@ -1,0 +1,6 @@
+# Unity YAML intentionally serializes some empty scalar values with a trailing
+# space (for example `m_Name: `). Trimming it creates noisy diffs on the next
+# Editor save/domain reload.
+[*.{anim,asset,brush,controller,flare,fontsettings,giparams,guiskin,lighting,mask,mat,meta,mixer,overrideController,physicMaterial,physicsMaterial2D,playable,prefab,preset,renderTexture,scenetemplate,shadervariants,signal,spriteatlas,spriteatlasv2,terrainlayer,unity}]
+trim_trailing_whitespace = false
+insert_final_newline = true
