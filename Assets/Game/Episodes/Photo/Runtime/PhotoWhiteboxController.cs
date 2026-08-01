@@ -1,4 +1,5 @@
 using System;
+using Jam.Core.Cutscenes;
 using Jam.Core.Save;
 using NodeCanvas.Framework;
 using NodeCanvas.StateMachines;
@@ -30,6 +31,7 @@ namespace Jam.Episodes.Photo
     [RequireComponent(typeof(FSMOwner), typeof(Blackboard))]
     public sealed class PhotoWhiteboxController : MonoBehaviour, IGameModeSaveProvider
     {
+        private const string IntroCutsceneId = "photo.prologue.intro";
         private const string ExploreCheckpoint = "photo.explore";
         private const string CameraCheckpoint = "photo.camera";
         private const string PublishedCheckpoint = "photo.published";
@@ -67,6 +69,7 @@ namespace Jam.Episodes.Photo
         private int _inspectedMask;
         private int _truth;
         private int _reach;
+        private bool _introCutsceneRunning;
         private PhotoCharacterSaveData _saveData = PhotoCheckpointAdapter.CreateNew();
 
         public bool CanSave => isActiveAndEnabled;
@@ -84,6 +87,12 @@ namespace Jam.Episodes.Photo
         private void Start()
         {
             RestoreOrBegin();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFromCutsceneDirector();
+            _introCutsceneRunning = false;
         }
 
         private void RestoreOrBegin()
@@ -124,7 +133,7 @@ namespace Jam.Episodes.Photo
             switch (phase)
             {
                 case PhotoWhiteboxPhase.IntroDialogue:
-                    RenderIntro();
+                    StartIntroCutsceneOrFallback();
                     break;
                 case PhotoWhiteboxPhase.Explore:
                     if (save) SaveCheckpoint(ExploreCheckpoint);
@@ -162,6 +171,77 @@ namespace Jam.Episodes.Photo
             if (_fsmOwner.isRunning && _fsmOwner.TriggerState(stateName) == null)
             {
                 Debug.LogWarning($"Photo FSM does not contain state '{stateName}'.");
+            }
+        }
+
+        private void StartIntroCutsceneOrFallback()
+        {
+            if (_introCutsceneRunning)
+            {
+                return;
+            }
+
+            var director = CutsceneDirector.Instance;
+            if (director == null)
+            {
+                RenderIntro();
+                return;
+            }
+
+            _introCutsceneRunning = true;
+            _blackboard.SetVariableValue("cutsceneId", IntroCutsceneId);
+            _blackboard.SetVariableValue("cutsceneResult", "Playing");
+            director.Finished += HandleIntroCutsceneFinished;
+
+            var context = new CutsceneContext
+            {
+                characterId = CharacterId.Photo.ToString(),
+                startCheckpointId = "photo.intro",
+                completionCheckpointId = ExploreCheckpoint
+            };
+
+            if (director.TryPlay(IntroCutsceneId, context, out var error))
+            {
+                return;
+            }
+
+            UnsubscribeFromCutsceneDirector();
+            _introCutsceneRunning = false;
+            _blackboard.SetVariableValue("cutsceneResult", "Unavailable");
+            Debug.LogWarning($"Photo intro cutscene fallback: {error}");
+            RenderIntro();
+        }
+
+        private void HandleIntroCutsceneFinished(CutsceneResult result)
+        {
+            if (result.CutsceneId != IntroCutsceneId)
+            {
+                return;
+            }
+
+            UnsubscribeFromCutsceneDirector();
+            _introCutsceneRunning = false;
+            _blackboard.SetVariableValue("cutsceneResult", result.Reason.ToString());
+
+            if (result.Succeeded)
+            {
+                _introIndex = _introLines.Length - 1;
+                EnterPhase(PhotoWhiteboxPhase.Explore, true);
+                return;
+            }
+
+            if (result.Reason == CutsceneEndReason.Failed)
+            {
+                Debug.LogWarning("Photo intro cutscene failed; using the white-box dialogue fallback.");
+                RenderIntro();
+            }
+        }
+
+        private void UnsubscribeFromCutsceneDirector()
+        {
+            if (CutsceneDirector.Instance != null)
+            {
+                CutsceneDirector.Instance.Finished -= HandleIntroCutsceneFinished;
             }
         }
 

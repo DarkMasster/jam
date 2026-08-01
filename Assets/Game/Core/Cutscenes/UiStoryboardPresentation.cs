@@ -1,0 +1,291 @@
+using System;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UI;
+
+namespace Jam.Core.Cutscenes
+{
+    public sealed class UiStoryboardPresentation : MonoBehaviour, ICutscenePresentation
+    {
+        [SerializeField] private string cutsceneId = "cutscene.storyboard";
+        [SerializeField] private StoryboardCutsceneAsset sequence;
+
+        private static readonly Color FallbackBackground = new(0.035f, 0.045f, 0.065f, 1f);
+        private static readonly Color DialoguePanel = new(0.055f, 0.065f, 0.09f, 0.96f);
+        private static readonly Color Accent = new(0.91f, 0.55f, 0.24f, 1f);
+        private static readonly Color TextColor = new(0.94f, 0.93f, 0.89f, 1f);
+        private static readonly Color MutedText = new(0.66f, 0.69f, 0.75f, 1f);
+
+        public string CutsceneId => cutsceneId;
+        public bool IsPlaying => _onFinished != null;
+        public bool CanSkip => sequence != null && sequence.Skippable;
+
+        private Action<CutsceneEndReason> _onFinished;
+        private GameObject _root;
+        private Image _background;
+        private Image _portrait;
+        private Text _speaker;
+        private Text _body;
+        private Text _progress;
+        private Button _skipButton;
+        private AudioSource _audioSource;
+        private Font _font;
+        private int _frameIndex;
+        private float _frameElapsed;
+
+        private void Awake()
+        {
+            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            _audioSource = gameObject.AddComponent<AudioSource>();
+            _audioSource.playOnAwake = false;
+            BuildInterface();
+        }
+
+        private void Update()
+        {
+            if (!IsPlaying)
+            {
+                return;
+            }
+
+            _frameElapsed += Time.unscaledDeltaTime;
+            var frame = sequence.Frames[_frameIndex];
+            if (frame.autoAdvanceSeconds > 0f && _frameElapsed >= frame.autoAdvanceSeconds)
+            {
+                Advance();
+                return;
+            }
+
+            if (Keyboard.current?.spaceKey.wasPressedThisFrame == true
+                || Keyboard.current?.enterKey.wasPressedThisFrame == true)
+            {
+                Advance();
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (IsPlaying)
+            {
+                Finish(CutsceneEndReason.SceneChanged);
+            }
+        }
+
+        public void Play(CutsceneContext context, Action<CutsceneEndReason> onFinished)
+        {
+            if (IsPlaying)
+            {
+                throw new InvalidOperationException($"Storyboard '{cutsceneId}' is already playing.");
+            }
+
+            if (sequence == null || sequence.Frames == null || sequence.Frames.Length == 0)
+            {
+                onFinished?.Invoke(CutsceneEndReason.Failed);
+                return;
+            }
+
+            _onFinished = onFinished;
+            _frameIndex = 0;
+            _root.SetActive(true);
+            _skipButton.gameObject.SetActive(CanSkip);
+            ShowFrame();
+        }
+
+        public void Skip()
+        {
+            if (IsPlaying && CanSkip)
+            {
+                Finish(CutsceneEndReason.Skipped);
+            }
+        }
+
+        public void Stop(CutsceneEndReason reason)
+        {
+            if (IsPlaying)
+            {
+                Finish(reason);
+            }
+        }
+
+        public void Advance()
+        {
+            if (!IsPlaying)
+            {
+                return;
+            }
+
+            if (_frameIndex + 1 >= sequence.Frames.Length)
+            {
+                Finish(CutsceneEndReason.Completed);
+                return;
+            }
+
+            _frameIndex++;
+            ShowFrame();
+        }
+
+        private void ShowFrame()
+        {
+            var frame = sequence.Frames[_frameIndex];
+            _frameElapsed = 0f;
+            _background.sprite = frame.background;
+            _background.color = frame.background == null ? FallbackBackground : Color.white;
+            _portrait.sprite = frame.portrait;
+            _portrait.gameObject.SetActive(frame.portrait != null);
+            _speaker.text = string.IsNullOrWhiteSpace(frame.speaker) ? "…" : frame.speaker;
+            _body.text = frame.text ?? string.Empty;
+            _progress.text = $"{_frameIndex + 1} / {sequence.Frames.Length}   •   ПРОБЕЛ / КЛИК";
+
+            _audioSource.Stop();
+            _audioSource.clip = frame.voice;
+            if (frame.voice != null)
+            {
+                _audioSource.Play();
+            }
+        }
+
+        private void Finish(CutsceneEndReason reason)
+        {
+            var callback = _onFinished;
+            _onFinished = null;
+            _audioSource.Stop();
+            _root.SetActive(false);
+            callback?.Invoke(reason);
+        }
+
+        private void BuildInterface()
+        {
+            _root = new GameObject(
+                "StoryboardCanvas",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(CanvasScaler),
+                typeof(GraphicRaycaster));
+            _root.transform.SetParent(transform, false);
+            var canvas = _root.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 900;
+            var scaler = _root.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var canvasRect = _root.GetComponent<RectTransform>();
+            _background = CreateImage("Background", canvasRect, FallbackBackground);
+            Stretch(_background.rectTransform);
+
+            _portrait = CreateImage("Portrait", _background.rectTransform, Color.white);
+            SetAnchoredRect(
+                _portrait.rectTransform,
+                new Vector2(0f, 0f),
+                new Vector2(0.46f, 0.92f),
+                Vector2.zero,
+                Vector2.zero);
+            _portrait.preserveAspect = true;
+
+            var panel = CreateImage("DialoguePanel", _background.rectTransform, DialoguePanel);
+            SetAnchoredRect(
+                panel.rectTransform,
+                new Vector2(0.06f, 0.04f),
+                new Vector2(0.94f, 0.34f),
+                Vector2.zero,
+                Vector2.zero);
+
+            _speaker = CreateText("Speaker", panel.rectTransform, string.Empty, 24, FontStyle.Bold, Accent, TextAnchor.UpperLeft);
+            SetAnchoredRect(_speaker.rectTransform, new Vector2(0.04f, 0.70f), new Vector2(0.96f, 0.94f), Vector2.zero, Vector2.zero);
+            _body = CreateText("Body", panel.rectTransform, string.Empty, 25, FontStyle.Normal, TextColor, TextAnchor.UpperLeft);
+            SetAnchoredRect(_body.rectTransform, new Vector2(0.04f, 0.20f), new Vector2(0.96f, 0.72f), Vector2.zero, Vector2.zero);
+            _progress = CreateText("Progress", panel.rectTransform, string.Empty, 14, FontStyle.Normal, MutedText, TextAnchor.MiddleRight);
+            SetAnchoredRect(_progress.rectTransform, new Vector2(0.50f, 0.02f), new Vector2(0.96f, 0.18f), Vector2.zero, Vector2.zero);
+
+            var next = CreateButton("AdvanceFrameButton", _background.rectTransform, string.Empty, Advance, 1, Color.clear);
+            Stretch(next.GetComponent<RectTransform>());
+            _skipButton = CreateButton("SkipCutsceneButton", _background.rectTransform, "ПРОПУСТИТЬ  [ESC]", Skip, 16, DialoguePanel);
+            SetAnchoredRect(
+                _skipButton.GetComponent<RectTransform>(),
+                new Vector2(1f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(-118f, -42f),
+                new Vector2(210f, 54f));
+            _root.SetActive(false);
+        }
+
+        private Button CreateButton(
+            string name,
+            RectTransform parent,
+            string label,
+            UnityEngine.Events.UnityAction action,
+            int fontSize,
+            Color color)
+        {
+            var buttonObject = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+            buttonObject.transform.SetParent(parent, false);
+            var image = buttonObject.GetComponent<Image>();
+            image.color = color;
+            var button = buttonObject.GetComponent<Button>();
+            button.targetGraphic = image;
+            button.onClick.AddListener(action);
+            var text = CreateText("Label", buttonObject.GetComponent<RectTransform>(), label, fontSize, FontStyle.Bold, TextColor, TextAnchor.MiddleCenter);
+            Stretch(text.rectTransform, new Vector2(10f, 0f), new Vector2(-10f, 0f));
+            return button;
+        }
+
+        private Text CreateText(
+            string name,
+            RectTransform parent,
+            string value,
+            int fontSize,
+            FontStyle style,
+            Color color,
+            TextAnchor alignment)
+        {
+            var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
+            textObject.transform.SetParent(parent, false);
+            var text = textObject.GetComponent<Text>();
+            text.font = _font;
+            text.text = value;
+            text.fontSize = fontSize;
+            text.fontStyle = style;
+            text.color = color;
+            text.alignment = alignment;
+            text.horizontalOverflow = HorizontalWrapMode.Wrap;
+            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.raycastTarget = false;
+            return text;
+        }
+
+        private static Image CreateImage(string name, RectTransform parent, Color color)
+        {
+            var imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
+            imageObject.transform.SetParent(parent, false);
+            var image = imageObject.GetComponent<Image>();
+            image.color = color;
+            return image;
+        }
+
+        private static void Stretch(RectTransform rect, Vector2? offsetMin = null, Vector2? offsetMax = null)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = offsetMin ?? Vector2.zero;
+            rect.offsetMax = offsetMax ?? Vector2.zero;
+        }
+
+        private static void SetAnchoredRect(
+            RectTransform rect,
+            Vector2 anchorMin,
+            Vector2 anchorMax,
+            Vector2 anchoredPosition,
+            Vector2 sizeDelta)
+        {
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = sizeDelta;
+        }
+    }
+}

@@ -1,4 +1,5 @@
 using System.Linq;
+using Jam.Core.Cutscenes;
 using Jam.Episodes.Photo;
 using Jam.Integrations.NodeCanvas;
 using NodeCanvas.Framework;
@@ -13,7 +14,18 @@ namespace Jam.Episodes.Photo.Editor
     public static class PhotoWhiteboxSetup
     {
         private const string GraphPath = "Assets/Game/Episodes/Photo/Graphs/PhotoPrologueWhitebox.asset";
+        private const string CutsceneFolder = "Assets/Game/Episodes/Photo/Cutscenes";
+        private const string IntroCutscenePath = CutsceneFolder + "/PhotoIntroStoryboard.asset";
+        private const string IntroCutsceneId = "photo.prologue.intro";
         private const string ScenePath = "Assets/Game/Scenes/Prologue_Photo.unity";
+
+        private static readonly (string speaker, string text)[] IntroFrames =
+        {
+            ("ОНА", "24 февраля 2022 года. Утро начинается с новостей, которым не находится места в привычной жизни."),
+            ("РЕДАКТОР", "Агентство закрывает российский офис. Проекты остановлены. Команда распущена."),
+            ("ТЕЛЕФОН", "Forbidgram недоступен. Клиенты молчат. В телефоне остаются архив, незакрытые счета и билет в один конец."),
+            ("ОНА", "Перед отъездом нужен ещё один кадр — достаточно честный, чтобы не предать себя, и достаточно заметный, чтобы оплатить дорогу.")
+        };
 
         private static readonly string[] PhaseNames =
         {
@@ -32,6 +44,9 @@ namespace Jam.Episodes.Photo.Editor
             EnsureFolder("Assets/Game/Episodes");
             EnsureFolder("Assets/Game/Episodes/Photo");
             EnsureFolder("Assets/Game/Episodes/Photo/Graphs");
+            EnsureFolder(CutsceneFolder);
+
+            var introCutscene = EnsureIntroCutsceneAsset();
 
             var graph = AssetDatabase.LoadAssetAtPath<FSM>(GraphPath);
             if (graph == null)
@@ -66,6 +81,7 @@ namespace Jam.Episodes.Photo.Editor
                 owner.firstActivation = GraphOwner.FirstActivation.OnEnable;
                 owner.enableAction = GraphOwner.EnableAction.EnableBehaviour;
                 root.AddComponent<PhotoWhiteboxController>();
+                ConfigureIntroPresentation(root, introCutscene);
 
                 EditorSceneManager.MarkSceneDirty(scene);
                 EditorSceneManager.SaveScene(scene, ScenePath);
@@ -76,6 +92,7 @@ namespace Jam.Episodes.Photo.Editor
                 scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
                 var root = GameObject.Find("PhotoWhiteboxRoot");
                 blackboard = root != null ? root.GetComponent<Blackboard>() : null;
+                ConfigureIntroPresentation(root, introCutscene);
             }
 
             EnsureBlackboardVariables(blackboard);
@@ -121,6 +138,56 @@ namespace Jam.Episodes.Photo.Editor
             if (blackboard.GetVariable("reach") == null) blackboard.AddVariable("reach", 0);
             if (blackboard.GetVariable("inspectedCount") == null) blackboard.AddVariable("inspectedCount", 0);
             if (blackboard.GetVariable("canUseCamera") == null) blackboard.AddVariable("canUseCamera", false);
+            if (blackboard.GetVariable("cutsceneId") == null) blackboard.AddVariable("cutsceneId", string.Empty);
+            if (blackboard.GetVariable("cutsceneResult") == null) blackboard.AddVariable("cutsceneResult", string.Empty);
+        }
+
+        private static StoryboardCutsceneAsset EnsureIntroCutsceneAsset()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<StoryboardCutsceneAsset>(IntroCutscenePath);
+            if (asset == null)
+            {
+                asset = ScriptableObject.CreateInstance<StoryboardCutsceneAsset>();
+                asset.name = "PhotoIntroStoryboard";
+                AssetDatabase.CreateAsset(asset, IntroCutscenePath);
+            }
+
+            var serialized = new SerializedObject(asset);
+            serialized.FindProperty("skippable").boolValue = true;
+            var frames = serialized.FindProperty("frames");
+            frames.arraySize = IntroFrames.Length;
+            for (var index = 0; index < IntroFrames.Length; index++)
+            {
+                var frame = frames.GetArrayElementAtIndex(index);
+                frame.FindPropertyRelative("speaker").stringValue = IntroFrames[index].speaker;
+                frame.FindPropertyRelative("text").stringValue = IntroFrames[index].text;
+                frame.FindPropertyRelative("autoAdvanceSeconds").floatValue = 0f;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        private static void ConfigureIntroPresentation(GameObject root, StoryboardCutsceneAsset sequence)
+        {
+            if (root == null)
+            {
+                Debug.LogError("PhotoWhiteboxRoot is missing; intro cutscene cannot be configured.");
+                return;
+            }
+
+            var presentation = root.GetComponent<UiStoryboardPresentation>();
+            if (presentation == null)
+            {
+                presentation = root.AddComponent<UiStoryboardPresentation>();
+            }
+
+            var serialized = new SerializedObject(presentation);
+            serialized.FindProperty("cutsceneId").stringValue = IntroCutsceneId;
+            serialized.FindProperty("sequence").objectReferenceValue = sequence;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(presentation);
         }
 
         private static void EnsureFolder(string path)

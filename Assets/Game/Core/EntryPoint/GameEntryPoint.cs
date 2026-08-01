@@ -1,3 +1,4 @@
+using Jam.Core.Cutscenes;
 using Jam.Core.Save;
 using Jam.Core.UI;
 using UnityEngine;
@@ -38,6 +39,10 @@ namespace Jam.Core.EntryPoint
             if (GetComponent<GlobalHudController>() == null)
             {
                 gameObject.AddComponent<GlobalHudController>();
+            }
+            if (GetComponent<CutsceneDirector>() == null)
+            {
+                gameObject.AddComponent<CutsceneDirector>();
             }
             Application.targetFrameRate = 60;
         }

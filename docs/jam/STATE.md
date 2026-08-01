@@ -76,6 +76,11 @@
   pause-overlay с продолжением, ручным сохранением режима и выходом в `Main`.
 - Ручное сохранение маршрутизируется через `IGameModeSaveProvider`;
   Photo сохраняет текущую фазу, включая позицию внутри вступительного диалога.
+- Базовая гибридная система катсцен включает persistent `CutsceneDirector`,
+  UI-сториборды, Timeline-адаптер и ожидающую NodeCanvas task по стабильному ID.
+- Вступление Photo подключено как реальный UI-сториборд `photo.prologue.intro`:
+  четыре кадра запускаются из общего Director, а `Completed` и `Skipped`
+  одинаково переводят FSM в `Explore` и сохраняют `photo.explore`.
 - Веб-демо [office](../../web-demos/office/) запускается через локальный статический
   сервер: проверены стартовая сцена, переход в забег, HUD и restart клавишей `R`.
 - Индекс `ccc` пересоздан и успешно обрабатывает все 545 файлов проекта без ошибок.
@@ -84,8 +89,9 @@
 
 - Сюжетная концепция описана на уровне исходных вводных, но ещё не готова для
   написания диалогов и cutscenes.
-- Текст и UI Photo пока являются white-box внутри `PhotoWhiteboxController`;
-  production Dialogue Trees, графические hotspots и DNP-feedback ещё не созданы.
+- Исследование, камера и публикация Photo пока являются white-box внутри
+  `PhotoWhiteboxController`; production Dialogue Trees, графические hotspots,
+  иллюстрации для вступительного storyboard и DNP-feedback ещё не созданы.
 - Веб-демо не связано с `Assets/` и не является Unity-сборкой. Его Three.js-модули
   загружаются локально, а Three.js и bloom при первом запуске запрашиваются с unpkg.
 
@@ -102,9 +108,10 @@
 
 ## Следующий шаг
 
-Заменить временные текстовые экраны `PhotoWhiteboxController` на production
-Dialogue Trees и компоненты `PhotoEpisodeController`/`PhotoCheckpointAdapter`,
-сохранив работающий FSM, checkpoint ID и маршрут из главного меню.
+Добавить иллюстрации и звук в `PhotoIntroStoryboard`, затем заменить оставшиеся
+временные экраны `PhotoWhiteboxController` на production Dialogue Trees и
+компоненты `PhotoEpisodeController`/`PhotoCheckpointAdapter`, сохранив работающий
+FSM, checkpoint ID и маршрут из главного меню.
 Владелец офисного эпизода параллельно фиксирует по веб-демо параметры движения,
 рывка, Momentum и броска, затем переносит минимальный цикл в Unity. Продюсер
 закрывает оставшиеся P0 из `QUESTIONS.md`.
