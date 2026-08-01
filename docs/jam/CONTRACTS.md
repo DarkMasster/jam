@@ -79,9 +79,19 @@
 - Damage Numbers Pro получает только presentation-события через
   `GameFeedbackService` после изменения state.
 - Существующий `EpisodeProgressReporter` не сохраняет промежуточный Photo-state
-  без payload; завершение линии происходит после общей сцены `HotelArrival`.
+  без payload; завершение всей линии происходит только после Photo-финала.
 - До реализации production-компонентов white-box контроллер временно владеет
-  Photo-state и UI, но сохраняет те же checkpoint ID и JSON payload версии `1`.
+  Photo-state и UI, но сохраняет те же checkpoint ID и JSON payload схемы `2`.
+- `PhotoCharacterSaveData` хранит всю линию героини по актам: `prologue`,
+  `mainAct`, `finale`; Core продолжает считать payload непрозрачным.
+- `PhotoCheckpointAdapter` единолично сериализует, проверяет инварианты и
+  мигрирует legacy white-box payload версии `1` в схему `2`.
+- Публикация сначала атомарно фиксирует `publicationCommitted` и checkpoint,
+  затем запускает presentation; повторная загрузка не начисляет эффект заново.
+- Завершение Пролога выставляет только `prologue.completed`. Метод
+  `CompleteMainStoryLine(Photo)` разрешён лишь после Финала линии.
+- `GameSaveService.LeaveCharacterLine` возвращает в `CharacterSelect`, очищая
+  активную сессию, но сохраняя последний checkpoint персонажа.
 
 - Интегратор отвечает за `main`, общий билд и разрешение конфликтов общих
   ресурсов.

@@ -27,17 +27,6 @@ namespace Jam.Episodes.Photo
         Butterfly
     }
 
-    [Serializable]
-    public sealed class PhotoWhiteboxSaveData
-    {
-        public int version = 1;
-        public string phase = nameof(PhotoWhiteboxPhase.IntroDialogue);
-        public int inspectedMask;
-        public string choice = nameof(PhotoChoice.None);
-        public int truth;
-        public int reach;
-    }
-
     [RequireComponent(typeof(FSMOwner), typeof(Blackboard))]
     public sealed class PhotoWhiteboxController : MonoBehaviour
     {
@@ -45,7 +34,7 @@ namespace Jam.Episodes.Photo
         private const string CameraCheckpoint = "photo.camera";
         private const string PublishedCheckpoint = "photo.published";
         private const string ArrivalCheckpoint = "photo.arrival";
-        private const int RequiredInspectionMask = 0b111;
+        private const int RequiredInspectionMask = PhotoCheckpointAdapter.RequiredInspectionMask;
 
         private static readonly Color BackgroundColor = new(0.075f, 0.085f, 0.11f, 1f);
         private static readonly Color PanelColor = new(0.13f, 0.14f, 0.18f, 0.98f);
@@ -78,6 +67,7 @@ namespace Jam.Episodes.Photo
         private int _inspectedMask;
         private int _truth;
         private int _reach;
+        private PhotoCharacterSaveData _saveData = PhotoCheckpointAdapter.CreateNew();
 
         private void Awake()
         {
@@ -101,14 +91,14 @@ namespace Jam.Episodes.Photo
             {
                 try
                 {
-                    var restored = JsonUtility.FromJson<PhotoWhiteboxSaveData>(checkpoint.payloadJson);
-                    if (restored != null && restored.version == 1)
+                    if (PhotoCheckpointAdapter.TryLoad(checkpoint, out var restored))
                     {
-                        _inspectedMask = restored.inspectedMask;
-                        _choice = ParseChoice(restored.choice);
-                        _truth = restored.truth;
-                        _reach = restored.reach;
-                        EnterPhase(ResolveRestoredPhase(checkpoint.checkpointId), false);
+                        _saveData = restored;
+                        _inspectedMask = restored.prologue.inspectedMask;
+                        _choice = restored.prologue.photoChoice;
+                        _truth = restored.prologue.truth;
+                        _reach = restored.prologue.reach;
+                        EnterPhase(PhotoCheckpointAdapter.ResolveResumePhase(restored, checkpoint.checkpointId), false);
                         SetStatus($"Продолжение: {checkpoint.checkpointId}");
                         return;
                     }
@@ -120,17 +110,6 @@ namespace Jam.Episodes.Photo
             }
 
             EnterPhase(PhotoWhiteboxPhase.IntroDialogue, false);
-        }
-
-        private static PhotoWhiteboxPhase ResolveRestoredPhase(string checkpointId)
-        {
-            return checkpointId switch
-            {
-                CameraCheckpoint => PhotoWhiteboxPhase.Camera,
-                PublishedCheckpoint => PhotoWhiteboxPhase.ReflectionDialogue,
-                ArrivalCheckpoint => PhotoWhiteboxPhase.Arrival,
-                _ => PhotoWhiteboxPhase.Explore
-            };
         }
 
         private void EnterPhase(PhotoWhiteboxPhase phase, bool save)
@@ -159,6 +138,7 @@ namespace Jam.Episodes.Photo
                     RenderReflection();
                     break;
                 case PhotoWhiteboxPhase.Arrival:
+                    _saveData.prologue.completed = true;
                     if (save) SaveCheckpoint(ArrivalCheckpoint);
                     RenderArrival();
                     break;
@@ -275,6 +255,7 @@ namespace Jam.Episodes.Photo
             }
 
             (_truth, _reach) = _choice == PhotoChoice.Summons ? (2, 1) : (0, 2);
+            _saveData.prologue.publicationCommitted = true;
             EnterPhase(PhotoWhiteboxPhase.Publish, true);
         }
 
@@ -312,31 +293,31 @@ namespace Jam.Episodes.Photo
                 "Маршрут продолжается на Бали — уже в следующем акте.");
             SetStatus("Checkpoint photo.arrival сохранён");
             ClearActions();
-            CreateActionButton("ЗАВЕРШИТЬ ИСТОРИЮ 3", CompleteStory, true, AccentColor);
+            CreateActionButton("ЗАВЕРШИТЬ ПРОЛОГ", CompletePrologue, true, AccentColor);
         }
 
-        private void CompleteStory()
+        private void CompletePrologue()
         {
-            GameSaveService.CompleteMainStoryLine(CharacterId.Photo, "CharacterSelect");
+            _saveData.prologue.completed = true;
+            SaveCheckpoint(ArrivalCheckpoint);
+            GameSaveService.LeaveCharacterLine(CharacterId.Photo, "CharacterSelect");
             SceneManager.LoadSceneAsync("CharacterSelect", LoadSceneMode.Single);
         }
 
         private void SaveCheckpoint(string checkpointId)
         {
-            var payload = new PhotoWhiteboxSaveData
-            {
-                phase = _phase.ToString(),
-                inspectedMask = _inspectedMask,
-                choice = _choice.ToString(),
-                truth = _truth,
-                reach = _reach
-            };
+            _saveData.activeAct = PhotoAct.Prologue;
+            _saveData.prologue.phase = _phase;
+            _saveData.prologue.inspectedMask = _inspectedMask;
+            _saveData.prologue.photoChoice = _choice;
+            _saveData.prologue.truth = _truth;
+            _saveData.prologue.reach = _reach;
 
             GameSaveService.SaveCharacterCheckpoint(
                 CharacterId.Photo,
                 gameObject.scene.name,
                 checkpointId,
-                JsonUtility.ToJson(payload));
+                PhotoCheckpointAdapter.Serialize(_saveData, checkpointId));
         }
 
         private int CountInspected()
@@ -346,11 +327,6 @@ namespace Jam.Episodes.Photo
             if ((_inspectedMask & 0b010) != 0) count++;
             if ((_inspectedMask & 0b100) != 0) count++;
             return count;
-        }
-
-        private static PhotoChoice ParseChoice(string value)
-        {
-            return Enum.TryParse(value, out PhotoChoice result) ? result : PhotoChoice.None;
         }
 
         private void BuildInterface()
