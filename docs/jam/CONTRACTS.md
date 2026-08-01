@@ -38,6 +38,18 @@
 - `CharacterSelect` имеет build index `1`; отсутствующие эпизодные сцены временно
   заменяются `SampleScene`, но выбранный `CharacterId` всё равно сохраняется.
 
+## Ввод
+
+- Вся игра, включая gameplay, меню и UI, использует только Unity New Input System.
+- Единственный общий runtime-asset ввода — `InputSystem_Actions.inputactions`; его
+  владельцем является интегратор.
+- Эпизоды используют согласованные action maps и запрашивают новые actions у
+  интегратора вместо создания параллельных assets.
+- Legacy Input Manager, `UnityEngine.Input` и `StandaloneInputModule` запрещены.
+- UI работает через `InputSystemUIInputModule`; gameplay — через `InputAction`,
+  `PlayerInput` или общий адаптер ввода.
+- Игровой код не привязывается напрямую к конкретной клавиатуре, мыши или геймпаду.
+
 ## Интеграция
 
 - Интегратор отвечает за `main`, общий билд и разрешение конфликтов общих
