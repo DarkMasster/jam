@@ -6,7 +6,8 @@
 
 - Движок: Unity 6000.5.3f1.
 - Render Pipeline: Universal Render Pipeline 17.5.0.
-- Input: Unity Input System 1.19.0.
+- Input: Unity New Input System 1.19.0 используется во всей игре; legacy Input
+  Manager не используется.
 - Репозиторий: Git с Git LFS.
 
 ## Подтверждённый формат
