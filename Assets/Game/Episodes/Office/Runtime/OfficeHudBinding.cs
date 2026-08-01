@@ -14,6 +14,7 @@ namespace Jam.Episodes.Office
         [SerializeField] private Image momentumFill;
         [SerializeField] private GameObject downPanel;
         [SerializeField] private Text downText;
+        [SerializeField] private Text coach;
 
         public Text Zone => zone;
         public Text Objective => objective;
@@ -25,6 +26,8 @@ namespace Jam.Episodes.Office
         public GameObject DownPanel => downPanel;
         public Text DownText => downText;
 
+        public Text Coach => coach;
+
         public void Configure(
             Text zoneText,
             Text objectiveText,
@@ -34,8 +37,10 @@ namespace Jam.Episodes.Office
             Text momentumText,
             Image momentumBar,
             GameObject downOverlay,
-            Text downMessage)
+            Text downMessage,
+            Text coachText)
         {
+            coach = coachText;
             zone = zoneText;
             objective = objectiveText;
             carry = carryText;

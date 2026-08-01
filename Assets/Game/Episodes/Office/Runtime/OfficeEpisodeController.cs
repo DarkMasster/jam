@@ -138,6 +138,12 @@ namespace Jam.Episodes.Office
             SetStatus($"{targetName} ПРОМАХНУЛОСЬ • ОКНО ДЛЯ БРОСКА");
         }
 
+        /// <summary>Короткая сюжетная или служебная строка маршрута.</summary>
+        public void ReportStoryBeat(string message)
+        {
+            SetStatus(message);
+        }
+
         public void ReportCarryPickup(string itemName)
         {
             SetCarry($"В РУКАХ: {itemName} • PRIMARY — БРОСОК");

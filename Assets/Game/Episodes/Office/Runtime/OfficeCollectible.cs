@@ -13,19 +13,32 @@ namespace Jam.Episodes.Office
     {
         [SerializeField] private OfficeCollectibleType collectibleType;
         [SerializeField] private OfficeEpisodeController episodeController;
+        [SerializeField] private Renderer pickupMarker;
         [SerializeField, Min(0f)] private float rotationSpeed = 55f;
         [SerializeField, Min(0f)] private float bobAmplitude = 0.16f;
         [SerializeField, Min(0f)] private float bobFrequency = 2.2f;
 
+        private Vector3 _spawnPosition;
         private Vector3 _basePosition;
+        private Vector3 _markerSpawnPosition;
         private Collider _trigger;
         private Renderer[] _renderers;
         private bool _collected;
         private bool _missingControllerReported;
 
+        public OfficeCollectibleType CollectibleType => collectibleType;
+
+        public bool IsCollected => _collected;
+
         private void Awake()
         {
-            _basePosition = transform.position;
+            _spawnPosition = transform.position;
+            _basePosition = _spawnPosition;
+            if (pickupMarker != null)
+            {
+                _markerSpawnPosition = pickupMarker.transform.position;
+            }
+
             _trigger = GetComponent<Collider>();
             _renderers = GetComponentsInChildren<Renderer>(true);
         }
@@ -77,21 +90,51 @@ namespace Jam.Episodes.Office
             SetPresent(false);
         }
 
-        public void Configure(OfficeEpisodeController controller, OfficeCollectibleType type)
+        public void Configure(
+            OfficeEpisodeController controller,
+            OfficeCollectibleType type,
+            Renderer marker = null)
         {
             episodeController = controller;
             collectibleType = type;
+            if (marker != null)
+            {
+                pickupMarker = marker;
+            }
+        }
+
+        /// <summary>
+        /// Переносит несобранную вещь на гарантированную точку маршрута.
+        /// Стартовая позиция сохраняется и возвращается при перезапуске забега.
+        /// </summary>
+        public void MoveTo(Vector3 position)
+        {
+            var offset = position - _basePosition;
+            _basePosition = position;
+            transform.position = position;
+
+            if (pickupMarker != null)
+            {
+                pickupMarker.transform.position += offset;
+            }
         }
 
         public void ResetForRun()
         {
+            _basePosition = _spawnPosition;
+            transform.position = _basePosition;
+            if (pickupMarker != null)
+            {
+                pickupMarker.transform.position = _markerSpawnPosition;
+                pickupMarker.enabled = true;
+            }
+
             if (!_collected)
             {
                 return;
             }
 
             _collected = false;
-            transform.position = _basePosition;
             SetPresent(true);
         }
 
@@ -100,6 +143,11 @@ namespace Jam.Episodes.Office
             if (_trigger != null)
             {
                 _trigger.enabled = value;
+            }
+
+            if (pickupMarker != null)
+            {
+                pickupMarker.enabled = value;
             }
 
             if (_renderers == null)

@@ -65,11 +65,8 @@ namespace Jam.Episodes.Office.Editor
                 carryController,
                 episodeController);
 
-            var laptop = CreateLaptop(palette, gameplayRoot, new Vector3(0f, 0.78f, -6f));
-            laptop.GetComponent<OfficeCollectible>().Configure(episodeController, OfficeCollectibleType.Laptop);
-
-            var mug = CreateMug(palette, gameplayRoot, new Vector3(0f, 0.72f, 28.8f));
-            mug.GetComponent<OfficeCollectible>().Configure(episodeController, OfficeCollectibleType.Mug);
+            var laptop = CreateLaptop(palette, gameplayRoot, new Vector3(0f, 0.78f, -6f), episodeController);
+            var mug = CreateMug(palette, gameplayRoot, new Vector3(0f, 0.72f, 28.8f), episodeController);
 
             var exitGate = CreateExitGate(palette, gameplayRoot, episodeController);
             CreateZoneTriggers(gameplayRoot, episodeController);
@@ -80,6 +77,7 @@ namespace Jam.Episodes.Office.Editor
 
             var enemyRoot = CreateGroup("Enemies", gameplayRoot);
             BuildChasers(palette, enemyRoot, player.transform, runController, momentum, episodeController);
+            var chasers = enemyRoot.GetComponentsInChildren<OfficeChaser>(true);
 
             var hudPrefab = CreateOrUpdatePrefab("OfficeHud", BuildHudTemplate);
             var hudInstance = (GameObject)PrefabUtility.InstantiatePrefab(hudPrefab, sceneRoot);
@@ -96,6 +94,18 @@ namespace Jam.Episodes.Office.Editor
                 hudBinding.DownText,
                 exitGate,
                 momentum);
+
+            var coach = episodeObject.AddComponent<OfficeCoach>();
+            coach.Configure(
+                hudBinding.Coach,
+                player.transform,
+                carryController,
+                runController,
+                episodeController,
+                chasers);
+
+            CreateReflectionBeat(palette, gameplayRoot, player.transform, episodeController, coach);
+            CreateItemGuarantee(palette, gameplayRoot, laptop, mug, episodeController, coach);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -301,25 +311,37 @@ namespace Jam.Episodes.Office.Editor
             return camera;
         }
 
-        private static GameObject CreateLaptop(Palette p, Transform parent, Vector3 position)
+        private static GameObject CreateLaptop(
+            Palette p,
+            Transform parent,
+            Vector3 position,
+            OfficeEpisodeController controller)
         {
             var root = CreateCollectibleRoot("Laptop Pickup", position, parent);
             CreateCube("Laptop Base", Vector3.zero, new Vector3(1.25f, 0.12f, 0.82f), p.panel, root.transform, false).transform.localPosition = Vector3.zero;
             var screen = CreateCube("Laptop Screen", Vector3.zero, new Vector3(1.25f, 0.72f, 0.08f), p.playerRim, root.transform, false);
             screen.transform.localPosition = new Vector3(0f, 0.42f, 0.36f);
             screen.transform.localRotation = Quaternion.Euler(-12f, 0f, 0f);
-            CreateCylinder("Laptop Marker", new Vector3(position.x, 0.04f, position.z), new Vector3(1.5f, 0.025f, 1.5f), p.redDim, parent, false);
+            var marker = CreateCylinder("Laptop Marker", new Vector3(position.x, 0.04f, position.z), new Vector3(1.5f, 0.025f, 1.5f), p.redDim, parent, false)
+                .GetComponent<Renderer>();
+            root.GetComponent<OfficeCollectible>().Configure(controller, OfficeCollectibleType.Laptop, marker);
             return root;
         }
 
-        private static GameObject CreateMug(Palette p, Transform parent, Vector3 position)
+        private static GameObject CreateMug(
+            Palette p,
+            Transform parent,
+            Vector3 position,
+            OfficeEpisodeController controller)
         {
             var root = CreateCollectibleRoot("Mug Pickup", position, parent);
             var body = CreatePrimitive("Mug Body", PrimitiveType.Cylinder, Vector3.zero, new Vector3(0.5f, 0.42f, 0.5f), p.paper, root.transform, false);
             body.transform.localPosition = Vector3.zero;
             var handle = CreateCube("Mug Handle", Vector3.zero, new Vector3(0.16f, 0.42f, 0.42f), p.paper, root.transform, false);
             handle.transform.localPosition = new Vector3(0.42f, 0f, 0f);
-            CreateCylinder("Mug Marker", new Vector3(position.x, 0.04f, position.z), new Vector3(1.5f, 0.025f, 1.5f), p.redDim, parent, false);
+            var marker = CreateCylinder("Mug Marker", new Vector3(position.x, 0.04f, position.z), new Vector3(1.5f, 0.025f, 1.5f), p.redDim, parent, false)
+                .GetComponent<Renderer>();
+            root.GetComponent<OfficeCollectible>().Configure(controller, OfficeCollectibleType.Mug, marker);
             return root;
         }
 
@@ -369,6 +391,78 @@ namespace Jam.Episodes.Office.Editor
             zone.GetComponent<OfficeZoneTrigger>().Configure(controller, label);
         }
 
+        private static void CreateReflectionBeat(
+            Palette p,
+            Transform parent,
+            Transform player,
+            OfficeEpisodeController controller,
+            OfficeCoach coach)
+        {
+            var triggerObject = new GameObject("Meeting Reflection Beat", typeof(BoxCollider), typeof(OfficeReflectionBeat));
+            triggerObject.transform.SetParent(parent, false);
+            triggerObject.transform.position = new Vector3(0f, 1f, -3.8f);
+
+            var trigger = triggerObject.GetComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = new Vector3(14f, 2f, 1.5f);
+
+            var echo = new GameObject("Delayed Reflection").transform;
+            echo.SetParent(parent, false);
+            echo.position = new Vector3(8.7f, 0.04f, -3.8f);
+            CreatePrimitive("Echo Body", PrimitiveType.Capsule, Vector3.zero, new Vector3(0.62f, 0.78f, 0.62f), p.playerRim, echo, false)
+                .transform.localPosition = new Vector3(0f, 0.92f, 0f);
+            CreatePrimitive("Echo Rim", PrimitiveType.Sphere, Vector3.zero, new Vector3(0.3f, 0.18f, 0.3f), p.glass, echo, false)
+                .transform.localPosition = new Vector3(0f, 1.8f, -0.08f);
+
+            triggerObject.GetComponent<OfficeReflectionBeat>()
+                .Configure(echo, player, controller, coach);
+        }
+
+        private static void CreateItemGuarantee(
+            Palette p,
+            Transform parent,
+            GameObject laptop,
+            GameObject mug,
+            OfficeEpisodeController controller,
+            OfficeCoach coach)
+        {
+            var triggerObject = new GameObject("Personal Item Guarantee", typeof(BoxCollider), typeof(OfficeItemGuarantee));
+            triggerObject.transform.SetParent(parent, false);
+            triggerObject.transform.position = new Vector3(0f, 1f, 31f);
+
+            var trigger = triggerObject.GetComponent<BoxCollider>();
+            trigger.isTrigger = true;
+            trigger.size = new Vector3(23f, 2f, 1.4f);
+
+            var laptopAnchor = new GameObject("Laptop Fallback").transform;
+            laptopAnchor.SetParent(parent, false);
+            laptopAnchor.position = new Vector3(-0.72f, 0.78f, 33.8f);
+
+            var mugAnchor = new GameObject("Mug Fallback").transform;
+            mugAnchor.SetParent(parent, false);
+            mugAnchor.position = new Vector3(0.72f, 0.72f, 33.8f);
+
+            var accessHold = CreateGroup("Personal Item Access Hold", parent).gameObject;
+            CreateCube("Access Hold Barrier", new Vector3(0f, 1f, 35.4f), new Vector3(23.5f, 2f, 0.24f), p.redDim, accessHold.transform);
+            CreateWorldLabel(
+                "Access Hold Label",
+                "ЗАБЕРИ ЛИЧНЫЕ ВЕЩИ",
+                new Vector3(0f, 2.25f, 35.2f),
+                0.075f,
+                Hex("EDE9DF"),
+                accessHold.transform);
+            accessHold.SetActive(false);
+
+            triggerObject.GetComponent<OfficeItemGuarantee>().Configure(
+                laptop.GetComponent<OfficeCollectible>(),
+                mug.GetComponent<OfficeCollectible>(),
+                laptopAnchor,
+                mugAnchor,
+                accessHold,
+                controller,
+                coach);
+        }
+
         private static GameObject BuildHudTemplate()
         {
             var canvasObject = new GameObject("Office HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(OfficeHudBinding));
@@ -403,6 +497,12 @@ namespace Jam.Episodes.Office.Editor
             SetRect(status.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-24f, -10f), new Vector2(0.5f, 0.5f));
             status.text = "WASD / СТРЕЛКИ • ДВИГАЙСЯ К EXIT";
 
+            var coachPanel = CreateUiPanel("Coach Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
+            SetRect(coachPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 170f), new Vector2(1180f, 62f), new Vector2(0.5f, 0f));
+            var coach = CreateUiText("Coach", coachPanel.transform, 21, FontStyle.Bold, Hex("EDE9DF"), TextAnchor.MiddleCenter);
+            SetRect(coach.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-24f, -10f), new Vector2(0.5f, 0.5f));
+            coach.text = "WASD / СТРЕЛКИ — ИДИ ВПЕРЁД";
+
             var momentumPanel = CreateUiPanel("Momentum Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
             SetRect(momentumPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 102f), new Vector2(1180f, 56f), new Vector2(0.5f, 0f));
             var momentumLabel = CreateUiText("Momentum", momentumPanel.transform, 18, FontStyle.Bold, Hex("FF5A3C"), TextAnchor.MiddleLeft);
@@ -431,7 +531,8 @@ namespace Jam.Episodes.Office.Editor
                 momentumLabel,
                 momentumFill,
                 downPanel.gameObject,
-                downText);
+                downText,
+                coach);
             return canvasObject;
         }
 
