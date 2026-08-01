@@ -81,6 +81,29 @@
 - `CharacterSelect` имеет build index `1`; отсутствующие эпизодные сцены временно
   заменяются `SampleScene`, но выбранный `CharacterId` всё равно сохраняется.
 
+## Катсцены
+
+- `CutsceneDirector` — единственный runtime-оркестратор катсцен и создаётся
+  persistent `GameEntryPoint` вместе с глобальным HUD.
+- Сцена предоставляет presentation-компонент с уникальным стабильным
+  `CutsceneId`: `UiStoryboardPresentation` или `TimelineCutscenePresentation`.
+- `ICutscenePresentation` отвечает только за показ, пропуск и остановку;
+  сюжетные условия и gameplay-state остаются в NodeCanvas/контроллере эпизода.
+- `PlayCutsceneTask` запускает катсцену по ID и завершает NodeCanvas action после
+  `Completed` или `Skipped`. Следующая task меняет авторитетный state и сохраняет
+  checkpoint — Timeline/Storyboard не записывают прогресс самостоятельно.
+- Во время катсцены глобальная кнопка меню скрыта. `Escape` принадлежит
+  `CutsceneDirector` и пропускает сцену, только если presentation это разрешает.
+- Смена сцены или остановка graph завершает текущую катсцену с неуспешным
+  результатом; callback применяется не более одного раза.
+- Середина Timeline и номер storyboard-кадра не входят в save payload: загрузка
+  возвращает игрока к устойчивой границе до или после короткой катсцены.
+- Стабильный ID вступления героини — `photo.prologue.intro`; границы сохранения:
+  до показа — `photo.intro`, после `Completed` или `Skipped` — `photo.explore`.
+- `Prologue_Photo` содержит ровно один `UiStoryboardPresentation` для этого ID;
+  его данные принадлежат `PhotoIntroStoryboard.asset`, а контроллер только
+  применяет результат к FSM и checkpoint.
+
 ## Ввод
 
 - Вся игра, включая gameplay, меню и UI, использует только Unity New Input System.

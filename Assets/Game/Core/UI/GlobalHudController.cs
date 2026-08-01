@@ -29,6 +29,7 @@ namespace Jam.Core.UI
         private Font _font;
         private bool _isGameplayScene;
         private bool _menuOpen;
+        private bool _cutsceneActive;
         private float _previousTimeScale = 1f;
         private CursorLockMode _previousCursorLockMode;
         private bool _previousCursorVisible;
@@ -58,7 +59,7 @@ namespace Jam.Core.UI
 
         private void Update()
         {
-            if (!_isGameplayScene || Keyboard.current?.escapeKey.wasPressedThisFrame != true)
+            if (!_isGameplayScene || _cutsceneActive || Keyboard.current?.escapeKey.wasPressedThisFrame != true)
             {
                 return;
             }
@@ -119,6 +120,17 @@ namespace Jam.Core.UI
             SceneManager.LoadSceneAsync(MainScene, LoadSceneMode.Single);
         }
 
+        public void SetCutsceneActive(bool active)
+        {
+            _cutsceneActive = active;
+            if (active && _menuOpen)
+            {
+                CloseMenu();
+            }
+
+            _menuButton.gameObject.SetActive(_isGameplayScene && !_menuOpen && !_cutsceneActive);
+        }
+
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             if (_menuOpen)
@@ -136,7 +148,7 @@ namespace Jam.Core.UI
                                && scene.name != MainScene
                                && scene.name != CharacterSelectScene;
             _canvas.enabled = _isGameplayScene;
-            _menuButton.gameObject.SetActive(_isGameplayScene && !_menuOpen);
+            _menuButton.gameObject.SetActive(_isGameplayScene && !_menuOpen && !_cutsceneActive);
             _overlay.SetActive(_isGameplayScene && _menuOpen);
         }
 

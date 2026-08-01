@@ -100,6 +100,11 @@
 - В том же прогоне работает петля «подбор → бросок → разрушение»: по маршруту
   расставлены пять клавиатур и четыре принтера, HUD показывает состояние рук и
   счётчик разрушенной техники.
+- Базовая гибридная система катсцен включает persistent `CutsceneDirector`,
+  UI-сториборды, Timeline-адаптер и ожидающую NodeCanvas task по стабильному ID.
+- Вступление Photo подключено как реальный UI-сториборд `photo.prologue.intro`:
+  четыре кадра запускаются из общего Director, а `Completed` и `Skipped`
+  одинаково переводят FSM в `Explore` и сохраняют `photo.explore`.
 - Веб-демо [office](../../web-demos/office/) запускается через локальный статический
   сервер: проверены стартовая сцена, переход в забег, HUD и restart клавишей `R`.
 - Индекс `ccc` пересоздан и успешно обрабатывает все 555 индексируемых файлов
@@ -109,8 +114,9 @@
 
 - Сюжетная концепция описана на уровне исходных вводных, но ещё не готова для
   написания диалогов и cutscenes.
-- Текст и UI Photo пока являются white-box внутри `PhotoWhiteboxController`;
-  production Dialogue Trees, графические hotspots и DNP-feedback ещё не созданы.
+- Исследование, камера и публикация Photo пока являются white-box внутри
+  `PhotoWhiteboxController`; production Dialogue Trees, графические hotspots,
+  иллюстрации для вступительного storyboard и DNP-feedback ещё не созданы.
 - Веб-демо не связано с `Assets/` и не является Unity-сборкой. Его Three.js-модули
   загружаются локально, а Three.js и bloom при первом запуске запрашиваются с unpkg.
 - `Prologue_Office` ещё не добавлена владельцем в Build Settings, поэтому
@@ -131,9 +137,10 @@
 
 ## Следующий шаг
 
-Заменить временные текстовые экраны `PhotoWhiteboxController` на production
-Dialogue Trees и компоненты `PhotoEpisodeController`/`PhotoCheckpointAdapter`,
-сохранив работающий FSM, checkpoint ID и маршрут из главного меню.
+Добавить иллюстрации и звук в `PhotoIntroStoryboard`, затем заменить оставшиеся
+временные экраны `PhotoWhiteboxController` на production Dialogue Trees и
+компоненты `PhotoEpisodeController`/`PhotoCheckpointAdapter`, сохранив работающий
+FSM, checkpoint ID и маршрут из главного меню.
 Владелец офисного эпизода параллельно фиксирует по веб-демо параметры движения,
 рывка и Momentum. Следующий офисный срез `M1B` добавляет одного противника, базовый
 Momentum и быстрый restart; интегратор до этого добавляет карту `Office` и

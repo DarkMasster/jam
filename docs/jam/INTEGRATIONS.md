@@ -68,6 +68,17 @@
 - `ShowGameFeedback` через проектный feedback-сервис;
 - условия для проверок episode-state без копирования бизнес-логики в graph.
 
+### Катсцены через NodeCanvas
+
+- Project task `PlayCutsceneTask` принимает стабильный `cutsceneId` и ждёт
+  результат общего `CutsceneDirector`.
+- `characterId`, `startCheckpointId`, `completionCheckpointId` передаются как
+  контекст и доступны обработчикам результата, но task не пишет save напрямую.
+- Выходы `endReason` и `wasSkipped` позволяют графу выбрать reflection beat,
+  применить state и вызвать отдельную task сохранения.
+- Остановка graph отменяет только катсцену с тем же ID; завершённый callback не
+  применяется повторно.
+
 ## Damage Numbers Pro 4.55
 
 ### Назначение и граница

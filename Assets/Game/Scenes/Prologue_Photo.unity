@@ -131,6 +131,7 @@ GameObject:
   - component: {fileID: 903484230}
   - component: {fileID: 903484229}
   - component: {fileID: 903484228}
+  - component: {fileID: 903484232}
   m_Layer: 0
   m_Name: PhotoWhiteboxRoot
   m_TagString: Untagged
@@ -148,7 +149,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6f9ad0d190298304ab36184fca9837ce, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Jam.Episodes.Photo.PhotoWhiteboxController
 --- !u!114 &903484229
 MonoBehaviour:
@@ -198,6 +199,8 @@ MonoBehaviour:
     mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"},"reach":{"_name":"reach","_id":"2446e8e8-e1df-4264-afbc-1ef894f57990","$type":"NodeCanvas.Framework.Variable`1[[System.Int32,
     mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"},"inspectedCount":{"_name":"inspectedCount","_id":"5d5aa58a-7047-4e1a-89d7-44b3522b47ce","$type":"NodeCanvas.Framework.Variable`1[[System.Int32,
     mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"},"canUseCamera":{"_name":"canUseCamera","_id":"181c436c-1faa-4497-96a5-222c2e60425a","$type":"NodeCanvas.Framework.Variable`1[[System.Boolean,
+    mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"},"cutsceneId":{"_value":"","_name":"cutsceneId","_id":"cdd0b4f0-d1d0-4711-b036-692cf2a6cb97","$type":"NodeCanvas.Framework.Variable`1[[System.String,
+    mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"},"cutsceneResult":{"_value":"","_name":"cutsceneResult","_id":"e2fddf27-5750-4ee6-9924-34e10c877158","$type":"NodeCanvas.Framework.Variable`1[[System.String,
     mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"}}}'
   _objectReferences: []
   _serializedVariables:
@@ -219,6 +222,12 @@ MonoBehaviour:
   - _json: '{"_name":"canUseCamera","_id":"181c436c-1faa-4497-96a5-222c2e60425a","$type":"NodeCanvas.Framework.Variable`1[[System.Boolean,
       mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"}'
     _references: []
+  - _json: '{"_value":"","_name":"cutsceneId","_id":"cdd0b4f0-d1d0-4711-b036-692cf2a6cb97","$type":"NodeCanvas.Framework.Variable`1[[System.String,
+      mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"}'
+    _references: []
+  - _json: '{"_value":"","_name":"cutsceneResult","_id":"e2fddf27-5750-4ee6-9924-34e10c877158","$type":"NodeCanvas.Framework.Variable`1[[System.String,
+      mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"}'
+    _references: []
 --- !u!4 &903484231
 Transform:
   m_ObjectHideFlags: 0
@@ -234,6 +243,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &903484232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 903484227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c03e0c4319921f48b0962920b1d547c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Jam.Core.Cutscenes.UiStoryboardPresentation
+  cutsceneId: photo.prologue.intro
+  sequence: {fileID: 11400000, guid: 6e818a0fed87db14c959154cb0b1eccc, type: 2}
 --- !u!1 &1078604462
 GameObject:
   m_ObjectHideFlags: 0
