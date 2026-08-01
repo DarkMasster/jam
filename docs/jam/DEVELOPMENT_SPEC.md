@@ -59,14 +59,13 @@
 ## 3. Игровой поток Пролога
 
 ```text
-Bootstrap
-→ Title
+Main
 → Character Select
 → выбранный эпизод
 → Hotel Arrival cutscene
 → сохранение результата
 → Character Select
-→ после 3 эпизодов: Prologue Complete
+→ после 3 эпизодов: Finale разблокирован
 ```
 
 Правила:
@@ -276,7 +275,13 @@ C-level руководитель едет с женой, детьми и кот�
 
 ```text
 GameSessionState
+├── activeCharacter
+├── lastSceneName
 ├── completedEpisodes
+├── characterCheckpoints
+│   ├── sceneName
+│   ├── checkpointId
+│   └── payloadJson
 ├── driveResult
 │   ├── happiness
 │   ├── safety
@@ -291,7 +296,10 @@ GameSessionState
     └── reach
 ```
 
-Состояние сохраняется после завершения эпизода, а не на каждом действии.
+Состояние сохраняется при выборе героя, смене сцены, достижении checkpoint и
+завершении эпизода. Мини-игра передаёт свой внутренний state как JSON payload;
+система сохранения не интерпретирует его. При остановке сессии «Продолжить»
+возвращает последнюю сцену и активного героя.
 
 ## 9. Техническая архитектура Unity
 
@@ -329,14 +337,17 @@ Assets/Game/
 
 ### Сцены джем-билда
 
-- `Bootstrap`
+- `Main` — entry point и главное меню: новая игра, продолжить, выход
 - `CharacterSelect`
 - `Prologue_Drive`
 - `Prologue_Office`
 - `Prologue_Photo`
 - `HotelArrival` — одна параметризованная сцена для трёх героев
+- `Finale` — доступен после завершения трёх основных линий
 
-`SampleScene` не используется как интеграционная сцена после появления `Bootstrap`.
+`Main` всегда имеет build index `0`, `CharacterSelect` — build index `1`.
+До появления эпизодных сцен выбор героя временно загружает `SampleScene`, сохраняя
+идентификатор выбранной линии.
 
 ### Публичные контракты
 
@@ -431,7 +442,7 @@ public interface IGameFlow
 ### Этап 1 — первые 3 часа
 
 1. Ответить на оставшиеся P0 из `QUESTIONS.md`.
-2. Создать `Bootstrap`, `CharacterSelect`, `GameSessionState` и заглушку результата.
+2. Создать `Main`, `CharacterSelect`, `GameSessionState` и заглушку результата.
 3. Зафиксировать UI-макет и Input Actions.
 4. Создать три независимые episode-сцены с кнопкой `Complete`.
 

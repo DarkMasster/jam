@@ -18,6 +18,26 @@
   согласования с затронутыми владельцами.
 - Изменение контракта и его документации попадает в один commit.
 
+## Старт приложения и сохранение
+
+- `Assets/Game/Scenes/Main.unity` — сцена с build index `0` и единственная точка
+  входа в игру.
+- `GameEntryPoint` существует в `Main`, переживает смену сцен через
+  `DontDestroyOnLoad` и не допускает дубликатов.
+- «Новая игра» очищает прежний слот, создаёт прогресс и загружает
+  `CharacterSelect`.
+- «Продолжить» доступна только при наличии сохранённой сцены в Build Settings.
+- `CharacterId`: `Drive`, `Office`, `Photo`; порядок прохождения свободный.
+- Общие системы записывают простой переход через `SetLastScene`, а checkpoint
+  линии — через `SaveCharacterCheckpoint(CharacterId, sceneName, checkpointId,
+  payloadJson)`. Payload принадлежит эпизоду и не интерпретируется Core.
+- Эпизод читает свой checkpoint через `TryGetCharacterCheckpoint` и сообщает
+  завершение через `CompleteMainStoryLine` либо компонент
+  `EpisodeProgressReporter`.
+- `FinaleUnlocked` становится истинным только после завершения всех трёх линий.
+- `CharacterSelect` имеет build index `1`; отсутствующие эпизодные сцены временно
+  заменяются `SampleScene`, но выбранный `CharacterId` всё равно сохраняется.
+
 ## Интеграция
 
 - Интегратор отвечает за `main`, общий билд и разрешение конфликтов общих
