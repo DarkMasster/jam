@@ -1,0 +1,10 @@
+﻿fileFormatVersion: 2
+guid: 9d4eb787e02b4ea890a051ea4da9586a
+timeCreated: 1494353948
+AssetOrigin:
+  serializedVersion: 1
+  productId: 14914
+  packageName: NodeCanvas
+  packageVersion: 3.4.2
+  assetPath: Assets/ParadoxNotion/CanvasCore/Common/Runtime/Serialization/SerializedConstructorInfo.cs
+  uploadId: 940840
