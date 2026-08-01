@@ -76,10 +76,11 @@
   #panel,#dlg{position:absolute;left:1em;right:1em;bottom:3.4em;pointer-events:auto;display:none;
     background:linear-gradient(180deg,#312816f8,#120d06fc);
     border:2px solid #7d6740;border-radius:7px;
-    box-shadow:inset 0 0 0 1px #0b0906, inset 0 0 30px #000b, 0 6px 18px #000c;
-    padding:.65em .9em .7em;max-height:44%;overflow:auto}
-  #panel::before,#dlg::before{content:'';position:absolute;inset:3px;border:1px solid #574526;
-    border-radius:4px;pointer-events:none}
+    box-shadow:inset 0 0 0 3px #120d06, inset 0 0 0 4px #574526,
+               inset 0 0 30px #000b, 0 6px 18px #000c;
+    padding:.8em 1em .85em;max-height:54%;overflow:auto;scrollbar-width:thin;
+    scrollbar-color:#6b5836 #1a130a}
+
   .who .tip{float:right;font-style:normal;color:#7c7358;letter-spacing:.1em;font-size:.85em;
     text-transform:none}
   .who{color:var(--gold);letter-spacing:.26em;font-size:.8em;margin-bottom:.5em;
@@ -114,6 +115,9 @@
   #tip{position:absolute;left:0;right:0;bottom:4.5em;text-align:center;
     font-family:var(--text);font-size:.86em;color:#ffd88f;letter-spacing:.02em;
     text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 18px rgba(255,190,110,.25)}
+  #tip.urgent{color:#ff9a72;font-weight:600;font-size:.95em;
+    text-shadow:0 1px 3px #000, 0 0 20px rgba(255,120,70,.45);animation:pulse .7s infinite alternate}
+  @keyframes pulse{from{opacity:.65}to{opacity:1}}
   #hint{position:absolute;left:0;right:0;bottom:3.1em;text-align:center;
     font-family:var(--text);font-weight:500;font-size:.88em;
     color:#fbf1d8;letter-spacing:.04em;
@@ -133,7 +137,7 @@
   .screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
     padding:1.2em;pointer-events:auto;overflow:auto;
     background:radial-gradient(130% 100% at 50% 40%,#1a1e12,#06070a 76%)}
-  .crate{position:relative;width:min(31em,95%);padding:1.6em 1.8em 1.5em;
+  .crate{position:relative;width:min(40em,96%);padding:2.2em 2.4em 2em;
     background:
       radial-gradient(circle at 10px 10px,#727c50 1.5px,transparent 2px),
       radial-gradient(circle at calc(100% - 10px) 10px,#727c50 1.5px,transparent 2px),
@@ -144,44 +148,46 @@
     box-shadow:inset 0 0 0 1px #12150c, inset 0 0 60px #000a, 0 6px 0 #00000066}
   .crate::before{content:'';position:absolute;inset:5px;border:1px solid #4b5433;
     border-radius:3px;pointer-events:none}
-  .stamp{position:absolute;right:1.1em;top:.9em;transform:rotate(-7deg);
-    border:2px solid #9c4b3a;color:#cf6349;font-size:.6em;letter-spacing:.18em;
+  .stamp{position:absolute;right:1.4em;top:1.2em;transform:rotate(-7deg);
+    border:2px solid #9c4b3a;color:#cf6349;font-size:.78em;letter-spacing:.18em;
     padding:.2em .5em;border-radius:2px}
   .crate h1{margin:0;font-family:var(--stencil);font-weight:400;line-height:.92;
-    font-size:3em;letter-spacing:.06em;text-transform:uppercase;
+    font-size:4.4em;letter-spacing:.05em;text-transform:uppercase;
     background:repeating-linear-gradient(180deg,#efd694 0 .34em,transparent .34em .43em);
     -webkit-background-clip:text;background-clip:text;color:transparent;
     -webkit-text-stroke:.5px #7b6f3d;filter:drop-shadow(0 3px 0 #00000066)}
   .sub{margin-top:.5em;font-size:.68em;letter-spacing:.26em;color:#a6b078}
-  .rule{height:1px;background:linear-gradient(90deg,transparent,#6c7749,transparent);margin:1em 0 .9em}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,#6c7749,transparent);margin:1.3em 0 1.1em}
   .mitems{display:flex;flex-direction:column;gap:.1em}
-  .mi{background:none;border:0;color:#e2d29a;cursor:pointer;text-align:left;
-    font-family:var(--stencil);font-size:1.3em;letter-spacing:.14em;text-transform:uppercase;
-    padding:.16em .3em;display:flex;gap:.55em;align-items:center;border-radius:3px;text-shadow:var(--sh)}
-  .mi:hover,.mi:focus{color:#fff3c4;background:#ffffff14;outline:none}
-  .mi b{color:#93a05e;font-weight:400}
-  .mtext{display:none;margin-top:.9em;font-size:.82em;line-height:1.7;color:#bdb49a;min-height:0;
+  .mi{background:none;border:0;color:#ddcd97;cursor:pointer;text-align:left;
+    font-family:var(--mil);font-size:1.55em;letter-spacing:.1em;text-transform:uppercase;
+    padding:.24em .4em;display:flex;gap:.6em;align-items:center;border-radius:3px;
+    text-shadow:0 2px 0 #00000066;transition:color .18s,letter-spacing .18s,background .18s}
+  .mi:hover,.mi:focus{color:#fff4c2;background:#ffffff12;letter-spacing:.16em;outline:none}
+  .mi b{color:#8b9a55;font-weight:400;transition:transform .18s}
+  .mi:hover b{transform:translateX(3px);color:#c6d488}
+  .mtext .head{color:#a9b477;letter-spacing:.2em;font-family:var(--mil);font-size:1em;
+    margin:.2em 0 .6em;text-transform:uppercase}
+  .mtext{display:none;margin-top:1.1em;font-size:.95em;line-height:1.75;color:#bdb49a;min-height:0;
     border-top:1px solid #47502f;padding-top:.7em;font-family:var(--text);
     max-height:42vh;overflow:auto}
   .team{margin-top:1.3em;display:flex;align-items:center;gap:.7em;justify-content:flex-end}
-  .team span{font-family:var(--mil);font-size:.92em;letter-spacing:.16em;
+  .team span{font-family:var(--mil);font-size:1.2em;letter-spacing:.16em;
     color:#b6bd7e;text-transform:uppercase;text-shadow:0 1px 0 #000,0 0 12px #97a35a33;
     transform:skewX(-4deg)}
   .team i{flex:1;height:1px;background:linear-gradient(90deg,transparent,#5d6740);font-style:normal}
-  .team b{font-family:var(--ui);font-size:.62em;letter-spacing:.28em;color:#79855a;font-weight:400}
+  .team b{font-family:var(--ui);font-size:.78em;letter-spacing:.28em;color:#79855a;font-weight:400}
   .mtext b{color:#efdcab;font-weight:500}
   .mtext p{margin:0 0 .8em}
   .mtext p:last-child{margin-bottom:0}
-  .mtext .head{color:#a9b477;letter-spacing:.24em;font-family:var(--ui);font-size:.82em;
-    margin:.2em 0 .55em}
   .leg{display:flex;gap:.8em;margin:.3em 0;align-items:baseline}
-  .leg u{color:var(--gold);text-decoration:none;min-width:6.2em;flex:none;
-    font-family:var(--ui);font-size:.85em;letter-spacing:.12em}
+  .leg u{color:var(--gold);text-decoration:none;min-width:6.6em;flex:none;
+    font-family:var(--ui);font-size:.9em;letter-spacing:.12em}
   .keys{display:flex;flex-wrap:wrap;gap:.35em .9em;margin:.1em 0 .7em}
   .keys kbd{font-family:var(--ui);font-size:.82em;background:#0f120a;border:1px solid #5d6740;
     border-radius:3px;padding:.08em .45em;color:#e2d29a}
-  #end .crate h1{font-size:1.9em}
-  .endtext{display:block;font-family:var(--text);font-size:.84em;line-height:1.72}
+  #end .crate h1{font-size:2.6em}
+  .endtext{display:block;font-family:var(--text);font-size:.98em;line-height:1.75}
   .et-lead{color:#f0e6c8}
   .et-stat{margin-top:.9em;font-family:var(--ui);font-size:.78em;letter-spacing:.08em;color:#95907a;
     border-top:1px solid #47502f;padding-top:.6em}
@@ -486,6 +492,20 @@ const AFTER=[
  ['Ты слышишь себя со стороны и не узнаёшь голос.','Марья отворачивается к окну.'],
  ['Трамп перестаёт орать. Это почему-то хуже всего.','Никто не отвечает.'],
 ];
+const FIRE_TALK=[
+ ['Кто-то подкидывает в огонь обломок ящика, и искры уходят вверх, в темноту ущелья.',
+  'Мужик напротив рассказывает, что вёз собаку, а собака сбежала на третьем километре и вернулась сама.',
+  'Ты выкуриваешь сигарету до фильтра и допиваешь чай. Полтора часа проходят как десять минут.',
+  'Впервые за сутки ты ни за кого не отвечаешь.'],
+ ['Женщина в двух куртках говорит, что стоит третьи сутки и уже знает всех по машинам.',
+  '— Вон те, зелёные, приехали раньше меня. А вон те уже уехали и вернулись.',
+  'Ты киваешь, куришь и смотришь в огонь. Разговор идёт сам, без тебя.',
+  'Когда встаёшь, кто-то суёт тебе в карман вторую сигарету. Просто так.'],
+ ['Чай отдаёт железом и дымом. Кружку передают по кругу и никто не морщится.',
+  'Парень лет двадцати спрашивает, есть ли у тебя дети. Ты говоришь: сын, девять.',
+  '— Значит, довезёте, — говорит он так, будто это правило.',
+  'Ты сидишь ещё полчаса и не можешь вспомнить, о чём думал всё это время.'],
+];
 const PASSER=[
  'Он идёт вдоль ряда и считает машины вслух.',
  'Он ищет рыжую собаку с синим ошейником. Второй час.',
@@ -744,16 +764,22 @@ function calmMenu(){
     {t:'Назад',f(){carMenu();}},
   ]);
 }
+function phoneMenu(){
+  showPanel('ТЕЛЕФОН · '+Math.round(S.batt)+'%',[
+    {t:'Позвонить домой',f(){callHome();}},
+    {t:'Полистать чат «Верхний Ларс»',f(){scroll();}},
+    {t:'Змейка',f(){closePanel();startSnake();}},
+    {t:S.radio?'Выключить радио в машине':'Включить радио в машине',f(){radioToggle();}},
+    {t:'Назад',f(){carMenu();}},
+  ]);
+}
 function carMenu(){
   const o=[
     {t:'Ждать (перемотка)',f(){S.ff=true;closePanel();toast('ЖДЁШЬ');}},
     {t:'Успокоить семью',f(){calmMenu();}},
-    {t:'Позвонить домой',f(){callHome();}},
-    {t:'Полистать чат',f(){scroll();}},
-    {t:'Змейка на телефоне',f(){closePanel();startSnake();}},
+    {t:'Телефон',f(){phoneMenu();}},
     {t:'Попить воды',f(){drink();}},
     {t:'Закурить',f(){smokeMenu();}},
-    {t:S.radio?'Выключить радио':'Включить радио',f(){radioToggle();}},
     {t:'Выйти из машины',f(){S.mode='foot';S.px=CAR_X+64;closePanel();}},
   ];
   if(S.bike)o.push({t:'Бросить машину и ехать дальше',f(){finish('bike');}});
@@ -807,11 +833,16 @@ const TALK={
     ]);
   },
   kiosk(){
-    say('ЛАРЁК',['Варёные яйца и кофе. Очередь человек семьдесят.','Ценник от руки: 400 ₽.'],[
+    say('ЛАРЁК',['Варёные яйца, кофе и вода в полторашках. Очередь человек семьдесят.','Ценник от руки: яйцо 400, вода 500.'],[
       {t:'Взять на троих (1200 ₽)',f(){
         if(S.money<1200){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
         S.money-=1200;S.t+=40;fam(11,-11);stress(-7);
         say('',['Тео ест яйцо так, будто это лучшее, что было в его жизни.']);}},
+      {t:'Купить воды: три бутылки по 1,5 л (1500 ₽)',f(){
+        if(S.money<1500){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=1500;S.water=Math.min(6,S.water+4.5);S.t+=30;calmFam(3,-5);
+        say('',['Вода тёплая и в мятых бутылках, но её сразу три.',
+                'Марья убирает две под сиденье и одну отдаёт Тео.']);}},
       {t:'Купить сигареты (900 ₽)',f(){
         if(S.money<900){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
         S.money-=900;S.cigs+=20;S.t+=25;toast('ПАЧКА В КАРМАНЕ');closeDlg();}},
@@ -823,6 +854,11 @@ const TALK={
   },
   fire(){
     say('КОСТЁР',['Чай в железной кружке.','Никто не спрашивает, куда ты и почему.'],[
+      {t:'Выкурить сигарету с чаем, не торопясь',f(){
+        if(S.cigs<=0){toast('СИГАРЕТ НЕТ');return;}
+        S.cigs--;S.nic=clamp(S.nic+40,0,100);S.t+=95;stress(-28);fam(-3,7);
+        S.nextAdv=Math.max(S.nextAdv,S.t+40);      /* ряд стоит, пока ты сидишь */
+        say('КОСТЁР',pick(FIRE_TALK));}},
       {t:'Посидеть час',f(){S.t+=60;stress(-16);fam(-2,6);
         say('',['Час прошёл. Стало теплее и почему-то тише.','Марья пишет: «ты где».']);}},
       {t:'Позвать Марью и Тео',f(){S.t+=70;stress(-8);calmFam(10,-16);
@@ -1008,7 +1044,7 @@ function ev_voenkom(){
 }
 function checkEvents(){
   if(S.dialog||S.panel||S.dice||S.overlay||S.scene!=='play')return;
-  if(S.t<S.quietUntil)return;                 /* пауза после предыдущей сцены */
+  if(S.t<S.quietUntil||S.honk)return;         /* пауза после сцены и во время сигнала */
   if(!S.evDone.closed&&S.km<9600){ev_closed();return;}
   if(!S.evDone.health&&S.km<7000){ev_health();return;}
   if(!S.evDone.voenkom&&S.km<5200&&Math.random()<0.5){ev_voenkom();return;}
@@ -1081,7 +1117,8 @@ function advance(){
   if(S.stalled){S.stalled=0;toast('РЯД УШЁЛ БЕЗ ТЕБЯ');S.nextAdv=S.t+rnd(20,40);return;}
   if(S.mode==='foot'&&Math.abs(S.px-CAR_MID)>210){
     S.km+=70;stress(8);fam(-3,7);S.misses++;toast('ТЫ БЫЛ СЛИШКОМ ДАЛЕКО ОТ МАШИНЫ');
-  }else{const d=rnd(120,520);S.km-=d;S.fuel-=0.3;S.bgOff+=d*0.05;S.advAnim=1;stress(-3);fam(2,-4);}
+  }else{const d=rnd(120,520);S.km-=d;S.fuel-=0.3;S.bgOff+=d*0.05;S.advAnim=1;stress(-3);fam(2,-4);
+    if(S.mode==='foot')toast('УСПЕЛ · РЯД ПРОШЁЛ '+Math.round(d)+' М');}
   S.nextAdv=S.t+rnd(22,58);S.honk=false;
 }
 function step(dt){
@@ -1117,8 +1154,8 @@ function step(dt){
   if(S.t>=S.nextAdv){advance();S.ff=false;}
   if(S.advAnim>0)S.advAnim=Math.max(0,S.advAnim-dt*1.6);
   if(S.t>S.nextSms){S.nextSms=S.t+rnd(260,460);
-    if(S.batt>3){const m=pick(SMSES);sms(m.w,m.t);stress(2);}}
-  if(S.t>S.nextToxic&&S.t>S.quietUntil&&S.mode==='car'&&!busy&&!S.alone){S.nextToxic=S.t+rnd(240,420);toxic();}
+    if(S.batt>3&&!S.honk){const m=pick(SMSES);sms(m.w,m.t);stress(2);}}
+  if(S.t>S.nextToxic&&S.t>S.quietUntil&&!S.honk&&S.mode==='car'&&!busy&&!S.alone){S.nextToxic=S.t+rnd(240,420);toxic();}
   if(S.mode==='foot'){
     if(keys['ArrowLeft']){S.px-=66*dt;S.face=-1;S.walk+=dt*9;}
     if(keys['ArrowRight']){S.px+=66*dt;S.face=1;S.walk+=dt*9;}
@@ -1529,6 +1566,8 @@ function hud(){
   if(kk.style.display!==kw)kk.style.display=kw;
   const tp=document.getElementById('tip'),tt=busy?'':currentTip();
   if(tp.textContent!==tt)tp.textContent=tt;
+  const urg=!busy&&S.honk&&S.mode==='foot';
+  if(tp.classList.contains('urgent')!==urg)tp.classList.toggle('urgent',urg);
   const tk=document.getElementById('ticker'),want=S.radio?'block':'none';
   if(tk.style.display!==want)tk.style.display=want;
 }
@@ -1536,8 +1575,10 @@ function hud(){
 function currentTip(){
   const rock=SPOTS.find(x=>x.key==='rock');
   const dR=Math.round(Math.abs(S.px-rock.x)*0.09);
-  if(S.honk&&S.mode==='foot'&&Math.abs(S.px-CAR_MID)>150)
-    return 'Ряд сейчас тронется · бегом к своей машине';
+  if(S.honk&&S.mode==='foot'){
+    const d=Math.round(Math.abs(S.px-CAR_MID)*0.09);
+    return d>4?'РЯД СЕЙЧАС ТРОНЕТСЯ · до машины '+d+' м'
+              :'РЯД СЕЙЧАС ТРОНЕТСЯ · вы у машины, E — сесть';}
   if(S.bike)return 'Велосипед куплен · E — меню машины, «бросить машину и ехать дальше»';
   if(S.bladder>65)
     return S.mode==='car'?'Нужно отлить · F — выйти, потом идти налево к камню'
