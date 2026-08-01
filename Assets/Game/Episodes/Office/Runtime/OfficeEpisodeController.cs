@@ -159,6 +159,12 @@ namespace Jam.Episodes.Office
             SetStatus(Loc.Get(LocalizationTables.Office, "status.chaser_missed", "{0} ПРОМАХНУЛОСЬ • ОКНО ДЛЯ БРОСКА", LocalizeRuntimeName(targetName)));
         }
 
+        /// <summary>Короткая сюжетная или служебная строка маршрута.</summary>
+        public void ReportStoryBeat(string message)
+        {
+            SetStatus(message);
+        }
+
         public void ReportCarryPickup(string itemName)
         {
             var localizedName = LocalizeRuntimeName(itemName);

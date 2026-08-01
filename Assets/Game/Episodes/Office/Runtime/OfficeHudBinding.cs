@@ -15,6 +15,7 @@ namespace Jam.Episodes.Office
         [SerializeField] private Image momentumFill;
         [SerializeField] private GameObject downPanel;
         [SerializeField] private TMP_Text downText;
+        [SerializeField] private TMP_Text coach;
 
         public TMP_Text Zone => zone;
         public TMP_Text Objective => objective;
@@ -26,6 +27,8 @@ namespace Jam.Episodes.Office
         public GameObject DownPanel => downPanel;
         public TMP_Text DownText => downText;
 
+        public TMP_Text Coach => coach;
+
         public void Configure(
             TMP_Text zoneText,
             TMP_Text objectiveText,
@@ -35,8 +38,10 @@ namespace Jam.Episodes.Office
             TMP_Text momentumText,
             Image momentumBar,
             GameObject downOverlay,
-            TMP_Text downMessage)
+            TMP_Text downMessage,
+            TMP_Text coachText)
         {
+            coach = coachText;
             zone = zoneText;
             objective = objectiveText;
             carry = carryText;

@@ -156,6 +156,50 @@ MonoBehaviour:
     m_Localized: "ACCESS REVOKED \u2022 BOSS ZONE READY FOR THE NEXT SLICE"
     m_Metadata:
       m_Items: []
+  - m_Id: 13655453196288
+    m_Localized: "WASD / ARROWS \u2014 MOVE FORWARD"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499456
+    m_Localized: "ITEMS ARE PICKED UP AUTOMATICALLY \u2014 APPROACH THE HIGHLIGHT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499457
+    m_Localized: "PRIMARY \u2014 THROW THE ITEM AT OFFICE EQUIPMENT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499458
+    m_Localized: "RED STRIP \u2014 STEP OUT OF THE CHARGE LINE"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499459
+    m_Localized: COLLECT THE LAPTOP AND MUG, THEN GO TO EXIT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499460
+    m_Localized: "YOU HAVE YOUR THINGS \u2014 EXIT IS STRAIGHT AHEAD"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499461
+    m_Localized: "THE REFLECTION WALKS BESIDE YOU \u2022 IT IS STILL YOU"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499462
+    m_Localized: 'FORGOTTEN ITEMS WAIT AT EXIT: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499463
+    m_Localized: LAPTOP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499464
+    m_Localized: MUG
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499465
+    m_Localized: '{0} AND {1}'
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

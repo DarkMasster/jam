@@ -169,7 +169,18 @@ namespace Jam.Core.Localization.Editor
             new("status.missing_mug", "НУЖНА КРУЖКА", "MUG REQUIRED"),
             new("status.access_denied", "ДОСТУП ОТКЛОНЁН • {0}", "ACCESS DENIED • {0}"),
             new("objective.false_exit", "EXIT — ЛОЖНАЯ ЦЕЛЬ • ВПЕРЕДИ СЕРВЕРНЫЙ БОСС", "EXIT IS A FALSE GOAL • SERVER BOSS AHEAD"),
-            new("status.access_revoked", "ДОСТУП ОТОЗВАН • ЗОНА БОССА ГОТОВА ДЛЯ СЛЕДУЮЩЕГО СРЕЗА", "ACCESS REVOKED • BOSS ZONE READY FOR THE NEXT SLICE")
+            new("status.access_revoked", "ДОСТУП ОТОЗВАН • ЗОНА БОССА ГОТОВА ДЛЯ СЛЕДУЮЩЕГО СРЕЗА", "ACCESS REVOKED • BOSS ZONE READY FOR THE NEXT SLICE"),
+            new("coach.move", "WASD / СТРЕЛКИ — ИДИ ВПЕРЁД", "WASD / ARROWS — MOVE FORWARD"),
+            new("coach.approach", "ПРЕДМЕТ БЕРЁТСЯ САМ — ПОДОЙДИ К ПОДСВЕЧЕННОМУ", "ITEMS ARE PICKED UP AUTOMATICALLY — APPROACH THE HIGHLIGHT"),
+            new("coach.throw", "PRIMARY — БРОСЬ ПРЕДМЕТ В ТЕХНИКУ", "PRIMARY — THROW THE ITEM AT OFFICE EQUIPMENT"),
+            new("coach.dodge", "КРАСНАЯ ПОЛОСА — СОЙДИ С ЛИНИИ РЫВКА", "RED STRIP — STEP OUT OF THE CHARGE LINE"),
+            new("coach.collect", "СОБЕРИ НОУТБУК И КРУЖКУ И ИДИ К EXIT", "COLLECT THE LAPTOP AND MUG, THEN GO TO EXIT"),
+            new("coach.exit", "ЛИЧНЫЕ ВЕЩИ У ТЕБЯ — EXIT ПРЯМО ПО КОРИДОРУ", "YOU HAVE YOUR THINGS — EXIT IS STRAIGHT AHEAD"),
+            new("coach.reflection", "ОТРАЖЕНИЕ ИДЁТ РЯДОМ • ЭТО ВСЁ ЕЩЁ ТЫ", "THE REFLECTION WALKS BESIDE YOU • IT IS STILL YOU"),
+            new("coach.fallback_items", "ЗАБЫТОЕ ЖДЁТ У EXIT: {0}", "FORGOTTEN ITEMS WAIT AT EXIT: {0}"),
+            new("item.laptop", "НОУТБУК", "LAPTOP"),
+            new("item.mug", "КРУЖКА", "MUG"),
+            new("item.list_pair", "{0} И {1}", "{0} AND {1}")
         };
 
         [MenuItem("Jam/Localization/Create or Update Localization")]

@@ -151,6 +151,50 @@ MonoBehaviour:
     m_Key: status.access_revoked
     m_Metadata:
       m_Items: []
+  - m_Id: 13655453196288
+    m_Key: coach.move
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499456
+    m_Key: coach.approach
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499457
+    m_Key: coach.throw
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499458
+    m_Key: coach.dodge
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499459
+    m_Key: coach.collect
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499460
+    m_Key: coach.exit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499461
+    m_Key: coach.reflection
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499462
+    m_Key: coach.fallback_items
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499463
+    m_Key: item.laptop
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499464
+    m_Key: item.mug
+    m_Metadata:
+      m_Items: []
+  - m_Id: 13655524499465
+    m_Key: item.list_pair
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
