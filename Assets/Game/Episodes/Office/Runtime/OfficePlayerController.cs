@@ -13,6 +13,7 @@ namespace Jam.Episodes.Office
 
         [Header("Movement")]
         [SerializeField] private Camera movementCamera;
+        [SerializeField] private OfficeMomentum momentum;
         [SerializeField, Min(0.1f)] private float moveSpeed = 10.5f;
         [SerializeField, Min(0.1f)] private float acceleration = 46f;
         [SerializeField, Min(0.1f)] private float rotationSpeed = 720f;
@@ -46,19 +47,25 @@ namespace Jam.Episodes.Office
 
         private void Update()
         {
-            if (_moveAction == null)
+            // Быстрый restart на кадр выключает CharacterController, чтобы перенести
+            // героя; двигать его в этот момент нельзя.
+            if (_moveAction == null || !_characterController.enabled)
             {
                 return;
             }
 
             var input = Vector2.ClampMagnitude(_moveAction.ReadValue<Vector2>(), 1f);
             var desiredDirection = GetCameraRelativeDirection(input);
-            var desiredVelocity = desiredDirection * moveSpeed;
+            var speed = momentum != null ? moveSpeed * momentum.SpeedMultiplier : moveSpeed;
+            var desiredVelocity = desiredDirection * speed;
 
             _planarVelocity = Vector3.MoveTowards(
                 _planarVelocity,
                 desiredVelocity,
                 acceleration * Time.deltaTime);
+
+            // Простой роняет Momentum, поэтому шкала считает реальную скорость героя.
+            momentum?.ReportPlanarSpeed(_planarVelocity.magnitude);
 
             var motion = _planarVelocity;
             motion.y = -groundPressure;
@@ -78,12 +85,21 @@ namespace Jam.Episodes.Office
             InputActionAsset actions,
             Camera camera,
             string mapName,
-            string actionName)
+            string actionName,
+            OfficeMomentum momentumScale = null)
         {
             inputActions = actions;
             movementCamera = camera;
             actionMapName = mapName;
             moveActionName = actionName;
+            momentum = momentumScale;
+        }
+
+        /// <summary>Гасит инерцию героя; используется быстрым restart забега.</summary>
+        public void ResetMotion()
+        {
+            _planarVelocity = Vector3.zero;
+            momentum?.ReportPlanarSpeed(0f);
         }
 
         private void ResolveMoveAction()

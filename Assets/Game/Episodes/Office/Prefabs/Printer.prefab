@@ -1053,6 +1053,7 @@ MonoBehaviour:
   bodyCollider: {fileID: 1004634854445202523}
   impactFlash: {fileID: 2727878483356626354}
   episodeController: {fileID: 0}
+  momentum: {fileID: 0}
   breakImpactSpeed: 6
   flashIntensity: 7
   flashDuration: 0.45

@@ -9,7 +9,7 @@ namespace Jam.Episodes.Office
     }
 
     [RequireComponent(typeof(Collider))]
-    public sealed class OfficeCollectible : MonoBehaviour
+    public sealed class OfficeCollectible : MonoBehaviour, IOfficeRunResettable
     {
         [SerializeField] private OfficeCollectibleType collectibleType;
         [SerializeField] private OfficeEpisodeController episodeController;
@@ -18,12 +18,26 @@ namespace Jam.Episodes.Office
         [SerializeField, Min(0f)] private float bobFrequency = 2.2f;
 
         private Vector3 _basePosition;
+        private Collider _trigger;
+        private Renderer[] _renderers;
         private bool _collected;
         private bool _missingControllerReported;
 
         private void Awake()
         {
             _basePosition = transform.position;
+            _trigger = GetComponent<Collider>();
+            _renderers = GetComponentsInChildren<Renderer>(true);
+        }
+
+        private void OnEnable()
+        {
+            OfficeRunReset.Register(this);
+        }
+
+        private void OnDisable()
+        {
+            OfficeRunReset.Unregister(this);
         }
 
         private void Update()
@@ -59,13 +73,47 @@ namespace Jam.Episodes.Office
 
             _collected = true;
             episodeController.RegisterCollectible(collectibleType);
-            gameObject.SetActive(false);
+            // Объект остаётся включённым, иначе быстрый restart не сможет его вернуть.
+            SetPresent(false);
         }
 
         public void Configure(OfficeEpisodeController controller, OfficeCollectibleType type)
         {
             episodeController = controller;
             collectibleType = type;
+        }
+
+        public void ResetForRun()
+        {
+            if (!_collected)
+            {
+                return;
+            }
+
+            _collected = false;
+            transform.position = _basePosition;
+            SetPresent(true);
+        }
+
+        private void SetPresent(bool value)
+        {
+            if (_trigger != null)
+            {
+                _trigger.enabled = value;
+            }
+
+            if (_renderers == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < _renderers.Length; i++)
+            {
+                if (_renderers[i] != null)
+                {
+                    _renderers[i].enabled = value;
+                }
+            }
         }
     }
 }
