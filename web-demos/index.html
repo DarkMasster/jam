@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hẹngặ Plạy — web demos</title>
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 64px 24px;
+    background: #e9e9e6;
+    color: #121212;
+    font-family: "Helvetica Neue", Arial, sans-serif;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  h1 {
+    margin: 0;
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: 3px;
+  }
+
+  .sub {
+    margin: 6px 0 44px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #b3241d;
+  }
+
+  a.card {
+    display: block;
+    padding: 22px 26px;
+    margin-bottom: 14px;
+    background: #f4f3ef;
+    border: 3px solid #121212;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.12s ease, background 0.12s ease;
+  }
+
+  a.card:hover {
+    transform: translateX(6px);
+    background: #fff;
+  }
+
+  a.card h2 {
+    margin: 0 0 6px;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+
+  a.card p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #4a4a46;
+  }
+
+  a.card .tag {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 10px;
+    background: #b3241d;
+    color: #f4f3ef;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 2px;
+  }
+
+  .note {
+    margin-top: 40px;
+    font-size: 12px;
+    line-height: 1.7;
+    color: #77776f;
+  }
+
+  code {
+    background: #dedbd4;
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    body { background: #17171a; color: #f0efeb; }
+    a.card { background: #202024; border-color: #f0efeb; }
+    a.card:hover { background: #26262b; }
+    a.card p { color: #b3b2ac; }
+    code { background: #2c2c31; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>WEB DEMOS</h1>
+    <p class="sub">Hẹngặ Plạy — прототипы механик</p>
+
+    <a class="card" href="office/">
+      <h2>OFFBOARDING — OFFICE</h2>
+      <p>
+        Скоростной проход через офис: momentum, разрушение предметов, стеклянные
+        перегородки как ворота скорости, меню внутри сцены с переворотом стола.
+      </p>
+      <span class="tag">PLAYABLE</span>
+    </a>
+
+    <p class="note">
+      Каждая демка — самостоятельная папка, ничего общего между ними нет.<br />
+      Новая демка: создать <code>web-demos/&lt;название&gt;/index.html</code> и добавить
+      сюда карточку.
+    </p>
+  </div>
+</body>
+</html>
