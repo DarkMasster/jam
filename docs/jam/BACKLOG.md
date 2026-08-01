@@ -25,6 +25,10 @@
 | P0 | Сохранение всей Photo-линии по актам, миграция v1 → v2 | ИИ/интегратор | `feature/photo-save-v2` | Done | Готово |
 | P0 | Общий HUD, pause-меню и контракт сохранения игровых режимов | ИИ/интегратор | `feature/global-game-hud` | Done | Готово |
 | P0 | Реализовать вертикальный срез фотопролога | TBD | `feature/photo-prologue` | Todo | Час 12 |
+| P0 | Первый Unity-срез офисного кошмара | ИИ-агент | `feature/office-unity-scene` | Done | Час 12 |
+| P0 | Создать и закрепить живой roadmap офисного эпизода | ИИ-агент | `feature/office-unity-scene` | Done | Готово |
+| P0 | Офис `M1A`: предмет, бросок и простое разрушение | ИИ-агент | `feature/office-unity-scene` | Done | Готово |
+| P0 | Офис `M1B`: противник, Momentum и быстрый restart | TBD | `feature/office-m1b-pressure` | Blocked | После P0 №7–8 |
 | P0 | Добавить победу, поражение и рестарт | TBD | `feature/game-flow` | Todo | Час 24 |
 | P0 | Получить проверенный финальный билд | TBD | `fix/final-build` | Todo | Час 42 |
 | P1 | Добавить ключевую визуальную и звуковую обратную связь | TBD | `polish/game-feel` | Todo | Час 34 |

@@ -1,0 +1,131 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+namespace Jam.Episodes.Office
+{
+    [RequireComponent(typeof(CharacterController))]
+    public sealed class OfficePlayerController : MonoBehaviour
+    {
+        [Header("Input")]
+        [SerializeField] private InputActionAsset inputActions;
+        [SerializeField] private string actionMapName = "Player";
+        [SerializeField] private string moveActionName = "Move";
+
+        [Header("Movement")]
+        [SerializeField] private Camera movementCamera;
+        [SerializeField, Min(0.1f)] private float moveSpeed = 10.5f;
+        [SerializeField, Min(0.1f)] private float acceleration = 46f;
+        [SerializeField, Min(0.1f)] private float rotationSpeed = 720f;
+        [SerializeField, Min(0f)] private float groundPressure = 2f;
+
+        private CharacterController _characterController;
+        private InputAction _moveAction;
+        private Vector3 _planarVelocity;
+        private bool _ownsMoveActionEnable;
+
+        private void Awake()
+        {
+            _characterController = GetComponent<CharacterController>();
+            movementCamera ??= Camera.main;
+        }
+
+        private void OnEnable()
+        {
+            ResolveMoveAction();
+        }
+
+        private void OnDisable()
+        {
+            if (_ownsMoveActionEnable && _moveAction != null)
+            {
+                _moveAction.Disable();
+            }
+
+            _ownsMoveActionEnable = false;
+        }
+
+        private void Update()
+        {
+            if (_moveAction == null)
+            {
+                return;
+            }
+
+            var input = Vector2.ClampMagnitude(_moveAction.ReadValue<Vector2>(), 1f);
+            var desiredDirection = GetCameraRelativeDirection(input);
+            var desiredVelocity = desiredDirection * moveSpeed;
+
+            _planarVelocity = Vector3.MoveTowards(
+                _planarVelocity,
+                desiredVelocity,
+                acceleration * Time.deltaTime);
+
+            var motion = _planarVelocity;
+            motion.y = -groundPressure;
+            _characterController.Move(motion * Time.deltaTime);
+
+            if (desiredDirection.sqrMagnitude > 0.001f)
+            {
+                var targetRotation = Quaternion.LookRotation(desiredDirection, Vector3.up);
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    targetRotation,
+                    rotationSpeed * Time.deltaTime);
+            }
+        }
+
+        public void Configure(
+            InputActionAsset actions,
+            Camera camera,
+            string mapName,
+            string actionName)
+        {
+            inputActions = actions;
+            movementCamera = camera;
+            actionMapName = mapName;
+            moveActionName = actionName;
+        }
+
+        private void ResolveMoveAction()
+        {
+            if (inputActions == null)
+            {
+                Debug.LogError($"{nameof(OfficePlayerController)} on '{name}' has no Input Actions asset assigned.", this);
+                return;
+            }
+
+            var actionMap = inputActions.FindActionMap(actionMapName, false);
+            if (actionMap == null)
+            {
+                Debug.LogError($"Input action map '{actionMapName}' was not found for the office player.", this);
+                return;
+            }
+
+            _moveAction = actionMap.FindAction(moveActionName, false);
+            if (_moveAction == null)
+            {
+                Debug.LogError($"Input action '{actionMapName}/{moveActionName}' was not found for the office player.", this);
+                return;
+            }
+
+            if (!_moveAction.enabled)
+            {
+                _moveAction.Enable();
+                _ownsMoveActionEnable = true;
+            }
+        }
+
+        private Vector3 GetCameraRelativeDirection(Vector2 input)
+        {
+            if (movementCamera == null)
+            {
+                return new Vector3(input.x, 0f, input.y);
+            }
+
+            var cameraForward = Vector3.ProjectOnPlane(movementCamera.transform.forward, Vector3.up).normalized;
+            var cameraRight = Vector3.ProjectOnPlane(movementCamera.transform.right, Vector3.up).normalized;
+            var direction = (cameraRight * input.x) + (cameraForward * input.y);
+            return Vector3.ClampMagnitude(direction, 1f);
+        }
+    }
+}
