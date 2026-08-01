@@ -6,7 +6,17 @@
 
 | Приоритет | Задача | Владелец | Ветка | Статус | Дедлайн |
 |---|---|---|---|---|---|
-| P0 | Утвердить питч и core loop | TBD | `feature/game-concept` | Todo | Час 1 |
+| P0 | Создать единую спецификацию разработки | ИИ/продюсер | `feature/story-premortem` | Done | Готово |
+| P0 | Назначить владельцев Core, Drive, Office, Photo и Narrative | Продюсер | `feature/team-ownership` | Todo | До кода |
+| P0 | Ответить на сюжетные вопросы P0 | Продюсер | `feature/story-premortem` | Doing | До сценария |
+| P0 | Утвердить тему `Reflection + Momentum` и структуру актов | Продюсер | `feature/story-premortem` | Done | Готово |
+| P0 | Разрешить хронологию линии героини | Продюсер | `feature/story-premortem` | Done | Готово |
+| P0 | Утвердить параметры трёх мини-игр Пролога | Продюсер | `feature/story-premortem` | Doing | До storyboard |
+| P0 | Написать outline трёх линий Пролога | TBD | `feature/prologue-outline` | Blocked | Час 3 |
+| P0 | Сделать общий диалоговый и state-каркас | TBD | `feature/narrative-core` | Todo | Час 6 |
+| P0 | Сократить каждую мини-игру до одного повторяемого действия | TBD | `feature/minigame-scope` | Blocked | Час 2 |
+| P0 | Написать по три сюжетных бита на героя | TBD | `feature/story-outline` | Blocked | Час 3 |
+| P0 | Утвердить питч и core loop | Продюсер | `feature/game-concept` | Done | Готово |
 | P0 | Выбрать движок, платформу и способ сборки | TBD | `feature/project-bootstrap` | Todo | Час 2 |
 | P0 | Создать вертикальный прототип core loop | TBD | `feature/core-loop` | Todo | Час 12 |
 | P0 | Добавить победу, поражение и рестарт | TBD | `feature/game-flow` | Todo | Час 24 |

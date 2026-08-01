@@ -8,12 +8,15 @@
 Прочитай по порядку:
 
 1. `docs/jam/README.md`
-2. `docs/jam/GAME.md`
-3. `docs/jam/STATE.md`
-4. `docs/jam/BACKLOG.md`
-5. `docs/jam/CONTRACTS.md`
-6. `docs/jam/GIT.md`
-7. назначенный файл из `docs/jam/tasks/`
+2. `docs/jam/DEVELOPMENT_SPEC.md`
+3. `docs/jam/GAME.md`
+4. `docs/jam/STORY.md`
+5. `docs/jam/QUESTIONS.md`
+6. `docs/jam/STATE.md`
+7. `docs/jam/BACKLOG.md`
+8. `docs/jam/CONTRACTS.md`
+9. `docs/jam/GIT.md`
+10. назначенный файл из `docs/jam/tasks/`
 
 Если задача противоречит этим документам, остановись и явно опиши конфликт.
 
