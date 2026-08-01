@@ -8,13 +8,18 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
   }
 }
 </script>
 </head>
 <body>
   <canvas id="scene"></canvas>
+
+  <div id="vignette"></div>
+  <div id="smoke-overlay"></div>
+  <div id="zone"></div>
 
   <div id="hud">
     <div id="hud-title">
@@ -28,9 +33,14 @@
         <span class="hud-label">MOMENTUM</span>
         <div class="meter"><div id="momentum-fill"></div></div>
       </div>
-      <div class="hud-row small">
+      <div class="hud-row stats">
         <span id="hud-timer">00:00</span>
-        <span id="hud-destroyed">DESTROYED: 0</span>
+        <span id="hud-destroyed">DESTROYED 0</span>
+      </div>
+      <div class="hud-row stats">
+        <span id="hud-hold">—</span>
+        <span id="hud-cigs">CIGS 0</span>
+        <span id="hud-dash">DASH</span>
       </div>
     </div>
   </div>
@@ -42,12 +52,17 @@
       <h2>EMPLOYEE HANDBOOK</h2>
       <p class="red">EFFECTIVE IMMEDIATELY</p>
       <ul>
-        <li><b>WASD / ARROWS</b> — move. Keep moving to build momentum.</li>
-        <li><b>COLLIDE</b> with furniture at speed to break it.</li>
-        <li><b>CHAIN BREAKS</b> to stay fast.</li>
-        <li><b>REACH THE EXIT</b> before they change the locks.</li>
-        <li><b>R</b> — restart. <b>ESC</b> — close this.</li>
+        <li><b>WASD</b> — move. Standing still bleeds momentum.</li>
+        <li><b>SHIFT / SPACE</b> — dash. Goes through glass and machines.</li>
+        <li><b>E / LMB</b> — grab what is in front of you. Press again to throw, hold to throw harder.</li>
+        <li><b>F / RMB</b> — swing what you hold. Mice swing wider the more you carry, a paper ream fires a volley.</li>
+        <li><b>Q</b> — smoke. Momentum spikes and holds, damage goes up, then it crashes.</li>
+        <li><b>R</b> — restart · <b>ESC</b> — close</li>
       </ul>
+      <p class="dim">
+        Your reflection repeats what you did two seconds ago and finishes off
+        anything you already cracked.
+      </p>
       <button class="btn" id="handbook-close">CLOSE</button>
     </div>
   </div>
@@ -55,7 +70,7 @@
   <div id="overlay-quit" class="overlay hidden">
     <div class="panel">
       <h2>EXIT</h2>
-      <p>Thanks for playing the prototype.<br/>Your access badge has been deactivated.</p>
+      <p>Thanks for playing the prototype.<br />Your access badge has been deactivated.</p>
       <button class="btn" id="quit-close">STAY A WHILE LONGER</button>
     </div>
   </div>

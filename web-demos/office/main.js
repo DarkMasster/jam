@@ -1,17 +1,38 @@
 import * as THREE from 'three';
+import { COLORS, MAT, createProp, createPlayer, createGhostBody, makeSign, glowSprite } from './props.js';
 import {
-  MAT,
-  COLORS,
-  PROP_SPECS,
-  createProp,
-  createPlayer,
-  createGhostBody,
-  makeBroken,
-  makeSign,
-} from './props.js';
+  scene,
+  world,
+  statics,
+  props,
+  enemies,
+  projectiles,
+  debris,
+  P,
+  GAME,
+  FX,
+  ROOM,
+  HALL,
+  initAudio,
+  blip,
+  noise,
+  addProp,
+  spawnDebris,
+  damageProp,
+  breakProp,
+  resetProps,
+  spawnProjectile,
+  removeProjectile,
+  resolveCircleAabb,
+  dist2,
+  damageMul,
+  addFloorGlow,
+} from './core.js';
+import { buildLevel, getExitSign, ZONES } from './level.js';
+import { buildEnemies, resetEnemies, updateEnemies, damageEnemy } from './enemies.js';
 
 /* =========================================================
-   core setup
+   renderer, camera, light
    ========================================================= */
 
 const canvas = document.getElementById('scene');
@@ -20,33 +41,24 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xe9e9e6);
-scene.fog = new THREE.Fog(0xe9e9e6, 60, 130);
+scene.background = new THREE.Color(COLORS.void);
+scene.fog = new THREE.Fog(COLORS.void, 34, 80);
 
 const CAM = {
   menu: { pos: new THREE.Vector3(14.5, 9, 1.5), target: new THREE.Vector3(-1, 1.5, 6.6), frustum: 11 },
-  game: { offset: new THREE.Vector3(0, 21, 21), frustum: 21 },
+  game: { offset: new THREE.Vector3(0, 21, 21), frustum: 22 },
 };
 
-const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
 let frustum = CAM.menu.frustum;
 const camTarget = CAM.menu.target.clone();
 camera.position.copy(CAM.menu.pos);
 camera.lookAt(camTarget);
 
-function resize() {
-  const w = canvas.clientWidth || innerWidth;
-  const h = canvas.clientHeight || innerHeight;
-  if (canvas.width !== w * renderer.getPixelRatio() || canvas.height !== h * renderer.getPixelRatio()) {
-    renderer.setSize(w, h, false);
-  }
-  applyFrustum();
-}
+let composer = null;
 
 function applyFrustum() {
   const aspect = (canvas.clientWidth || innerWidth) / (canvas.clientHeight || innerHeight);
-  // widen the view a little on narrow windows so the level still reads
   const f = frustum * Math.min(1.3, Math.max(1, 1.45 / aspect));
   camera.left = (-f * aspect) / 2;
   camera.right = (f * aspect) / 2;
@@ -55,261 +67,151 @@ function applyFrustum() {
   camera.updateProjectionMatrix();
 }
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x9a9a95, 1.05));
-const sun = new THREE.DirectionalLight(0xffffff, 1.35);
-sun.position.set(14, 30, 16);
-sun.castShadow = true;
-sun.shadow.mapSize.set(1024, 1024);
-sun.shadow.camera.near = 1;
-sun.shadow.camera.far = 110;
-const SH = 34;
-Object.assign(sun.shadow.camera, { left: -SH, right: SH, top: SH, bottom: -SH });
-sun.shadow.camera.updateProjectionMatrix();
-sun.shadow.bias = -0.0012;
-scene.add(sun);
-scene.add(sun.target);
+function resize() {
+  const w = canvas.clientWidth || innerWidth;
+  const h = canvas.clientHeight || innerHeight;
+  const pr = renderer.getPixelRatio();
+  if (canvas.width !== Math.floor(w * pr) || canvas.height !== Math.floor(h * pr)) {
+    renderer.setSize(w, h, false);
+    if (composer) composer.setSize(w, h);
+  }
+  applyFrustum();
+}
+
+// night office: barely any ambient, everything reads as pools of light
+const ambient = new THREE.HemisphereLight(0x5c6a84, 0x0a0a0c, 0.45);
+scene.add(ambient);
+
+const key = new THREE.DirectionalLight(0x9fb0c8, 0.5);
+key.position.set(14, 30, 16);
+key.castShadow = true;
+key.shadow.mapSize.set(1024, 1024);
+key.shadow.camera.near = 1;
+key.shadow.camera.far = 110;
+const SH = 30;
+Object.assign(key.shadow.camera, { left: -SH, right: SH, top: SH, bottom: -SH });
+key.shadow.camera.updateProjectionMatrix();
+key.shadow.bias = -0.0012;
+scene.add(key, key.target);
+
+// ceiling light travelling with the hero — keeps the silhouette readable
+const followLight = new THREE.SpotLight(0xcfe0ff, 110, 36, 0.75, 0.75, 1.5);
+followLight.position.set(0, 13, 0);
+scene.add(followLight, followLight.target);
+
+// momentum bleeds red light into the room
+const heatLight = new THREE.PointLight(COLORS.red, 0, 18, 2);
+heatLight.position.set(0, 2.4, 0);
+scene.add(heatLight);
+
+/* optional bloom — the look leans on the red glow, but never block on it */
+try {
+  const [{ EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }] = await Promise.all([
+    import('three/addons/postprocessing/EffectComposer.js'),
+    import('three/addons/postprocessing/RenderPass.js'),
+    import('three/addons/postprocessing/UnrealBloomPass.js'),
+    import('three/addons/postprocessing/OutputPass.js'),
+  ]);
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.7, 0.5, 0.4));
+  composer.addPass(new OutputPass());
+} catch (err) {
+  console.warn('[offboarding] bloom unavailable, plain render', err);
+}
 
 /* =========================================================
-   world
+   player rig
    ========================================================= */
 
-const world = new THREE.Group();
-scene.add(world);
+const player = createPlayer();
+player.traverse((o) => {
+  if (o.isMesh) o.castShadow = true;
+});
+world.add(player);
+const playerBody = player.getObjectByName('body');
+const playerMarker = player.getObjectByName('marker');
+const armL = player.getObjectByName('armL');
+const armR = player.getObjectByName('armR');
+playerMarker.visible = false;
 
-const statics = []; // { x, z, hw, hd, prop? }
-const props = []; // destructible entries
-const drones = [];
-const debris = [];
-const afterimages = [];
-
-const ROOM = { minX: -11, maxX: 11, startZ: 13, doorZ: -2 };
-const HALL = { minX: -16, maxX: 16, endZ: -72 };
-
-function addFloor() {
-  const geo = new THREE.PlaneGeometry(40, 96);
-  const floor = new THREE.Mesh(geo, MAT.white);
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, 0, -28);
-  floor.receiveShadow = true;
-  world.add(floor);
-
-  // carpet strip guiding to the exit
-  const carpet = new THREE.Mesh(
-    new THREE.PlaneGeometry(5, 92),
-    new THREE.MeshLambertMaterial({ color: COLORS.light })
+// held mice orbit the hero, cables are plain lines
+const miceRig = new THREE.Group();
+world.add(miceRig);
+const miceVisuals = [];
+for (let i = 0; i < 4; i++) {
+  const m = createProp('mouse');
+  m.visible = false;
+  miceRig.add(m);
+  const line = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]),
+    new THREE.LineBasicMaterial({ color: 0x7a7a84 })
   );
-  carpet.rotation.x = -Math.PI / 2;
-  carpet.position.set(0, 0.01, -28);
-  carpet.receiveShadow = true;
-  world.add(carpet);
+  line.visible = false;
+  miceRig.add(line);
+  miceVisuals.push({ mesh: m, line });
 }
 
-function addWall(cx, cz, hw, hd, height = 3, visible = true) {
-  statics.push({ x: cx, z: cz, hw, hd });
-  if (!visible) return;
-  const m = new THREE.Mesh(
-    new THREE.BoxGeometry(hw * 2, height, hd * 2),
-    height < 1 ? MAT.mid : MAT.light
-  );
-  m.position.set(cx, height / 2, cz);
-  m.castShadow = height > 1;
-  m.receiveShadow = true;
-  world.add(m);
+// cigarette smoke
+const puffs = [];
+for (let i = 0; i < 12; i++) {
+  const s = glowSprite(1.6, 0xb9b9c2, 0);
+  s.visible = false;
+  world.add(s);
+  puffs.push({ mesh: s, life: 0 });
 }
 
-function buildShell() {
-  // start room
-  addWall(ROOM.minX - 0.2, 5.5, 0.2, 7.7, 3.2); // sticker wall (left)
-  addWall(ROOM.maxX + 0.2, 5.5, 0.2, 7.7, 0.3); // curb (right, near menu camera)
-  addWall(0, ROOM.startZ + 0.2, 11.2, 0.2, 3.2); // back wall with EXIT door
-  addWall(-7.25, ROOM.doorZ, 3.75, 0.25, 3.0);
-  addWall(7.25, ROOM.doorZ, 3.75, 0.25, 3.0);
+// reflection echo — replays what you did a couple of seconds ago
+const echo = createGhostBody();
+echo.visible = false;
+world.add(echo);
+const ECHO_DELAY = 2.2;
+const echoTape = [];
+let echoTimer = 0;
+let pendingAttack = false;
 
-  // office hall
-  addWall(HALL.minX - 0.2, -37, 0.2, 35.2, 3.2);
-  addWall(HALL.maxX + 0.2, -37, 0.2, 35.2, 3.2);
-  addWall(-12.5, ROOM.doorZ, 3.5, 0.25, 3.0);
-  addWall(12.5, ROOM.doorZ, 3.5, 0.25, 3.0);
-  addWall(-9.75, HALL.endZ - 0.2, 6.25, 0.2, 3.2);
-  addWall(9.75, HALL.endZ - 0.2, 6.25, 0.2, 3.2);
+/* =========================================================
+   HUD
+   ========================================================= */
+
+const HUD = {
+  title: document.getElementById('hud-title'),
+  game: document.getElementById('hud-game'),
+  fill: document.getElementById('momentum-fill'),
+  timer: document.getElementById('hud-timer'),
+  destroyed: document.getElementById('hud-destroyed'),
+  hold: document.getElementById('hud-hold'),
+  cigs: document.getElementById('hud-cigs'),
+  dash: document.getElementById('hud-dash'),
+  prompt: document.getElementById('prompt'),
+  zone: document.getElementById('zone'),
+  smoke: document.getElementById('smoke-overlay'),
+};
+
+function showOverlay(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
+function closeOverlays() {
+  document.querySelectorAll('.overlay').forEach((o) => o.classList.add('hidden'));
 }
 
-/* ---------- narrative wall ---------- */
-
-const WALL_TEXTS = [
-  ['REPLACEABLE', true],
-  ['AI CAN DO IT FASTER', false],
-  ['TRAIN YOUR REPLACEMENT', false],
-  ['LLM READY', true],
-  ['COST CUTTING', false],
-  ['YOUR ROLE IS EVOLVING', false],
-  ['HEADCOUNT REDUCTION', true],
-  ['DO MORE WITH LESS', false],
-  ['THE FUTURE IS AUTOMATED', false],
-  ['SYNERGY', false],
-  ['Q3 OPTIMIZATION', false],
-  ['THANK YOU FOR YOUR SERVICE', true],
-];
-
-function buildNarrativeWall() {
-  const x = ROOM.minX + 0.02;
-  let i = 0;
-  for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 4; col++) {
-      const [text, red] = WALL_TEXTS[i++ % WALL_TEXTS.length];
-      const sign = makeSign(text, 1.7, 0.88, {
-        bg: red ? '#b3241d' : '#f4f3ef',
-        fg: red ? '#f4f3ef' : '#121212',
-      });
-      sign.rotation.y = Math.PI / 2;
-      sign.rotation.z = (Math.random() - 0.5) * 0.14;
-      sign.position.set(x, 2.6 - row * 1.0, 11.4 - col * 2.2 + (Math.random() - 0.5) * 0.2);
-      world.add(sign);
-    }
-  }
-
-  const memo = makeSign('NOTICE OF ROLE ELIMINATION', 3.0, 1.4, {
-    bg: '#f4f3ef',
-    fg: '#b3241d',
-  });
-  memo.rotation.y = Math.PI / 2;
-  memo.rotation.z = -0.05;
-  memo.position.set(x, 1.5, 0.9);
-  world.add(memo);
-}
-
-/* ---------- destructible props ---------- */
-
-function addProp(type, x, z, rotY = 0) {
-  const spec = PROP_SPECS[type];
-  const intact = createProp(type);
-  const broken = makeBroken(intact);
-
-  const group = new THREE.Group();
-  group.position.set(x, spec.y || 0, z);
-  group.rotation.y = rotY;
-  group.add(intact, broken);
-  group.traverse((o) => {
-    if (o.isMesh) o.castShadow = true;
-  });
-  world.add(group);
-
-  const entry = {
-    type,
-    spec,
-    group,
-    intact,
-    broken,
-    x,
-    z,
-    vx: 0,
-    vz: 0,
-    broken_: false,
-    spin: 0,
-  };
-  props.push(entry);
-  if (!spec.dynamic) {
-    const rot = Math.abs(Math.sin(rotY)) > 0.5;
-    entry.aabb = {
-      x,
-      z,
-      hw: rot ? spec.half[1] : spec.half[0],
-      hd: rot ? spec.half[0] : spec.half[1],
-      prop: entry,
-    };
-    statics.push(entry.aabb);
-  }
-  return entry;
-}
-
-function buildOffice() {
-  // desk pods
-  const podZ = [-9, -21, -33, -45, -59];
-  for (const z of podZ) {
-    for (const side of [-1, 1]) {
-      const x = side * (7 + Math.random() * 3);
-      addProp('desk', x, z, Math.PI / 2);
-      addProp('monitor', x + side * 0.2, z - 0.5, -side * (Math.PI / 2));
-      addProp('monitor', x + side * 0.2, z + 0.7, -side * (Math.PI / 2));
-      addProp('chair', x - side * 1.5, z - 0.4);
-      addProp('chair', x - side * 1.5, z + 1.1);
-    }
-  }
-
-  // glass partitions across the floor — the momentum gates
-  for (const z of [-15, -27, -39, -51, -65]) {
-    for (const x of [-13, -7.8, -2.6, 2.6, 7.8, 13]) addProp('glassPanel', x, z, 0);
-  }
-
-  // meeting room dressing
-  addProp('whiteboard', -4.5, -36, 0.4);
-  addProp('chair', -2, -30.5);
-  addProp('chair', 2, -31.2);
-  addProp('desk', 0, -30.8, 0);
-
-  // server room
-  for (let i = 0; i < 4; i++) {
-    addProp('serverRack', -13.5 + i * 1.9, -55, 0);
-    addProp('serverRack', 13.5 - i * 1.9, -55, 0);
-  }
-
-  // scatter
-  const scatter = [
-    ['cooler', -15, -12],
-    ['cooler', 15, -42],
-    ['cooler', -15, -62],
-    ['plant', 14.6, -7],
-    ['plant', -14.6, -24],
-    ['plant', 14.6, -60],
-    ['plant', -14.6, -48],
-    ['extinguisher', -15.6, -35],
-    ['extinguisher', 15.6, -22],
-    ['extinguisher', 15.6, -68],
-    ['whiteboard', 11, -25, 1.2],
-    ['whiteboard', -11, -62, -0.8],
-    ['chair', 0.5, -13],
-    ['chair', -2.4, -24],
-    ['chair', 1.8, -47],
-    ['chair', -1.4, -57],
-    ['monitor', 2.2, -19, 0.7],
-    ['monitor', -2.6, -43, -0.9],
-  ];
-  for (const [type, x, z, r] of scatter) addProp(type, x, z, r || 0);
-
-  // reception near the exit
-  addProp('desk', -3.4, -68, 0);
-  addProp('desk', 3.4, -68, 0);
-  addProp('plant', -6, -70);
-  addProp('plant', 6, -70);
-}
-
-/* ---------- exit ---------- */
-
-let exitSign;
-function buildExit() {
-  const frame = new THREE.Mesh(new THREE.BoxGeometry(6.4, 3.2, 0.3), MAT.black);
-  frame.position.set(0, 1.6, HALL.endZ - 0.1);
-  world.add(frame);
-  const light = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 2.6), MAT.redGlow);
-  light.position.set(0, 1.4, HALL.endZ + 0.1);
-  world.add(light);
-
-  exitSign = makeSign('EXIT', 3.4, 1.1, { bg: '#121212', fg: '#b3241d' });
-  exitSign.position.set(0, 3.6, HALL.endZ + 0.2);
-  world.add(exitSign);
-
-  const arrow = makeSign('THIS WAY OUT', 5, 1.0, { bg: '#e9e9e6', fg: '#b3241d' });
-  arrow.rotation.x = -Math.PI / 2;
-  arrow.position.set(0, 0.03, HALL.endZ + 14);
-  world.add(arrow);
-}
-
-/* ---------- menu room ---------- */
+/* =========================================================
+   menu room
+   ========================================================= */
 
 const menu = {};
 const menuTargets = [];
-
 const DESK_HOME = new THREE.Vector3(-2.2, 0, 6.0);
+
+function registerMenuTarget(object, label, action) {
+  object.traverse((o) => {
+    if (o.isMesh) {
+      o.userData.menuAction = action;
+      o.userData.menuLabel = label;
+    }
+  });
+  menuTargets.push({ object, label, action });
+}
 
 function buildMenuRoom() {
   const deskPivot = new THREE.Group();
@@ -322,6 +224,27 @@ function buildMenuRoom() {
   desk.position.set(1.4, 0, 0);
   deskPivot.add(desk);
 
+  // desk lamp — the only warm light in the game
+  const lamp = new THREE.Group();
+  lamp.add(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.06, 10), MAT.black));
+  const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.1, 6), MAT.black);
+  arm.position.set(0, 0.55, 0);
+  arm.rotation.z = 0.3;
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.4, 12, 1, true), MAT.black);
+  head.position.set(-0.34, 1.05, 0);
+  head.rotation.z = -2.3;
+  const bulb = new THREE.Mesh(new THREE.CircleGeometry(0.2, 12), MAT.lamp);
+  bulb.position.set(-0.42, 0.96, 0);
+  bulb.rotation.set(-0.9, -1.2, 0);
+  lamp.add(arm, head, bulb);
+  lamp.position.set(1.5, 0.84, -1.2);
+  deskPivot.add(lamp);
+
+  menu.lampLight = new THREE.PointLight(0xffe0b0, 30, 12, 2);
+  menu.lampLight.position.set(0.6, 1.9, 5.0);
+  scene.add(menu.lampLight);
+  menu.lampPool = addFloorGlow(-0.6, 5.2, 8, 0xffd9a0, 0.22);
+
   // laptop = PLAY
   const laptop = new THREE.Group();
   const base = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.62), MAT.black);
@@ -329,7 +252,7 @@ function buildMenuRoom() {
   const lid = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.05), MAT.black);
   lid.position.set(0, 1.17, -0.3);
   lid.rotation.x = -0.28;
-  const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.48), MAT.redGlow);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.78, 0.48), MAT.glow);
   glow.position.set(0, 1.17, -0.35);
   glow.rotation.x = -0.28;
   laptop.add(base, lid, glow);
@@ -338,24 +261,28 @@ function buildMenuRoom() {
   deskPivot.add(laptop);
   registerMenuTarget(laptop, 'PLAY', 'play');
 
-  const playLabel = makeSign('PLAY', 1.5, 0.5, { bg: '#b3241d', fg: '#f4f3ef' });
+  const screenHalo = glowSprite(3.6, COLORS.red, 0.45);
+  screenHalo.position.set(1.32, 1.2, 0);
+  screenHalo.rotation.y = Math.PI / 2;
+  deskPivot.add(screenHalo);
+
+  const playLabel = makeSign('PLAY', 1.5, 0.5, { bg: '#160707', fg: '#ff3b30' });
   playLabel.material.transparent = true;
   playLabel.position.set(1.58, 1.85, 0);
   playLabel.rotation.y = Math.PI / 2;
   deskPivot.add(playLabel);
   menu.playLabel = playLabel;
 
-  // folder = SETTINGS / handbook
+  // clipboard = SETTINGS
   const folder = new THREE.Group();
-  const paper = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.06, 0.86), MAT.light);
+  const paper = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.06, 0.86), MAT.paper);
   paper.position.y = 0.87;
-  const tab = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.02, 0.5), MAT.red);
-  tab.position.set(0, 0.91, 0);
-  tab.rotation.y = 0.4;
-  folder.add(paper, tab);
+  const clip = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.12), MAT.metal);
+  clip.position.set(0, 0.91, -0.34);
+  folder.add(paper, clip);
   folder.position.set(1.0, 0, 1.55);
   deskPivot.add(folder);
-  registerMenuTarget(folder, 'HANDBOOK', 'handbook');
+  registerMenuTarget(folder, 'SETTINGS', 'handbook');
 
   deskPivot.traverse((o) => {
     if (o.isMesh) o.castShadow = true;
@@ -366,157 +293,82 @@ function buildMenuRoom() {
   const slab = new THREE.Mesh(new THREE.BoxGeometry(1.9, 2.6, 0.16), MAT.black);
   slab.position.y = 1.3;
   door.add(slab);
-  const sign = makeSign('EXIT', 1.6, 0.6, { bg: '#121212', fg: '#b3241d' });
-  sign.position.set(0, 2.95, 0);
+  const sign = makeSign('EXIT', 1.6, 0.6, { bg: '#160707', fg: '#ff3b30' });
+  sign.position.set(0, 2.95, 0.02);
   door.add(sign);
+  const halo = glowSprite(3, COLORS.red, 0.35);
+  halo.position.set(0, 2.95, 0.12);
+  door.add(halo);
   door.position.set(4.5, 0, ROOM.startZ - 0.1);
   door.rotation.y = Math.PI;
   world.add(door);
   registerMenuTarget(door, 'QUIT', 'quit');
 
-  // personal belongings box
-  const boxProp = addProp('box', 2.9, 8.4, 0.3);
-  menu.box = boxProp;
-  registerMenuTarget(boxProp.group, 'TAKE THE BOX', 'box');
+  // personal belongings box — the tutorial weapon
+  menu.box = addProp('box', 2.9, 8.4, 0.3);
+  registerMenuTarget(menu.box.group, 'YOUR THINGS', 'box');
 
-  // chair the hero was sitting on
   menu.chair = addProp('chair', 1.6, 6.0, -Math.PI / 2);
 
-  // start-room dressing
   addProp('plant', -9.4, 11.4);
   addProp('cooler', 8.6, 11.6);
-  addProp('extinguisher', -10.2, -0.6);
-  addProp('monitor', -0.9, 1.2, -Math.PI / 2);
-  addProp('desk', -0.8, 1.2, Math.PI / 2);
+  addProp('cigarettes', 1.2, 8.6);
+  addProp('mouse', -0.7, 5.2);
 
-  const wallSign = makeSign('FLOOR 7 — OPERATIONS', 3.6, 0.6, {
-    bg: '#e9e9e6',
-    fg: '#8f8f8a',
-  });
-  wallSign.position.set(-1.5, 2.7, ROOM.startZ - 0.05);
-  wallSign.rotation.y = Math.PI;
-  world.add(wallSign);
-}
-
-function registerMenuTarget(object, label, action) {
-  object.traverse((o) => {
-    if (o.isMesh) {
-      o.userData.menuAction = action;
-      o.userData.menuLabel = label;
-    }
-  });
-  menuTargets.push({ object, label, action });
-}
-
-/* ---------- drones ---------- */
-
-function buildDrones() {
-  const spots = [
-    [-6, -16, 9],
-    [5, -27, 8],
-    [-4, -46, 10],
-    [6, -61, 9],
-  ];
-  for (const [x, z, range] of spots) {
-    const g = new THREE.Group();
-    const bodyMesh = new THREE.Mesh(new THREE.OctahedronGeometry(0.5), MAT.black);
-    bodyMesh.castShadow = true;
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), MAT.redGlow);
-    eye.position.z = 0.42;
-    const ring = new THREE.Mesh(
-      new THREE.TorusGeometry(0.72, 0.05, 6, 16),
-      MAT.dark
-    );
-    ring.rotation.x = Math.PI / 2;
-    g.add(bodyMesh, eye, ring);
-    g.position.set(x, 1.7, z);
-    world.add(g);
-    drones.push({ group: g, x, z, homeX: x, homeZ: z, range, dir: 1, alive: true, t: Math.random() * 6 });
-  }
+  const floorSign = makeSign('FLOOR 7 — OPERATIONS', 3.6, 0.6, { bg: '#0b0b0d', fg: '#55524a' });
+  floorSign.position.set(-1.5, 2.7, ROOM.startZ - 0.05);
+  floorSign.rotation.y = Math.PI;
+  world.add(floorSign);
 }
 
 /* =========================================================
-   player
-   ========================================================= */
-
-const player = createPlayer();
-player.traverse((o) => {
-  if (o.isMesh) o.castShadow = true;
-});
-world.add(player);
-const playerBody = player.getObjectByName('body');
-const playerMarker = player.getObjectByName('marker');
-playerMarker.visible = false;
-
-const P = {
-  x: 1.5,
-  z: 6.0,
-  vx: 0,
-  vz: 0,
-  angle: -Math.PI / 2,
-  radius: 0.55,
-  heat: 0,
-  hasBox: false,
-  invuln: 0,
-};
-
-const carriedBox = createProp('box');
-carriedBox.scale.setScalar(0.75);
-carriedBox.visible = false;
-carriedBox.position.set(0, 0.75, 0.45);
-player.add(carriedBox);
-
-/* =========================================================
-   game state
-   ========================================================= */
-
-const HUD = {
-  title: document.getElementById('hud-title'),
-  game: document.getElementById('hud-game'),
-  fill: document.getElementById('momentum-fill'),
-  timer: document.getElementById('hud-timer'),
-  destroyed: document.getElementById('hud-destroyed'),
-  prompt: document.getElementById('prompt'),
-  flash: document.getElementById('flash'),
-};
-
-const GAME = {
-  mode: 'menu', // menu | transition | playing | over
-  time: 0,
-  limit: 70,
-  destroyed: 0,
-  score: 0,
-  transition: 0,
-  shake: 0,
-  path: [],
-  lastPath: JSON.parse(localStorage.getItem('offboarding-run') || 'null'),
-  pathTimer: 0,
-};
-
-/* ---------- reflection: ghost of the previous run ---------- */
-
-const ghost = createGhostBody();
-ghost.visible = false;
-world.add(ghost);
-
-/* =========================================================
-   input
+   input — one contextual grab button, dash, attack, smoke
    ========================================================= */
 
 const keys = new Set();
+let grabHeldSince = 0;
+
+const up = () => keys.has('w') || keys.has('arrowup') || keys.has('ц');
+const down = () => keys.has('s') || keys.has('arrowdown') || keys.has('ы');
+const left = () => keys.has('a') || keys.has('arrowleft') || keys.has('ф');
+const right = () => keys.has('d') || keys.has('arrowright') || keys.has('в');
+
+function pressGrab() {
+  if (GAME.mode !== 'playing') return;
+  grabHeldSince = performance.now();
+  if (P.carry || P.mice > 0) throwHeld(false);
+  else grabNearest();
+}
+
+function releaseGrab() {
+  if (GAME.mode !== 'playing') return;
+  if ((P.carry || P.mice > 0) && performance.now() - grabHeldSince > 320) throwHeld(true);
+}
+
 addEventListener('keydown', (e) => {
   const k = e.key.toLowerCase();
-  keys.add(k);
-  if (k === 'r' && GAME.mode !== 'menu') restart();
-  if (k === 'escape') closeOverlays();
-  if (k === ' ' && GAME.mode === 'playing') throwBox();
-  if (GAME.mode === 'menu') {
-    if (k === 'enter' || k === ' ') startGame();
-    if (k === 'h') showOverlay('overlay-handbook');
+  if (!e.repeat) {
+    if (k === 'escape') closeOverlays();
+    if (k === 'r' && GAME.mode !== 'menu') restart();
+    if (GAME.mode === 'menu') {
+      if (k === 'enter' || k === ' ') startGame();
+      if (k === 'h') showOverlay('overlay-handbook');
+    } else if (GAME.mode === 'playing') {
+      if (k === 'e') pressGrab();
+      if (k === 'f') attack();
+      if (k === ' ' || k === 'shift') dash();
+      if (k === 'q') smoke();
+    }
   }
+  keys.add(k);
   if ([' ', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(k)) e.preventDefault();
 });
-addEventListener('keyup', (e) => keys.delete(e.key.toLowerCase()));
+
+addEventListener('keyup', (e) => {
+  const k = e.key.toLowerCase();
+  keys.delete(k);
+  if (k === 'e') releaseGrab();
+});
 
 const pointer = new THREE.Vector2(-10, -10);
 const raycaster = new THREE.Raycaster();
@@ -525,13 +377,26 @@ let hovered = null;
 canvas.addEventListener('mousemove', (e) => {
   pointer.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
 });
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-canvas.addEventListener('click', () => {
-  if (GAME.mode !== 'menu' || !hovered) return;
-  if (hovered.action === 'play') startGame();
-  if (hovered.action === 'handbook') showOverlay('overlay-handbook');
-  if (hovered.action === 'quit') showOverlay('overlay-quit');
-  if (hovered.action === 'box') toggleBox();
+canvas.addEventListener('mousedown', (e) => {
+  initAudio();
+  if (GAME.mode === 'menu') {
+    if (e.button === 0 && hovered) {
+      if (hovered.action === 'play') startGame();
+      if (hovered.action === 'handbook') showOverlay('overlay-handbook');
+      if (hovered.action === 'quit') showOverlay('overlay-quit');
+      if (hovered.action === 'box') FX.hint('the box comes with you', 2);
+    }
+    return;
+  }
+  if (GAME.mode !== 'playing') return;
+  if (e.button === 0) pressGrab();
+  if (e.button === 2) attack();
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (e.button === 0) releaseGrab();
 });
 
 document.getElementById('handbook-close').onclick = closeOverlays;
@@ -541,119 +406,302 @@ document.getElementById('win-restart').onclick = () => {
   restart();
 };
 
-function showOverlay(id) {
-  document.getElementById(id).classList.remove('hidden');
-}
-function closeOverlays() {
-  document.querySelectorAll('.overlay').forEach((o) => o.classList.add('hidden'));
+/* =========================================================
+   grab / carry / throw
+   ========================================================= */
+
+const forwardX = () => Math.sin(P.angle);
+const forwardZ = () => Math.cos(P.angle);
+
+function handPosition() {
+  return { x: P.x + forwardX() * 0.8, z: P.z + forwardZ() * 0.8 };
 }
 
-function toggleBox() {
-  P.hasBox = !P.hasBox;
-  carriedBox.visible = P.hasBox;
-  menu.box.group.visible = !P.hasBox;
+function grabNearest() {
+  const hand = handPosition();
+  let best = null;
+  let bestD = 2.6 * 2.6;
+  for (const p of props) {
+    if (p.dead || p.carried || p.spec.carry === 'heavy') continue;
+    const d = dist2(hand.x, hand.z, p.group.position.x, p.group.position.z);
+    if (d < bestD) {
+      bestD = d;
+      best = p;
+    }
+  }
+
+  if (!best) {
+    shoveHeavy();
+    return;
+  }
+
+  if (best.spec.pickup === 'cigs') {
+    takeCigs(best);
+    return;
+  }
+
+  if (best.type === 'mouse') {
+    if (P.carry || P.mice >= 4) return;
+    P.mice++;
+    best.dead = true;
+    best.group.visible = false;
+    blip(500 + P.mice * 90, 0.08, 'square', 0.035);
+    FX.hint(P.mice === 4 ? 'MOUSE BALL — E TO HURL IT' : `${P.mice}× MOUSE — F TO SWING`, 2);
+    return;
+  }
+
+  if (P.mice > 0) return;
+  best.carried = true;
+  best.thrown = false;
+  best.vx = best.vz = best.vy = 0;
+  P.carry = best;
+  if (best.type === 'paperReam') {
+    P.paper = 12;
+    FX.hint('PAPER REAM — F FIRES A VOLLEY', 2.4);
+  }
+  blip(300, 0.07, 'square', 0.035);
+}
+
+function takeCigs(entry) {
+  P.cigs += 3;
+  entry.dead = true;
+  entry.group.visible = false;
+  blip(760, 0.1, 'square', 0.04);
+  FX.hint('CIGARETTES +3 — Q TO SMOKE', 2.2);
+}
+
+function shoveHeavy() {
+  const hand = handPosition();
+  for (const p of props) {
+    if (p.dead || p.spec.carry !== 'heavy') continue;
+    if (dist2(hand.x, hand.z, p.group.position.x, p.group.position.z) > 6.5) continue;
+    damageProp(p, 2 * damageMul(), 10);
+    FX.shake(0.2);
+    noise(0.14, 0.06);
+    return;
+  }
+}
+
+function throwHeld(charged) {
+  const fx = forwardX();
+  const fz = forwardZ();
+  const power = (charged ? 30 : 23) * damageMul() * (1 + P.heat * 0.35);
+
+  if (P.mice > 0) {
+    spawnProjectile({
+      x: P.x + fx * 1.1,
+      z: P.z + fz * 1.1,
+      y: 1.1,
+      vx: fx * power,
+      vz: fz * power,
+      kind: 'ball',
+      power: P.mice,
+      life: 2.6,
+    });
+    blip(200, 0.2, 'sawtooth', 0.05);
+    P.mice = 0;
+    FX.shake(0.2);
+    return;
+  }
+
+  const c = P.carry;
+  if (!c) return;
+  c.carried = false;
+  c.thrown = true;
+  c.vx = fx * power;
+  c.vz = fz * power;
+  c.vy = 3.2;
+  P.carry = null;
+  P.paper = 0;
+  FX.shake(0.18);
+  blip(240, 0.14, 'square', 0.045);
 }
 
 /* =========================================================
-   audio (tiny synth, no assets)
+   attacks
    ========================================================= */
 
-let actx = null;
-function blip(freq, dur, type = 'square', gain = 0.06) {
-  if (!actx) return;
-  const o = actx.createOscillator();
-  const g = actx.createGain();
-  o.type = type;
-  o.frequency.setValueAtTime(freq, actx.currentTime);
-  o.frequency.exponentialRampToValueAtTime(freq * 0.4, actx.currentTime + dur);
-  g.gain.setValueAtTime(gain, actx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.0001, actx.currentTime + dur);
-  o.connect(g).connect(actx.destination);
-  o.start();
-  o.stop(actx.currentTime + dur);
+function meleeSweep(radius, amount) {
+  const cx = P.x + forwardX() * radius * 0.5;
+  const cz = P.z + forwardZ() * radius * 0.5;
+  let hits = 0;
+  for (const p of props) {
+    if (p.dead || p.carried) continue;
+    if (dist2(cx, cz, p.group.position.x, p.group.position.z) < radius * radius) {
+      if (damageProp(p, amount, 10)) hits++;
+    }
+  }
+  for (const e of enemies) {
+    if (e.dead) continue;
+    if (dist2(cx, cz, e.x, e.z) < radius * radius) {
+      damageEnemy(e, amount);
+      hits++;
+    }
+  }
+  if (hits) P.heat = Math.min(1, P.heat + 0.05);
+  return hits;
 }
-function noise(dur = 0.18, gain = 0.09) {
-  if (!actx) return;
-  const len = Math.floor(actx.sampleRate * dur);
-  const buf = actx.createBuffer(1, len, actx.sampleRate);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
-  const src = actx.createBufferSource();
-  src.buffer = buf;
-  const g = actx.createGain();
-  g.gain.value = gain;
-  src.connect(g).connect(actx.destination);
-  src.start();
-}
-addEventListener('pointerdown', () => {
-  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-  if (actx.state === 'suspended') actx.resume();
-}, { once: false });
 
-/* =========================================================
-   destruction
-   ========================================================= */
-
-function spawnDebris(x, z, count, tint = MAT.dark) {
-  for (let i = 0; i < count; i++) {
-    const s = 0.12 + Math.random() * 0.22;
-    const m = new THREE.Mesh(new THREE.BoxGeometry(s, s, s), tint);
-    m.position.set(x + (Math.random() - 0.5), 0.4 + Math.random() * 0.8, z + (Math.random() - 0.5));
-    m.castShadow = true;
-    world.add(m);
-    debris.push({
-      mesh: m,
-      vx: (Math.random() - 0.5) * 9,
-      vy: 3 + Math.random() * 5,
-      vz: (Math.random() - 0.5) * 9,
-      rx: (Math.random() - 0.5) * 12,
-      ry: (Math.random() - 0.5) * 12,
-      life: 6,
+function firePaperVolley() {
+  const shots = Math.min(5, P.paper);
+  for (let i = 0; i < shots; i++) {
+    const a = P.angle + (i - (shots - 1) / 2) * 0.17;
+    spawnProjectile({
+      x: P.x + Math.sin(a) * 0.9,
+      z: P.z + Math.cos(a) * 0.9,
+      y: 1.1,
+      vx: Math.sin(a) * 26,
+      vz: Math.cos(a) * 26,
+      kind: 'paper',
+      power: 1,
+      life: 1.6,
     });
   }
-  while (debris.length > 260) {
-    const d = debris.shift();
-    world.remove(d.mesh);
-    d.mesh.geometry.dispose();
-  }
+  P.paper -= shots;
+  noise(0.1, 0.05);
+  blip(880, 0.08, 'triangle', 0.03);
+  if (P.paper <= 0) FX.hint('REAM EMPTY — E TO THROW IT', 2);
 }
 
-function breakProp(entry, impactSpeed) {
-  if (entry.broken_ || entry.type === 'box') return;
-  entry.broken_ = true;
-  entry.intact.visible = false;
-  entry.broken.visible = true;
-  entry.group.rotation.z = (Math.random() - 0.5) * 0.4;
+function attack() {
+  if (P.attackT > 0) return;
+  P.attackT = 0.28;
+  pendingAttack = true;
 
-  if (entry.aabb) {
-    const i = statics.indexOf(entry.aabb);
-    if (i >= 0) statics.splice(i, 1);
+  const mul = damageMul();
+
+  if (P.mice > 0) {
+    const radius = [0, 2.0, 2.5, 3.0, 3.4][P.mice];
+    meleeSweep(radius, (P.mice >= 3 ? 2 : 1) * mul);
+    blip(140 + P.mice * 40, 0.12, 'sawtooth', 0.045);
+    FX.shake(0.1 + P.mice * 0.04);
+    return;
   }
 
-  const glass = entry.type === 'glassPanel';
-  spawnDebris(entry.x, entry.z, glass ? 14 : 7, glass ? MAT.glass : MAT.dark);
+  if (P.carry && P.carry.type === 'paperReam' && P.paper > 0) {
+    firePaperVolley();
+    return;
+  }
 
-  P.heat = Math.min(1, P.heat + entry.spec.heat);
-  GAME.destroyed++;
-  GAME.score += entry.spec.score;
-  GAME.shake = Math.min(0.7, GAME.shake + 0.18 + entry.spec.heat);
+  if (P.carry) {
+    meleeSweep(2.4, 2 * mul);
+    if (Math.random() < 0.35) damageProp(P.carry, 1, 8);
+    if (P.carry && P.carry.dead) P.carry = null;
+    blip(190, 0.1, 'square', 0.045);
+    FX.shake(0.14);
+    return;
+  }
 
-  noise(glass ? 0.3 : 0.16, glass ? 0.1 : 0.08);
-  blip(glass ? 900 : 200 + impactSpeed * 6, 0.12, glass ? 'triangle' : 'square', 0.05);
+  meleeSweep(1.7, 1 * mul);
+  blip(150, 0.08, 'square', 0.035);
+}
+
+function dash() {
+  if (P.dashCd > 0) return;
+  P.dashCd = 0.85;
+  P.dashT = 0.18;
+  let dx = 0;
+  let dz = 0;
+  if (up()) dz -= 1;
+  if (down()) dz += 1;
+  if (left()) dx -= 1;
+  if (right()) dx += 1;
+  const len = Math.hypot(dx, dz);
+  if (len > 0) {
+    dx /= len;
+    dz /= len;
+  } else {
+    dx = forwardX();
+    dz = forwardZ();
+  }
+  P.vx = dx * 27;
+  P.vz = dz * 27;
+  P.heat = Math.min(1, P.heat + 0.04);
+  noise(0.12, 0.05);
+  blip(420, 0.12, 'triangle', 0.035);
+}
+
+function smoke() {
+  if (P.cigs <= 0) {
+    FX.hint('NO CIGARETTES', 1.2);
+    return;
+  }
+  P.cigs--;
+  P.smokeT = 6;
+  P.crashT = 0;
+  P.heat = Math.min(1, P.heat + 0.35);
+  HUD.smoke.classList.add('on');
+  FX.hint('SMOKE — DAMAGE UP, MOMENTUM HOLDS', 2.4);
+  blip(120, 0.5, 'sine', 0.05);
+}
+
+function spawnPuff(x, z) {
+  const p = puffs.find((q) => q.life <= 0);
+  if (!p) return;
+  p.life = 1.4;
+  p.mesh.visible = true;
+  p.mesh.position.set(x, 1.5, z);
+  p.mesh.scale.setScalar(1);
 }
 
 /* =========================================================
-   collision helpers
+   reflection echo
    ========================================================= */
 
-function resolveCircleAabb(cx, cz, r, a) {
-  const dx = cx - a.x;
-  const dz = cz - a.z;
-  const ox = a.hw + r - Math.abs(dx);
-  const oz = a.hd + r - Math.abs(dz);
-  if (ox <= 0 || oz <= 0) return null;
-  if (ox < oz) return { nx: Math.sign(dx) || 1, nz: 0, depth: ox };
-  return { nx: 0, nz: Math.sign(dz) || 1, depth: oz };
+function updateEcho(dt) {
+  echoTimer += dt;
+  if (echoTimer >= 0.05) {
+    echoTimer = 0;
+    echoTape.push({ t: GAME.time, x: P.x, z: P.z, a: P.angle, atk: pendingAttack, played: false });
+    pendingAttack = false;
+    while (echoTape.length && GAME.time - echoTape[0].t > ECHO_DELAY + 1) echoTape.shift();
+  }
+
+  const active = P.heat > 0.25 && echoTape.length > 6;
+  echo.visible = active;
+  if (!active) return;
+
+  const targetT = GAME.time - ECHO_DELAY;
+  let frame = null;
+  for (let i = echoTape.length - 1; i >= 0; i--) {
+    if (echoTape[i].t <= targetT) {
+      frame = echoTape[i];
+      break;
+    }
+  }
+  if (!frame) return;
+  if (!frame.played) {
+    frame.played = true;
+    if (frame.atk) echoAttack(frame);
+  }
+  echo.position.set(frame.x, 0, frame.z);
+  echo.rotation.y = frame.a;
+  echo.userData.mat.opacity = 0.1 + P.heat * 0.16;
+}
+
+function echoAttack(frame) {
+  const cx = frame.x + Math.sin(frame.a) * 1.1;
+  const cz = frame.z + Math.cos(frame.a) * 1.1;
+  let hits = 0;
+  // the double only finishes off what you already weakened
+  for (const p of props) {
+    if (p.dead || p.carried || !p.weak) continue;
+    if (dist2(cx, cz, p.group.position.x, p.group.position.z) < 5.3) {
+      breakProp(p, 10);
+      hits++;
+    }
+  }
+  for (const e of enemies) {
+    if (e.dead) continue;
+    if (dist2(cx, cz, e.x, e.z) < 4.4) {
+      damageEnemy(e, 1);
+      hits++;
+    }
+  }
+  if (hits) {
+    P.heat = Math.min(1, P.heat + 0.08);
+    blip(660, 0.14, 'sine', 0.035);
+  }
 }
 
 /* =========================================================
@@ -669,96 +717,104 @@ function startGame() {
   canvas.classList.remove('pointer');
   HUD.prompt.classList.add('hidden');
   HUD.title.style.opacity = '0';
-  blip(120, 0.35, 'sawtooth', 0.1);
-  noise(0.4, 0.12);
+  initAudio();
+  blip(110, 0.4, 'sawtooth', 0.08);
+  noise(0.45, 0.11);
+}
+
+function litForPlay() {
+  // the menu keeps the reference's darkness; the run needs to be readable
+  ambient.intensity = 1.0;
+  key.intensity = 0.9;
+  followLight.intensity = 190;
+  scene.fog.near = 40;
+  scene.fog.far = 96;
 }
 
 function beginPlay() {
   GAME.mode = 'playing';
-  playerMarker.visible = true;
   GAME.time = 0;
-  GAME.path = [];
+  litForPlay();
+  playerMarker.visible = true;
+  playerBody.position.y = 0;
+  playerBody.rotation.x = 0;
   HUD.game.classList.remove('hidden');
-  HUD.prompt.classList.remove('hidden');
-  HUD.prompt.textContent = P.hasBox ? 'SPACE — THROW THE BOX' : 'WASD — RUN. BREAK EVERYTHING.';
-  setTimeout(() => HUD.prompt.classList.add('hidden'), 4000);
-  if (GAME.lastPath && GAME.lastPath.length > 8) ghost.visible = true;
+  echoTape.length = 0;
+
+  // the box is already in your hands: first lesson is throwing it
+  const b = menu.box;
+  if (b && !b.dead) {
+    b.carried = true;
+    P.carry = b;
+  }
+  FX.hint('E THROWS THE BOX — SMASH THE GLASS DOOR', 4);
 }
 
 function endGame(won) {
   GAME.mode = 'over';
-  localStorage.setItem('offboarding-run', JSON.stringify(GAME.path.slice(0, 18000)));
-  const title = document.querySelector('#overlay-win h2');
-  title.textContent = won ? "YOU'RE OUT" : 'SECURITY ESCORTED YOU';
+  document.querySelector('#overlay-win h2').textContent = won ? "YOU'RE OUT" : 'SECURITY ESCORTED YOU';
   document.getElementById('win-stats').innerHTML = won
     ? `TIME <b>${GAME.time.toFixed(1)}s</b> · DESTROYED <b>${GAME.destroyed}</b> · SEVERANCE <b>${GAME.score * 120}$</b>`
-    : `You ran out of time. DESTROYED <b>${GAME.destroyed}</b>.`;
+    : `Time ran out. DESTROYED <b>${GAME.destroyed}</b> · SEVERANCE <b>${GAME.score * 120}$</b>`;
   showOverlay('overlay-win');
-  blip(won ? 520 : 90, 0.6, won ? 'square' : 'sawtooth', 0.08);
+  blip(won ? 520 : 90, 0.6, won ? 'square' : 'sawtooth', 0.07);
 }
 
 function restart() {
   closeOverlays();
-  if (GAME.mode === 'playing') {
-    localStorage.setItem('offboarding-run', JSON.stringify(GAME.path.slice(0, 18000)));
+  resetProps();
+  resetEnemies();
+  for (const p of puffs) {
+    p.life = 0;
+    p.mesh.visible = false;
   }
-  GAME.lastPath = JSON.parse(localStorage.getItem('offboarding-run') || 'null');
-
-  for (const p of props) {
-    if (p.broken_) {
-      p.broken_ = false;
-      p.intact.visible = true;
-      p.broken.visible = false;
-      p.group.rotation.z = 0;
-      if (p.aabb && !statics.includes(p.aabb)) statics.push(p.aabb);
-    }
-    p.group.position.set(p.x, p.spec.y || 0, p.z);
-    p.vx = p.vz = 0;
-  }
-  for (const d of debris) world.remove(d.mesh);
-  debris.length = 0;
-  for (const a of afterimages) world.remove(a.mesh);
-  afterimages.length = 0;
-  for (const d of drones) {
-    d.alive = true;
-    d.group.visible = true;
-    d.x = d.homeX;
-    d.z = d.homeZ;
-  }
+  HUD.smoke.classList.remove('on');
 
   P.x = 0;
   P.z = 1;
   P.vx = P.vz = 0;
-  P.heat = 0.3;
+  P.angle = Math.PI;
+  P.heat = 0.35;
   P.invuln = 0;
-  P.hasBox = false;
-  carriedBox.visible = false;
-  menu.box.group.visible = true;
-  playerBody.position.y = 0;
-  playerBody.rotation.x = 0;
+  P.dashT = P.dashCd = 0;
+  P.carry = null;
+  P.mice = 0;
+  P.paper = 0;
+  P.cigs = 1;
+  P.smokeT = P.crashT = 0;
+  P.attackT = 0;
+
   GAME.destroyed = 0;
   GAME.score = 0;
   GAME.time = 0;
-  GAME.path = [];
+  GAME.shake = 0;
   menu.deskPivot.rotation.x = 0;
   menu.deskPivot.position.copy(DESK_HOME);
-  ghost.visible = false;
-  beginPlay();
+  menu.flipFx = true;
+  echoTape.length = 0;
+  echo.visible = false;
+  currentZone = '';
+
+  GAME.mode = 'playing';
+  litForPlay();
+  playerMarker.visible = true;
+  playerBody.position.y = 0;
+  playerBody.rotation.x = 0;
+  HUD.game.classList.remove('hidden');
+  FX.hint('AGAIN', 1.5);
 }
 
 /* =========================================================
-   update
+   updates
    ========================================================= */
 
 const clock = new THREE.Clock();
 const tmpTarget = new THREE.Vector3();
+const tmpScale = new THREE.Vector3();
 
 function updateMenu(dt) {
   raycaster.setFromCamera(pointer, camera);
-  const hits = raycaster.intersectObjects(
-    menuTargets.map((t) => t.object),
-    true
-  );
+  const hits = raycaster.intersectObjects(menuTargets.map((t) => t.object), true);
   const hit = hits.find((h) => h.object.userData.menuAction);
   const next = hit ? menuTargets.find((t) => t.action === hit.object.userData.menuAction) : null;
 
@@ -766,29 +822,24 @@ function updateMenu(dt) {
     hovered = next;
     canvas.classList.toggle('pointer', !!hovered);
     if (hovered) {
-      HUD.prompt.textContent =
-        hovered.action === 'box' ? (P.hasBox ? 'LEAVE THE BOX' : 'TAKE THE BOX') : hovered.label;
+      HUD.prompt.textContent = hovered.label;
       HUD.prompt.classList.remove('hidden');
-      blip(660, 0.05, 'square', 0.03);
+      blip(660, 0.05, 'square', 0.02);
     } else {
       HUD.prompt.classList.add('hidden');
     }
   }
 
   for (const t of menuTargets) {
-    const target = hovered === t ? 1.08 : 1;
-    t.object.scale.lerp(new THREE.Vector3(target, target, target), 1 - Math.pow(0.001, dt));
+    const s = hovered === t ? 1.08 : 1;
+    t.object.scale.lerp(tmpScale.set(s, s, s), 1 - Math.pow(0.001, dt));
   }
 
-  // hero breathing / tension
-  const b = Math.sin(performance.now() * 0.004) * 0.02;
-  playerBody.position.y = 0.28 + b;
+  playerBody.position.y = 0.28 + Math.sin(performance.now() * 0.004) * 0.02;
   playerBody.rotation.z = Math.sin(performance.now() * 0.0021) * 0.02;
   player.position.set(P.x, 0, P.z);
   player.rotation.y = P.angle;
-
-  menu.playLabel.material.opacity = 0.7 + Math.sin(performance.now() * 0.006) * 0.3;
-  menu.playLabel.material.transparent = true;
+  menu.playLabel.material.opacity = 0.65 + Math.sin(performance.now() * 0.006) * 0.35;
 }
 
 function updateTransition(dt) {
@@ -796,11 +847,9 @@ function updateTransition(dt) {
   const t = Math.min(1, GAME.transition / 1.5);
   const e = t * t * (3 - 2 * t);
 
-  // hero stands up
   playerBody.position.y = 0.28 * (1 - Math.min(1, t * 3));
   playerBody.rotation.x = -0.25 * Math.max(0, 1 - t * 3);
 
-  // desk flip
   const f = Math.min(1, Math.max(0, (t - 0.12) / 0.5));
   menu.deskPivot.rotation.x = -f * 2.1;
   menu.deskPivot.position.y = Math.sin(f * Math.PI) * 1.2;
@@ -809,13 +858,14 @@ function updateTransition(dt) {
   if (GAME.transition > 0.2 && !menu.flipFx) {
     menu.flipFx = true;
     spawnDebris(DESK_HOME.x, DESK_HOME.z - 1.2, 10);
-    GAME.shake = 0.7;
-    noise(0.5, 0.14);
-    blip(90, 0.5, 'sawtooth', 0.09);
-    if (!menu.chair.broken_) breakProp(menu.chair, 12);
+    FX.shake(0.8);
+    noise(0.5, 0.13);
+    blip(90, 0.5, 'sawtooth', 0.08);
+    if (!menu.chair.dead) breakProp(menu.chair, 12);
+    menu.lampLight.intensity = 8;
+    menu.lampPool.material.opacity = 0.06;
   }
 
-  // camera swings from the menu framing to the gameplay framing
   const gamePos = new THREE.Vector3(P.x, 0, P.z).add(CAM.game.offset);
   camera.position.lerpVectors(CAM.menu.pos, gamePos, e);
   camTarget.lerpVectors(CAM.menu.target, new THREE.Vector3(P.x, 1, P.z), e);
@@ -826,268 +876,273 @@ function updateTransition(dt) {
   P.angle = THREE.MathUtils.lerp(-Math.PI / 2, Math.PI, e);
 
   if (t >= 1) {
-    P.heat = 0.45;
+    P.heat = 0.5;
+    P.cigs = 1;
     beginPlay();
   }
 }
 
 function updatePlayer(dt) {
-  let ix = 0;
-  let iz = 0;
-  if (keys.has('w') || keys.has('arrowup') || keys.has('ц')) iz -= 1;
-  if (keys.has('s') || keys.has('arrowdown') || keys.has('ы')) iz += 1;
-  if (keys.has('a') || keys.has('arrowleft') || keys.has('ф')) ix -= 1;
-  if (keys.has('d') || keys.has('arrowright') || keys.has('в')) ix += 1;
+  P.attackT = Math.max(0, P.attackT - dt);
+  P.dashT = Math.max(0, P.dashT - dt);
+  P.dashCd = Math.max(0, P.dashCd - dt);
+  P.invuln = Math.max(0, P.invuln - dt);
 
-  const len = Math.hypot(ix, iz);
-  const maxSpeed = (9.5 + P.heat * 7) * (P.hasBox ? 0.9 : 1);
-  const accel = 46;
-
-  if (len > 0) {
-    ix /= len;
-    iz /= len;
-    P.vx += ix * accel * dt;
-    P.vz += iz * accel * dt;
-  } else {
-    const damp = Math.pow(0.02, dt);
-    P.vx *= damp;
-    P.vz *= damp;
+  if (P.smokeT > 0) {
+    P.smokeT -= dt;
+    if (Math.random() < dt * 8) spawnPuff(P.x, P.z);
+    if (P.smokeT <= 0) {
+      P.crashT = 2.5;
+      HUD.smoke.classList.remove('on');
+      FX.hint('CRASH — MOMENTUM DROPS FAST', 2);
+    }
+  } else if (P.crashT > 0) {
+    P.crashT -= dt;
   }
 
-  const speed = Math.hypot(P.vx, P.vz);
-  if (speed > maxSpeed) {
-    P.vx = (P.vx / speed) * maxSpeed;
-    P.vz = (P.vz / speed) * maxSpeed;
+  let ix = 0;
+  let iz = 0;
+  if (up()) iz -= 1;
+  if (down()) iz += 1;
+  if (left()) ix -= 1;
+  if (right()) ix += 1;
+
+  const carryDrag = P.carry ? (P.carry.spec.carry === 'medium' ? 0.86 : 0.96) : 1;
+  const maxSpeed = (9.5 + P.heat * 7) * carryDrag;
+  const len = Math.hypot(ix, iz);
+
+  if (P.dashT <= 0) {
+    if (len > 0) {
+      ix /= len;
+      iz /= len;
+      P.vx += ix * 46 * dt;
+      P.vz += iz * 46 * dt;
+    } else {
+      const damp = Math.pow(0.02, dt);
+      P.vx *= damp;
+      P.vz *= damp;
+    }
+    const sp = Math.hypot(P.vx, P.vz);
+    if (sp > maxSpeed) {
+      P.vx = (P.vx / sp) * maxSpeed;
+      P.vz = (P.vz / sp) * maxSpeed;
+    }
   }
 
   P.x += P.vx * dt;
   P.z += P.vz * dt;
+  const speed = Math.hypot(P.vx, P.vz);
 
-  // collide with statics
+  // walls and heavy props
   for (const a of statics) {
     const hit = resolveCircleAabb(P.x, P.z, P.radius, a);
     if (!hit) continue;
-    const impact = Math.abs(hit.nx * P.vx + hit.nz * P.vz) || speed;
-    if (a.prop && !a.prop.broken_ && speed * (1 + P.heat * 0.4) >= a.prop.spec.breakSpeed) {
-      breakProp(a.prop, impact);
-      P.vx *= 0.86;
-      P.vz *= 0.86;
-      continue;
+    const target = a.prop;
+    if (target && !target.dead) {
+      const ram = speed * (1 + P.heat * 0.4) + (P.dashT > 0 ? 20 : 0);
+      if (ram >= target.spec.breakSpeed) {
+        damageProp(target, (P.dashT > 0 ? 3 : 2) * damageMul(), ram);
+        P.vx *= 0.9;
+        P.vz *= 0.9;
+        if (target.dead) continue;
+      }
     }
     P.x += hit.nx * hit.depth;
     P.z += hit.nz * hit.depth;
     if (hit.nx) P.vx *= -0.15;
     if (hit.nz) P.vz *= -0.15;
-    if (speed > 9) GAME.shake = Math.min(0.5, GAME.shake + 0.12);
+    if (speed > 9) FX.shake(0.1);
   }
 
-  // collide with dynamic props
+  // loose props
   for (const p of props) {
-    if (p.spec.dynamic === false) continue;
-    if (p.broken_) continue;
-    if (p === menu.box && !menu.box.group.visible) continue;
+    if (p.dead || p.carried || !p.spec.dynamic) continue;
     const dx = P.x - p.group.position.x;
     const dz = P.z - p.group.position.z;
-    const dist = Math.hypot(dx, dz);
-    const minDist = P.radius + p.spec.radius;
-    if (dist > minDist || dist === 0) continue;
+    const d = Math.hypot(dx, dz);
+    const minD = P.radius + p.spec.radius;
+    if (d > minD || d === 0) continue;
 
-    if (p.type === 'box') {
-      if (!P.hasBox) {
-        toggleBox();
-        blip(440, 0.1, 'square', 0.05);
-      }
+    if (p.spec.pickup === 'cigs') {
+      takeCigs(p);
       continue;
     }
 
-    if (speed * (1 + P.heat * 0.4) >= p.spec.breakSpeed) {
-      breakProp(p, speed);
-      P.vx *= 0.94;
-      P.vz *= 0.94;
+    const ram = speed * (1 + P.heat * 0.4) + (P.dashT > 0 ? 20 : 0);
+    if (ram >= p.spec.breakSpeed) {
+      damageProp(p, (P.dashT > 0 ? 3 : 2) * damageMul(), ram);
+      P.vx *= 0.95;
+      P.vz *= 0.95;
     } else {
-      const nx = dx / dist;
-      const nz = dz / dist;
-      p.vx -= (nx * speed) / p.spec.mass * 0.35;
-      p.vz -= (nz * speed) / p.spec.mass * 0.35;
-      P.x += nx * (minDist - dist) * 0.6;
-      P.z += nz * (minDist - dist) * 0.6;
-      P.vx *= 0.9;
-      P.vz *= 0.9;
+      const nx = dx / d;
+      const nz = dz / d;
+      p.vx -= ((nx * speed) / p.spec.mass) * 0.3;
+      p.vz -= ((nz * speed) / p.spec.mass) * 0.3;
+      P.x += nx * (minD - d) * 0.6;
+      P.z += nz * (minD - d) * 0.6;
+      P.vx *= 0.92;
+      P.vz *= 0.92;
     }
   }
 
   if (speed > 0.6) P.angle = Math.atan2(P.vx, P.vz);
   player.position.set(P.x, 0, P.z);
   player.rotation.y = P.angle;
-  playerBody.rotation.x = -Math.min(0.22, speed * 0.012);
+  playerBody.rotation.x = -Math.min(0.24, speed * 0.012);
 
-  // momentum decay
-  P.heat = Math.max(0, P.heat - (0.16 + (speed < 4 ? 0.25 : 0)) * dt);
+  const swing = P.attackT > 0 ? Math.sin((1 - P.attackT / 0.28) * Math.PI) : 0;
+  armR.rotation.x = -swing * 2.2;
+  armL.rotation.x = swing * 0.6;
+
+  // momentum bleed
+  let decay = 0.16;
+  if (P.smokeT > 0) decay = 0.05;
+  else if (P.crashT > 0) decay = 0.34;
+  if (speed < 4) decay += 0.22;
+  P.heat = Math.max(0, P.heat - decay * dt);
   if (speed > 12) P.heat = Math.min(1, P.heat + 0.05 * dt);
-  P.invuln = Math.max(0, P.invuln - dt);
 
-  // afterimages (reflection trail)
-  if (P.heat > 0.25 && speed > 6) {
-    GAME.pathTimer -= dt;
-    if (GAME.pathTimer <= 0) {
-      GAME.pathTimer = 0.07;
-      spawnAfterimage();
+  // carried item rides in front of the hero
+  if (P.carry) {
+    if (P.carry.dead) P.carry = null;
+    else {
+      const hand = handPosition();
+      P.carry.group.position.set(hand.x, 1.0, hand.z);
+      P.carry.group.rotation.y = P.angle;
     }
   }
 
-  // record run for the next reflection
-  GAME.path.push(+P.x.toFixed(2), +P.z.toFixed(2), +P.angle.toFixed(2));
+  // mice orbit and drag their cables along
+  for (let i = 0; i < 4; i++) {
+    const v = miceVisuals[i];
+    const on = i < P.mice;
+    v.mesh.visible = on;
+    v.line.visible = on;
+    if (!on) continue;
+    const a = performance.now() * 0.006 + (i * Math.PI * 2) / Math.max(1, P.mice);
+    const r = 1.0 + P.mice * 0.12;
+    const mx = P.x + Math.sin(a) * r;
+    const mz = P.z + Math.cos(a) * r;
+    v.mesh.position.set(mx, 0.9, mz);
+    v.mesh.rotation.y = a;
+    v.line.geometry.setFromPoints([
+      new THREE.Vector3(P.x, 1.15, P.z),
+      new THREE.Vector3(mx, 1.0, mz),
+    ]);
+  }
 
-  // exit
   if (P.z < HALL.endZ + 1.5 && Math.abs(P.x) < 3.2) endGame(true);
-}
-
-const afterimagePool = [];
-function spawnAfterimage() {
-  let mesh = afterimagePool.pop();
-  if (!mesh) mesh = createGhostBody();
-  mesh.position.set(P.x, 0, P.z);
-  mesh.rotation.y = P.angle;
-  mesh.visible = true;
-  mesh.traverse((o) => {
-    if (o.isMesh) o.material.opacity = 0.2;
-  });
-  world.add(mesh);
-  afterimages.push({ mesh, life: 0.55 });
-}
-
-function updateAfterimages(dt) {
-  for (let i = afterimages.length - 1; i >= 0; i--) {
-    const a = afterimages[i];
-    a.life -= dt;
-    const k = Math.max(0, a.life / 0.55);
-    a.mesh.traverse((o) => {
-      if (o.isMesh) o.material.opacity = 0.2 * k;
-    });
-    if (a.life <= 0) {
-      world.remove(a.mesh);
-      afterimagePool.push(a.mesh);
-      afterimages.splice(i, 1);
-    }
-  }
-}
-
-function updateGhost() {
-  const path = GAME.lastPath;
-  if (!path || !ghost.visible) return;
-  const i = Math.min(Math.floor(GAME.time * 60) * 3, path.length - 3);
-  if (i < 0) return;
-  ghost.position.set(path[i], 0, path[i + 1]);
-  ghost.rotation.y = path[i + 2];
 }
 
 function updateProps(dt) {
   for (const p of props) {
-    if (p.broken_) continue;
-    if (!p.spec.dynamic) continue;
+    if (p.dead || p.carried || !p.spec.dynamic) continue;
+    const rest = p.spec.y || 0;
     const speed = Math.hypot(p.vx, p.vz);
-    if (speed < 0.05) {
+    const airborne = p.group.position.y > rest + 0.01 || p.vy !== 0;
+    if (speed < 0.05 && !airborne) {
       p.vx = p.vz = 0;
       continue;
     }
+
     p.group.position.x += p.vx * dt;
     p.group.position.z += p.vz * dt;
-    const damp = Math.pow(speed > 12 ? 0.55 : 0.06, dt);
+
+    if (airborne) {
+      p.vy -= 26 * dt;
+      p.group.position.y += p.vy * dt;
+      if (p.group.position.y <= 0) {
+        p.group.position.y = 0;
+        p.vy = 0;
+        p.vx *= 0.5;
+        p.vz *= 0.5;
+        if (p.thrown && speed > 10) damageProp(p, 1, speed);
+        p.thrown = false;
+      }
+      p.group.rotation.x += dt * 6;
+    } else {
+      p.group.rotation.y += speed * dt * 0.5;
+    }
+
+    const damp = Math.pow(speed > 12 ? 0.6 : 0.06, dt);
     p.vx *= damp;
     p.vz *= damp;
-    p.group.rotation.y += speed * dt * 0.5;
 
-    // fast flying props smash what they touch (chain destruction)
-    if (speed > 9) {
+    // fast props wreck what they touch
+    if (speed > 8) {
+      const px = p.group.position.x;
+      const pz = p.group.position.z;
       for (const other of props) {
-        if (other === p || other.broken_) continue;
-        const dx = other.group.position.x - p.group.position.x;
-        const dz = other.group.position.z - p.group.position.z;
+        if (other === p || other.dead || other.carried) continue;
         const r = (other.spec.radius || Math.max(...other.spec.half)) + (p.spec.radius || 0.5);
-        if (dx * dx + dz * dz < r * r && speed >= other.spec.breakSpeed * 0.8) {
-          breakProp(other, speed);
-          p.vx *= 0.7;
-          p.vz *= 0.7;
+        if (dist2(px, pz, other.group.position.x, other.group.position.z) < r * r) {
+          if (damageProp(other, 2, speed)) {
+            p.vx *= 0.7;
+            p.vz *= 0.7;
+          }
         }
       }
-      for (const d of drones) {
-        if (!d.alive) continue;
-        if (Math.hypot(d.x - p.group.position.x, d.z - p.group.position.z) < 1.2) killDrone(d);
+      for (const e of enemies) {
+        if (e.dead) continue;
+        if (dist2(px, pz, e.x, e.z) < 1.6) {
+          damageEnemy(e, 2);
+          p.vx *= 0.5;
+          p.vz *= 0.5;
+        }
       }
     }
 
-    // keep inside bounds
     const bx = p.group.position.z > ROOM.doorZ ? ROOM.maxX : HALL.maxX;
     p.group.position.x = THREE.MathUtils.clamp(p.group.position.x, -bx + 0.6, bx - 0.6);
     p.group.position.z = THREE.MathUtils.clamp(p.group.position.z, HALL.endZ + 0.6, ROOM.startZ - 0.6);
   }
 }
 
-function throwBox() {
-  if (!P.hasBox) return;
-  P.hasBox = false;
-  carriedBox.visible = false;
-  const b = menu.box;
-  b.group.visible = true;
-  b.broken_ = false;
-  const dirX = Math.sin(P.angle);
-  const dirZ = Math.cos(P.angle);
-  b.group.position.set(P.x + dirX * 1.2, 0, P.z + dirZ * 1.2);
-  const speed = Math.hypot(P.vx, P.vz);
-  b.vx = dirX * (18 + speed);
-  b.vz = dirZ * (18 + speed);
-  GAME.shake = Math.min(0.6, GAME.shake + 0.2);
-  blip(300, 0.16, 'square', 0.06);
-}
+function updateProjectiles(dt) {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const pr = projectiles[i];
+    pr.life -= dt;
+    pr.x += pr.vx * dt;
+    pr.z += pr.vz * dt;
+    pr.mesh.position.set(pr.x, pr.y, pr.z);
+    pr.mesh.rotation.z += pr.spin * dt;
+    if (pr.kind === 'ball') pr.mesh.rotation.x += 12 * dt;
 
-function killDrone(d) {
-  d.alive = false;
-  d.group.visible = false;
-  spawnDebris(d.x, d.z, 9);
-  P.heat = Math.min(1, P.heat + 0.3);
-  GAME.destroyed++;
-  GAME.score += 3;
-  GAME.shake = Math.min(0.8, GAME.shake + 0.3);
-  noise(0.25, 0.1);
-  blip(1200, 0.2, 'triangle', 0.05);
-}
+    let done = pr.life <= 0;
 
-function updateDrones(dt) {
-  for (const d of drones) {
-    if (!d.alive) continue;
-    d.t += dt;
-    const distToPlayer = Math.hypot(P.x - d.x, P.z - d.z);
-    if (distToPlayer < 13) {
-      const nx = (P.x - d.x) / distToPlayer;
-      const nz = (P.z - d.z) / distToPlayer;
-      d.x += nx * 7.5 * dt;
-      d.z += nz * 7.5 * dt;
-      d.group.rotation.y = Math.atan2(nx, nz);
+    if (pr.hostile) {
+      if (dist2(pr.x, pr.z, P.x, P.z) < 0.9 && P.invuln <= 0 && P.dashT <= 0) {
+        P.invuln = 0.8;
+        P.heat *= 0.6;
+        FX.hit();
+        FX.shake(0.3);
+        blip(90, 0.2, 'sawtooth', 0.05);
+        done = true;
+      }
     } else {
-      d.x = d.homeX + Math.sin(d.t * 0.6) * d.range;
-      d.group.rotation.y = Math.cos(d.t * 0.6) > 0 ? Math.PI / 2 : -Math.PI / 2;
-    }
-    d.group.position.set(d.x, 1.7 + Math.sin(d.t * 3) * 0.12, d.z);
-    d.group.children[0].rotation.y += dt * 2;
-
-    if (distToPlayer < 1.15) {
-      const speed = Math.hypot(P.vx, P.vz);
-      if (speed > 12 || P.heat > 0.6) {
-        killDrone(d);
-      } else if (P.invuln <= 0) {
-        P.invuln = 1.1;
-        P.heat *= 0.35;
-        const nx = (P.x - d.x) / (distToPlayer || 1);
-        const nz = (P.z - d.z) / (distToPlayer || 1);
-        P.vx = nx * 14;
-        P.vz = nz * 14;
-        HUD.flash.classList.remove('hit');
-        void HUD.flash.offsetWidth;
-        HUD.flash.classList.add('hit');
-        GAME.shake = 0.6;
-        blip(80, 0.3, 'sawtooth', 0.08);
+      for (const e of enemies) {
+        if (e.dead) continue;
+        if (dist2(pr.x, pr.z, e.x, e.z) < 1.3) {
+          damageEnemy(e, pr.kind === 'ball' ? pr.power : 1);
+          done = true;
+          break;
+        }
+      }
+      if (!done) {
+        for (const p of props) {
+          if (p.dead || p.carried) continue;
+          const r = (p.spec.radius || Math.max(...p.spec.half)) + 0.3;
+          if (dist2(pr.x, pr.z, p.group.position.x, p.group.position.z) < r * r) {
+            damageProp(p, pr.kind === 'ball' ? pr.power * 2 : 1, 12);
+            if (pr.kind !== 'ball') done = true;
+            break;
+          }
+        }
       }
     }
+
+    if (Math.abs(pr.x) > 18 || pr.z < HALL.endZ - 2 || pr.z > ROOM.startZ + 2) done = true;
+    if (done) removeProjectile(i);
   }
 }
 
@@ -1117,9 +1172,34 @@ function updateDebris(dt) {
   }
 }
 
+function updatePuffs(dt) {
+  for (const p of puffs) {
+    if (p.life <= 0) continue;
+    p.life -= dt;
+    p.mesh.position.y += dt * 0.8;
+    p.mesh.scale.setScalar(1 + (1.4 - p.life));
+    p.mesh.material.opacity = Math.max(0, p.life / 1.4) * 0.22;
+    p.mesh.quaternion.copy(camera.quaternion);
+    if (p.life <= 0) p.mesh.visible = false;
+  }
+}
+
+let currentZone = '';
+function updateZoneBanner() {
+  let name = 'YOUR DESK';
+  for (const z of ZONES) if (P.z <= z.z) name = z.name;
+  if (name !== currentZone) {
+    currentZone = name;
+    HUD.zone.textContent = name;
+    HUD.zone.classList.remove('show');
+    void HUD.zone.offsetWidth;
+    HUD.zone.classList.add('show');
+  }
+}
+
 function updateCamera(dt) {
-  const lookX = THREE.MathUtils.clamp(P.x + P.vx * 0.28, -7, 7);
-  const lookZ = THREE.MathUtils.clamp(P.z + P.vz * 0.28, HALL.endZ + 6, ROOM.startZ - 3);
+  const lookX = THREE.MathUtils.clamp(P.x + P.vx * 0.26, -4.5, 4.5);
+  const lookZ = THREE.MathUtils.clamp(P.z + P.vz * 0.26, HALL.endZ + 6, ROOM.startZ - 3);
   tmpTarget.set(lookX, 1, lookZ);
   camTarget.lerp(tmpTarget, 1 - Math.pow(0.0015, dt));
 
@@ -1133,25 +1213,43 @@ function updateCamera(dt) {
     camera.position.z += (Math.random() - 0.5) * GAME.shake;
   }
 
-  const targetFrustum = CAM.game.frustum + P.heat * 4;
-  if (Math.abs(frustum - targetFrustum) > 0.02) {
-    frustum += (targetFrustum - frustum) * Math.min(1, dt * 3);
-    applyFrustum();
-  }
+  frustum += (CAM.game.frustum + P.heat * 3 - frustum) * Math.min(1, dt * 3);
+  applyFrustum();
   camera.lookAt(camTarget);
 
-  sun.position.set(P.x + 16, 34, P.z + 18);
-  sun.target.position.set(P.x, 0, P.z);
+  key.position.set(P.x + 16, 32, P.z + 18);
+  key.target.position.set(P.x, 0, P.z);
+  followLight.position.set(P.x, 13, P.z + 1);
+  followLight.target.position.set(P.x, 0, P.z);
+  heatLight.position.set(P.x, 2.2, P.z);
+  heatLight.intensity = P.heat * 26 + (P.smokeT > 0 ? 12 : 0);
 }
 
-function updateHUD() {
+function updateHUD(dt) {
   HUD.fill.style.width = `${P.heat * 100}%`;
-  const left = Math.max(0, GAME.limit - GAME.time);
-  HUD.timer.textContent = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(
-    Math.floor(left % 60)
+  HUD.fill.classList.toggle('hot', P.heat > 0.75);
+
+  const left_ = Math.max(0, GAME.limit - GAME.time);
+  HUD.timer.textContent = `${String(Math.floor(left_ / 60)).padStart(2, '0')}:${String(
+    Math.floor(left_ % 60)
   ).padStart(2, '0')}`;
-  HUD.timer.style.color = left < 20 ? '#b3241d' : '#333';
-  HUD.destroyed.textContent = `DESTROYED: ${GAME.destroyed}`;
+  HUD.timer.classList.toggle('warn', left_ < 20);
+  HUD.destroyed.textContent = `DESTROYED ${GAME.destroyed}`;
+  HUD.cigs.textContent = `CIGS ${P.cigs}`;
+
+  let hold = '—';
+  if (P.mice > 0) hold = `${P.mice}× MOUSE`;
+  else if (P.carry) hold = P.carry.type === 'paperReam' ? `PAPER ${P.paper}` : P.carry.type.toUpperCase();
+  HUD.hold.textContent = hold;
+  HUD.dash.style.opacity = P.dashCd > 0 ? 0.25 : 1;
+
+  if (GAME.hintT > 0) {
+    GAME.hintT -= dt;
+    HUD.prompt.textContent = GAME.hint;
+    HUD.prompt.classList.remove('hidden');
+  } else {
+    HUD.prompt.classList.add('hidden');
+  }
 }
 
 /* =========================================================
@@ -1175,12 +1273,14 @@ function tick() {
     GAME.time += dt;
     updatePlayer(dt);
     updateProps(dt);
-    updateDrones(dt);
+    updateEnemies(dt);
+    updateProjectiles(dt);
     updateDebris(dt);
-    updateAfterimages(dt);
-    updateGhost();
+    updatePuffs(dt);
+    updateEcho(dt);
+    updateZoneBanner();
     updateCamera(dt);
-    updateHUD();
+    updateHUD(dt);
     if (GAME.time >= GAME.limit) endGame(false);
   } else {
     updateDebris(dt);
@@ -1188,28 +1288,26 @@ function tick() {
     updateCamera(dt);
   }
 
+  const exitSign = getExitSign();
   if (exitSign) exitSign.material.opacity = 0.55 + Math.abs(Math.sin(performance.now() * 0.003)) * 0.45;
 
-  renderer.render(scene, camera);
+  if (composer) composer.render();
+  else renderer.render(scene, camera);
 }
 
 /* =========================================================
    boot
    ========================================================= */
 
-addFloor();
-buildShell();
-buildNarrativeWall();
+buildLevel();
 buildMenuRoom();
-buildOffice();
-buildExit();
-buildDrones();
+buildEnemies();
 
-exitSign.material.transparent = true;
 player.position.set(P.x, 0, P.z);
 player.rotation.y = P.angle;
 playerBody.position.y = 0.28;
 playerBody.rotation.x = -0.25;
 
+addEventListener('resize', resize);
 resize();
 tick();
