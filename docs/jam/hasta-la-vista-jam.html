@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HASTA LA VISTA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&family=Saira+Stencil+One&display=swap">
+<style>
+  :root{
+    --ink:#f2e8cd; --dim:#a1977c; --gold:#e5bd6b; --warn:#ee9f5f; --bad:#d85f46; --ok:#95b56b;
+    --olive1:#3c432c; --olive2:#232819; --edge:#5d6740; --bg:#05060a;
+    /* Oswald — узкий гротеск с полной кириллицей, держит трафаретный характер.
+       IBM Plex Sans — самая читаемая кириллица для реплик.
+       IBM Plex Mono — цифры и шкалы, моноширинные и не прыгают. */
+    --stencil:'Oswald','Impact','Franklin Gothic Heavy','Arial Narrow',sans-serif;
+    --ui:'IBM Plex Mono',ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --text:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    /* Saira Stencil One — трафарет по армейскому ящику, есть вьетнамская диакритика */
+    --mil:'Saira Stencil One','Stardos Stencil','Oswald','Arial Narrow',sans-serif;
+    --sh:0 1px 0 #000, 0 2px 6px #000c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:var(--ui);overflow:hidden;touch-action:manipulation}
+  #stage{position:relative;margin:0 auto}
+  canvas{display:block;width:100%;height:100%}
+  .layer{position:absolute;inset:0;pointer-events:none}
+
+  #ticker{position:absolute;left:0;right:0;top:0;height:1.6em;overflow:hidden;display:none;
+    background:linear-gradient(180deg,#05060ae0,#05060a00)}
+  #ticker span{position:absolute;white-space:nowrap;font-size:.72em;line-height:2.2em;
+    color:#d4bd88;letter-spacing:.12em;text-shadow:var(--sh)}
+  .hrow{display:flex;gap:1.1em;align-items:baseline;justify-content:center;margin-bottom:.3em}
+  .hrow .km{font-size:1.15em;color:var(--gold);letter-spacing:.09em;text-shadow:var(--sh)}
+  .hrow .clock{font-size:.68em;color:var(--dim);letter-spacing:.14em}
+  .hrow .left{font-size:.76em;color:#cbd6a2;letter-spacing:.12em}
+  .hrow .left.hot{color:var(--bad)}
+
+  #wlabel{position:absolute;display:none;transform:translate(-50%,-100%);white-space:nowrap;
+    background:linear-gradient(180deg,#4a4226,#241f10);border:1px solid var(--gold);border-radius:5px;
+    padding:.22em .6em;font-size:.82em;letter-spacing:.1em;color:#ffeab6;box-shadow:0 3px 10px #000b;
+    text-shadow:var(--sh)}
+  #wlabel b{color:var(--gold);font-weight:400}
+  #carlabel{position:absolute;display:none;transform:translate(-50%,-100%);white-space:nowrap;
+    background:linear-gradient(180deg,#26402f,#101c14);border:1px solid #6fae86;border-radius:5px;
+    padding:.22em .6em;font-family:var(--text);font-size:.82em;letter-spacing:.02em;color:#ddf7e5;
+    box-shadow:0 3px 10px #000b;text-shadow:var(--sh)}
+  #carlabel b{color:#8fd6a6;font-weight:400}
+
+  #hud{position:absolute;left:50%;transform:translateX(-50%);top:2em;max-width:calc(100% - 1.2em);
+    background:linear-gradient(180deg,#2c3220f5,#12150cfa);
+    border:1px solid var(--edge);border-radius:12px;
+    box-shadow:inset 0 1px 0 #ffffff18, inset 0 0 22px #000b, 0 3px 0 #0009;
+    padding:.35em .8em .4em}
+  .gauges{display:flex;flex-wrap:wrap;gap:.2em 1.15em;justify-content:center}
+  .g{display:flex;align-items:center;gap:.4em;font-size:.6em;letter-spacing:.1em;color:var(--dim)}
+  .g .lb{min-width:4.8em;flex:none}
+  .g .seg{display:flex;gap:2px;flex:none;margin:0 .15em}
+  .g .seg i{width:.36em;height:.6em;background:#00000099;border-radius:1px;box-shadow:inset 0 0 0 1px #ffffff12}
+  .g .seg i.on{background:#c3b184}
+  .g.warn .seg i.on{background:var(--warn)}
+  .g.bad  .seg i.on{background:var(--bad)}
+  .g.good .seg i.on{background:var(--ok)}
+  .g .vl{min-width:3.2em;color:var(--ink);text-align:right;font-weight:500;letter-spacing:.06em}
+  #stuff{font-size:.62em;color:var(--dim);letter-spacing:.22em;text-align:center;margin-top:.45em;
+    padding-top:.35em;border-top:1px solid #ffffff12}
+
+  #sms{position:absolute;right:.7em;top:8.4em;width:13em;display:flex;flex-direction:column;gap:.45em}
+  .sm{border-left:2px solid var(--gold);padding:.12em 0 .12em .5em;font-size:.74em;line-height:1.45;
+    text-shadow:var(--sh);opacity:0;transform:translateY(-5px);transition:opacity .4s,transform .4s}
+  .sm.on{opacity:1;transform:none}
+  .sm u{display:block;color:var(--gold);text-decoration:none;letter-spacing:.14em;font-size:.85em}
+
+  #panel,#dlg{position:absolute;left:1em;right:1em;bottom:3.4em;pointer-events:auto;display:none;
+    background:linear-gradient(180deg,#312816f8,#120d06fc);
+    border:2px solid #7d6740;border-radius:7px;
+    box-shadow:inset 0 0 0 1px #0b0906, inset 0 0 30px #000b, 0 6px 18px #000c;
+    padding:.65em .9em .7em;max-height:44%;overflow:auto}
+  #panel::before,#dlg::before{content:'';position:absolute;inset:3px;border:1px solid #574526;
+    border-radius:4px;pointer-events:none}
+  .who .tip{float:right;font-style:normal;color:#7c7358;letter-spacing:.1em;font-size:.85em;
+    text-transform:none}
+  .who{color:var(--gold);letter-spacing:.26em;font-size:.8em;margin-bottom:.5em;
+    border-bottom:1px solid #4a3c22;padding-bottom:.35em;text-shadow:var(--sh)}
+  .say{line-height:1.55;color:#fff6e0;font-size:1.08em;text-shadow:var(--sh);
+    font-family:var(--text);font-weight:400}
+  .opts{margin-top:.55em;display:flex;flex-direction:column;gap:.14em}
+  .opt{background:#ffffff08;border:1px solid #ffffff10;border-radius:5px;
+    color:#f0e2b8;font-family:var(--text);font-size:.98em;text-align:left;
+    padding:.3em .5em;cursor:pointer;display:flex;gap:.65em;align-items:baseline;text-shadow:var(--sh)}
+  .opt:hover,.opt:focus{color:#fff;background:#e5bd6b26;border-color:#e5bd6b66;outline:none}
+  .opt em{font-style:normal;color:#0f0c06;background:var(--gold);border-radius:3px;
+    min-width:1.4em;text-align:center;font-size:.8em;padding:.05em .25em;font-family:var(--ui);
+    font-weight:500;flex:none}
+  .opt.lock{color:#807a68;background:#ffffff04;border-color:#ffffff0a;cursor:not-allowed}
+  .opt.lock em{background:#4e4a3d;color:#171510}
+  .opt.lock:hover{background:#ffffff04;border-color:#ffffff0a;color:#807a68}
+  .opt .why{display:block;margin-top:.15em;font-size:.76em;font-style:italic;
+    color:#6e6857;letter-spacing:.02em}
+  .opt.rage{color:#f08064}
+  .opt.rage em{background:#c0503c;color:#fff}
+  .opt.rage:hover{background:#c0503c2e;border-color:#c0503c88;color:#ffb49f}
+
+  #keys{position:absolute;left:0;right:0;bottom:.7em;display:flex;flex-wrap:wrap;
+    justify-content:center;gap:.35em 1.1em;font-family:var(--text);font-size:.72em;
+    color:#d8cfb4;letter-spacing:.01em;
+    text-shadow:0 1px 3px rgba(0,0,0,.8)}
+  #keys span{display:flex;align-items:center;gap:.32em}
+  #keys kbd{font-family:var(--ui);background:#141810cc;border:1px solid #6d7a4a;border-radius:4px;
+    padding:.06em .4em;color:#ffeeba;font-size:.92em;
+    box-shadow:0 1px 0 #0009, inset 0 1px 0 #ffffff10}
+  #tip{position:absolute;left:0;right:0;bottom:4.5em;text-align:center;
+    font-family:var(--text);font-size:.86em;color:#ffd88f;letter-spacing:.02em;
+    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 18px rgba(255,190,110,.25)}
+  #hint{position:absolute;left:0;right:0;bottom:3.1em;text-align:center;
+    font-family:var(--text);font-weight:500;font-size:.88em;
+    color:#fbf1d8;letter-spacing:.04em;
+    text-shadow:0 1px 3px rgba(0,0,0,.8), 0 0 16px rgba(235,205,140,.22)}
+  #toast{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:1.05em;color:var(--gold);
+    letter-spacing:.16em;opacity:0;transition:opacity .35s;text-shadow:var(--sh)}
+
+  #dice{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    background:#05070cdb;pointer-events:auto}
+  #dice .box{background:linear-gradient(180deg,#312816,#120d06);border:2px solid #7d6740;border-radius:7px;
+    box-shadow:inset 0 0 0 1px #0b0906,inset 0 0 26px #000a;padding:1em 1.8em;text-align:center}
+  #dice .faces{font-size:2.8em;letter-spacing:.2em;color:#fff3d2;text-shadow:var(--sh)}
+  #dice .calc{font-size:.78em;color:#b6ab8c;letter-spacing:.08em;line-height:1.8;margin-top:.5em}
+  #dice .res{font-size:1.15em;letter-spacing:.3em;margin-top:.55em;text-shadow:var(--sh)}
+  #dice .res.win{color:var(--ok)} #dice .res.lose{color:var(--bad)}
+
+  .screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:1.2em;pointer-events:auto;overflow:auto;
+    background:radial-gradient(130% 100% at 50% 40%,#1a1e12,#06070a 76%)}
+  .crate{position:relative;width:min(31em,95%);padding:1.6em 1.8em 1.5em;
+    background:
+      radial-gradient(circle at 10px 10px,#727c50 1.5px,transparent 2px),
+      radial-gradient(circle at calc(100% - 10px) 10px,#727c50 1.5px,transparent 2px),
+      radial-gradient(circle at 10px calc(100% - 10px),#727c50 1.5px,transparent 2px),
+      radial-gradient(circle at calc(100% - 10px) calc(100% - 10px),#727c50 1.5px,transparent 2px),
+      linear-gradient(180deg,var(--olive1),var(--olive2));
+    border:2px solid var(--edge);border-radius:5px;
+    box-shadow:inset 0 0 0 1px #12150c, inset 0 0 60px #000a, 0 6px 0 #00000066}
+  .crate::before{content:'';position:absolute;inset:5px;border:1px solid #4b5433;
+    border-radius:3px;pointer-events:none}
+  .stamp{position:absolute;right:1.1em;top:.9em;transform:rotate(-7deg);
+    border:2px solid #9c4b3a;color:#cf6349;font-size:.6em;letter-spacing:.18em;
+    padding:.2em .5em;border-radius:2px}
+  .crate h1{margin:0;font-family:var(--stencil);font-weight:400;line-height:.92;
+    font-size:3em;letter-spacing:.06em;text-transform:uppercase;
+    background:repeating-linear-gradient(180deg,#efd694 0 .34em,transparent .34em .43em);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    -webkit-text-stroke:.5px #7b6f3d;filter:drop-shadow(0 3px 0 #00000066)}
+  .sub{margin-top:.5em;font-size:.68em;letter-spacing:.26em;color:#a6b078}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,#6c7749,transparent);margin:1em 0 .9em}
+  .mitems{display:flex;flex-direction:column;gap:.1em}
+  .mi{background:none;border:0;color:#e2d29a;cursor:pointer;text-align:left;
+    font-family:var(--stencil);font-size:1.3em;letter-spacing:.14em;text-transform:uppercase;
+    padding:.16em .3em;display:flex;gap:.55em;align-items:center;border-radius:3px;text-shadow:var(--sh)}
+  .mi:hover,.mi:focus{color:#fff3c4;background:#ffffff14;outline:none}
+  .mi b{color:#93a05e;font-weight:400}
+  .mtext{display:none;margin-top:.9em;font-size:.82em;line-height:1.7;color:#bdb49a;min-height:0;
+    border-top:1px solid #47502f;padding-top:.7em;font-family:var(--text);
+    max-height:42vh;overflow:auto}
+  .team{margin-top:1.3em;display:flex;align-items:center;gap:.7em;justify-content:flex-end}
+  .team span{font-family:var(--mil);font-size:.92em;letter-spacing:.16em;
+    color:#b6bd7e;text-transform:uppercase;text-shadow:0 1px 0 #000,0 0 12px #97a35a33;
+    transform:skewX(-4deg)}
+  .team i{flex:1;height:1px;background:linear-gradient(90deg,transparent,#5d6740);font-style:normal}
+  .team b{font-family:var(--ui);font-size:.62em;letter-spacing:.28em;color:#79855a;font-weight:400}
+  .mtext b{color:#efdcab;font-weight:500}
+  .mtext p{margin:0 0 .8em}
+  .mtext p:last-child{margin-bottom:0}
+  .mtext .head{color:#a9b477;letter-spacing:.24em;font-family:var(--ui);font-size:.82em;
+    margin:.2em 0 .55em}
+  .leg{display:flex;gap:.8em;margin:.3em 0;align-items:baseline}
+  .leg u{color:var(--gold);text-decoration:none;min-width:6.2em;flex:none;
+    font-family:var(--ui);font-size:.85em;letter-spacing:.12em}
+  .keys{display:flex;flex-wrap:wrap;gap:.35em .9em;margin:.1em 0 .7em}
+  .keys kbd{font-family:var(--ui);font-size:.82em;background:#0f120a;border:1px solid #5d6740;
+    border-radius:3px;padding:.08em .45em;color:#e2d29a}
+  #end .crate h1{font-size:1.9em}
+  .endtext{display:block;font-family:var(--text);font-size:.84em;line-height:1.72}
+  .et-lead{color:#f0e6c8}
+  .et-stat{margin-top:.9em;font-family:var(--ui);font-size:.78em;letter-spacing:.08em;color:#95907a;
+    border-top:1px solid #47502f;padding-top:.6em}
+  .et-verdict{margin-top:.7em;color:#cdd39a}
+
+  #touch{position:absolute;inset:auto 0 2.6em 0;display:none;justify-content:space-between;padding:0 .5em;pointer-events:auto}
+  #touch button{width:2.7em;height:2.7em;border:1px solid var(--edge);background:#0f120acc;color:var(--ink);
+    font:inherit;border-radius:8px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+
+  <div class="layer"><div id="ticker"><span id="tick-txt"></span></div></div>
+
+  <div class="layer"><div id="wlabel"></div><div id="carlabel"></div></div>
+  <div class="layer"><div id="sms"></div></div>
+  <div class="layer"><div id="toast"></div></div>
+  <div class="layer"><div id="tip"></div></div>
+  <div class="layer"><div id="hint"></div></div>
+  <div class="layer"><div id="keys">
+    <span><kbd>E</kbd>действие</span><span><kbd>F</kbd>выйти из машины</span>
+    <span><kbd>C</kbd>закурить</span><span><kbd>← →</kbd>идти</span>
+    <span><kbd>␣</kbd>ждать / дальше</span><span><kbd>1–9</kbd>ответ</span>
+    <span><kbd>ESC</kbd>закрыть</span>
+  </div></div>
+  <div class="layer">
+    <div id="hud">
+      <div class="hrow">
+        <span class="km" id="km">12.0 КМ</span>
+        <span class="clock" id="clock">ДЕНЬ 1 · 16:00</span>
+        <span class="left" id="left">6:00</span>
+      </div>
+      <div class="gauges" id="gauges"></div>
+      <div id="stuff">СИГАРЕТ 14 · 40 000 ₽</div>
+    </div>
+  </div>
+
+  <div id="panel"></div>
+  <div id="dlg"></div>
+
+  <div id="dice"><div class="box">
+    <div class="faces" id="dice-f">⚄ ⚂</div>
+    <div class="calc" id="dice-c"></div>
+    <div class="res" id="dice-r"></div>
+  </div></div>
+
+  <div class="screen" id="title">
+    <div class="crate">
+      <div class="stamp">24 · 09 · 2022</div>
+      <h1>Hasta<br>la vista</h1>
+      <div class="rule"></div>
+      <div class="mitems">
+        <button class="mi" id="start"><b>›</b>Новая игра</button>
+        <button class="mi" id="m-ctrl"><b>›</b>Управление</button>
+        <button class="mi" id="m-about"><b>›</b>О чём это</button>
+      </div>
+      <div class="mtext" id="mtext"></div>
+      <div class="team"><i></i><span>HangaPlay Team</span><b>2026</b></div>
+    </div>
+  </div>
+
+  <div class="screen" id="end" style="display:none">
+    <div class="crate">
+      <h1 id="end-h">…</h1>
+      <div class="rule"></div>
+      <div class="endtext">
+        <div id="end-t" class="et-lead"></div>
+        <div id="end-s" class="et-stat"></div>
+        <div id="end-v" class="et-verdict"></div>
+      </div>
+      <div class="mitems" style="margin-top:.9em"><button class="mi" id="again"><b>›</b>Ещё раз</button></div>
+    </div>
+  </div>
+
+  <div id="touch">
+    <button data-k="ArrowLeft">←</button><button data-k="KeyE">E</button>
+    <button data-k="Space">⏎</button><button data-k="KeyC">🚬</button>
+    <button data-k="KeyF">F</button><button data-k="ArrowRight">→</button>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ==========================================================
+   Два слоя: подвижный фон рисуется вектором в высоком
+   разрешении и масштабируется со сглаживанием; передний план
+   рисуется в буфер 320x180 и растягивается ступеньками.
+   ========================================================== */
+const W=320,H=180,BS=3;                       /* BS — множитель фонового холста */
+const buf=document.createElement('canvas');buf.width=W;buf.height=H;
+const ctx=buf.getContext('2d');
+const bgc=document.createElement('canvas');bgc.width=W*BS;bgc.height=H*BS;
+const bctx=bgc.getContext('2d');bctx.setTransform(BS,0,0,BS,0,0);
+bctx.imageSmoothingEnabled=true;
+const cv=document.getElementById('cv'),dctx=cv.getContext('2d');
+const stage=document.getElementById('stage');
+let kDev=3,kCss=3;
+function resize(){
+  kCss=Math.min(innerWidth/W,innerHeight/H);
+  const cssW=Math.floor(W*kCss),cssH=Math.floor(H*kCss);
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  kDev=Math.max(1,Math.round(cssW*dpr/W));
+  cv.width=W*kDev;cv.height=H*kDev;
+  cv.style.width=cssW+'px';cv.style.height=cssH+'px';
+  stage.style.width=cssW+'px';stage.style.height=cssH+'px';
+  stage.style.fontSize=Math.max(11,Math.min(23,Math.round(kCss*4.7)))+'px';
+}
+addEventListener('resize',resize);resize();
+if('ontouchstart' in window)document.getElementById('touch').style.display='flex';
+
+const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const hex=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
+const mix=(c1,c2,t)=>{const a=hex(c1),b=hex(c2);return 'rgb('+a.map((v,i)=>Math.round(lerp(v,b[i],t))).join(',')+')';};
+const shade=(c,t)=>mix(c,t<0?'#000000':'#ffffff',Math.abs(t));
+function hash(n){const s=Math.sin(n*127.1)*43758.5453;return s-Math.floor(s);}
+/* пиксельная растеризация переднего плана */
+function pxPoly(pts){
+  let minX=1e9,maxX=-1e9;
+  for(const p of pts){if(p[0]<minX)minX=p[0];if(p[0]>maxX)maxX=p[0];}
+  minX=Math.round(minX);maxX=Math.round(maxX);
+  for(let x=minX;x<=maxX;x++){
+    const xc=x+0.5,ys=[];
+    for(let i=0;i<pts.length;i++){
+      const a=pts[i],b=pts[(i+1)%pts.length];
+      if((a[0]<=xc&&b[0]>xc)||(b[0]<=xc&&a[0]>xc))
+        ys.push(a[1]+(xc-a[0])/(b[0]-a[0])*(b[1]-a[1]));
+    }
+    if(ys.length<2)continue;
+    ys.sort((p,q)=>p-q);
+    for(let i=0;i+1<ys.length;i+=2){
+      const y0=Math.round(ys[i]),y1=Math.round(ys[i+1]);
+      if(y1>y0)ctx.fillRect(x,y0,1,y1-y0);
+    }
+  }
+}
+function pxCircle(cx,cy,r){
+  cx=Math.round(cx);cy=Math.round(cy);r=Math.round(r);
+  for(let dy=-r;dy<=r;dy++){
+    const dx=Math.floor(Math.sqrt(Math.max(0,r*r-dy*dy)));
+    ctx.fillRect(cx-dx,cy+dy,dx*2+1,1);
+  }
+}
+function pxEllipse(cx,cy,rx,ry){
+  cx=Math.round(cx);cy=Math.round(cy);
+  for(let dy=-ry;dy<=ry;dy++){
+    const dx=Math.floor(rx*Math.sqrt(Math.max(0,1-(dy*dy)/(ry*ry))));
+    ctx.fillRect(cx-dx,Math.round(cy+dy),dx*2+1,1);
+  }
+}
+
+/* ============ контент ============ */
+const NEWS=[
+ '24.09 · ФТС: на подъезде к «Верхнему Ларсу» более 2300 автомобилей',
+ '24.09 · МВД Северной Осетии рекомендует воздержаться от поездок к границе',
+ '24.09 · Курс ЦБ: доллар 58,10 · евро 56,90',
+ '25.09 · Референдумы в ДНР, ЛНР, Херсонской и Запорожской областях — второй день',
+ '25.09 · Средняя цена АИ-95 по стране — около 40 рублей за литр',
+ '26.09 · Сообщения об утечках на «Северном потоке» в Балтийском море',
+ '26.09 · Зонд NASA DART столкнулся с астероидом Диморф',
+ '27.09 · Погода в горах: ночью около нуля, туман, местами дождь',
+ '28.09 · Ураган «Иан» приближается к побережью Флориды',
+ 'Реклама шин. Реклама шин. Помехи.',
+];
+const CHAT=[
+ 'Хочешь хинкали — крути педали! Велосипед 60 000, доставка к очереди',
+ 'Ребята, хватит драть деньги. Мы тут все по одной теме',
+ 'Впереди четыре часа. Не верьте тем, кто пишет два',
+ 'Кто с детьми — говорят, пропускают вперёд. Идите к шлагбауму',
+ 'Не верьте. Никого не пропускают. Стою вторые сутки',
+ 'Бензин тысяча за литр. Совесть — ноль за килограмм',
+ 'Потерялась собака, рыжая, ошейник синий. 12-й километр',
+];
+const SMSES=[
+ {w:'МАМА',t:'ты доехал? я не сплю'},
+ {w:'ОТЕЦ',t:'позвони когда сможешь. в мессенджеры не пиши'},
+ {w:'СЕРГЕЙ',t:'меня развернули. долг по алиментам. стою на обочине'},
+ {w:'БАНК',t:'Покупка 1000 ₽ отклонена. Недостаточно средств'},
+ {w:'МАРЬЯ · ИЗ МАШИНЫ',t:'выйди пожалуйста. не при тео'},
+ {w:'ЗАМ',t:'Иван Андреевич, совет директоров ждёт вашего решения'},
+ {w:'ОПЕРАТОР',t:'Роуминг в Грузии: 149 ₽/мин. Интернет 30 ₽/МБ'},
+];
+/* случайная стартовая сцена: каждый прогон начинается по-своему */
+const OPENERS=[
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Ряд стоит уже сорок минут. Двигатель заглушен, чтобы не жечь бензин.',
+   'Марья считает бутылки в багажнике вслух и сбивается на четвёртой.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Тео залез с ногами на заднее сиденье и уснул на переноске с Трампом.',
+   'Марья просит не будить его хотя бы час.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Мимо по обочине проходит человек с двумя канистрами и не смотрит по сторонам.',
+   '— Далеко ещё? — спрашивает Марья. Ты честно отвечаешь, что не знаешь.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Ты в третий раз проверяешь папку с документами. Всё на месте, как и в прошлые два.',
+   'Марья видит это и ничего не говорит.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['В зеркале — ряд машин до поворота. Сзади подъезжает ещё одна и встаёт вплотную.',
+   'Тео спрашивает, будет ли у него в новой школе физкультура.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Трамп орёт в переноске второй час подряд.',
+   '— Ему страшно, — говорит Тео. — Он же не знает, куда мы едем.','— Я тоже не знаю, — говорит Марья.']],
+];
+/* у каждой реплики свои живые ответы: примирение, молчание, срыв */
+const TOXIC=[
+ {who:'МАРЬЯ',line:'Я говорила — надо было выезжать в среду. Ты сказал «подождём».',
+  calm:'«Ты была права. Мне было страшно это признать»',
+  quiet:'Смотреть вперёд и считать машины до поворота',
+  snap:'«А сама собиралась две недели»',
+  lock:'…признать её правоту — язык не поворачивается'},
+ {who:'МАРЬЯ',line:'У тебя вообще есть план? Или мы просто едем.',
+  calm:'«План — довезти вас. Дальше придумаем вместе»',
+  quiet:'Достать карту и молча водить по ней пальцем',
+  snap:'«План был — не спрашивать каждые полчаса»',
+  lock:'…любой план сейчас прозвучит как враньё'},
+ {who:'МАРЬЯ',line:'Ты куришь третий раз за час. Мне этим дышать.',
+  calm:'Опустить стекло и сказать, что она права',
+  quiet:'Затушить и убрать пачку во внутренний карман',
+  snap:'«Это единственное, что у меня осталось»',
+  lock:'…рука уже держит пачку'},
+ {who:'МАРЬЯ',line:'Скажи честно: ты нас вывозишь или себя?',
+  calm:'«Вас. И себя. Я не умею это разделять»',
+  quiet:'Не отвечать и убавить радио',
+  snap:'«Хочешь — иди и разбирайся сама»',
+  lock:'…честный ответ сейчас звучит как приговор'},
+ {who:'МАРЬЯ',line:'Мама звонила. Плакала. Я не знала, что ей ответить.',
+  calm:'«Дай номер, я поговорю с ней сам»',
+  quiet:'Взять её за руку и ничего не говорить',
+  snap:'«Ну так не бери трубку»',
+  lock:'…на ещё один такой разговор тебя не хватит'},
+ {who:'ТЕО',line:'Пап, а мы вернёмся? У меня там аквариум.',
+  calm:'«Рыб кормит Наташа. Она обещала, я проверял»',
+  quiet:'Сказать «посмотрим» и глянуть в зеркало',
+  snap:'«Не сейчас, Тео»',
+  lock:'…соврать ребёнку в этот раз не выходит'},
+ {who:'МАРЬЯ',line:'Ты сказал шесть часов. Прошло тридцать.',
+  calm:'«Я ошибся. Больше не буду называть цифры»',
+  quiet:'Кивнуть и переставить будильник на телефоне',
+  snap:'«Я тебе не пограничник»',
+  lock:'…любое новое число снова окажется враньём'},
+ {who:'ТЕО',line:'Пап, а почему все дяди на нас так смотрят?',
+  calm:'«Они не на нас. Они просто очень устали»',
+  quiet:'Поднять стекло с его стороны',
+  snap:'«Тео, помолчи»',
+  lock:'…объяснить это девятилетнему тебе нечем'},
+ {who:'МАРЬЯ',line:'Трамп не пил с утра. Ты об этом подумал?',
+  calm:'Налить Трампу воды в крышку от термоса',
+  quiet:'Молча переставить переноску ближе к Тео',
+  snap:'«Я думаю о четверых сразу, извини»',
+  lock:'…ты и правда не подумал'},
+ {who:'МАРЬЯ',line:'Карта не проходит. Совсем. Я пробовала трижды.',
+  calm:'«У меня есть наличные. Хватит на неделю, дальше придумаем»',
+  quiet:'Молча пересчитать купюры в бардачке',
+  snap:'«И что ты хочешь от меня прямо сейчас?»',
+  lock:'…сказать «хватит» значит соврать про сумму'},
+ {who:'МАРЬЯ',line:'Где мы сегодня будем спать? Только не говори «в машине».',
+  calm:'«В машине. Я откину сиденья и отдам вам оба пледа»',
+  quiet:'Показать на разложенное заднее сиденье',
+  snap:'«В гостинице „Ларс Хилтон“, конечно»',
+  lock:'…шутить сейчас — единственное, что приходит в голову'},
+ {who:'ТЕО',line:'Пап, я не могу больше терпеть. Правда не могу.',
+  calm:'Взять его за руку и отвести за камень',
+  quiet:'Достать пустую бутылку и отвернуться',
+  snap:'«Потерпи ещё десять минут»',
+  lock:'…ты слишком долго объясняешь, куда идти'},
+ {who:'МАРЬЯ',line:'Еда кончилась. Осталось два печенья и они Тео.',
+  calm:'«Дойду до ларька. Возьму хоть что-нибудь горячее»',
+  quiet:'Отдать свою половину бутерброда, не объявляя об этом',
+  snap:'«Я тебе тут не супермаркет»',
+  lock:'…предлагать еду, которой нет, — глупо'},
+ {who:'МАРЬЯ',line:'Тебе звонили с работы. Четыре раза. Я не брала.',
+  calm:'«И правильно. Я туда больше не вернусь»',
+  quiet:'Перевести телефон в беззвучный и убрать в карман',
+  snap:'«Могла бы и ответить, там люди без зарплаты»',
+  lock:'…мысль о работе сейчас разбирает изнутри'},
+ {who:'МАРЬЯ',line:'Ты не спал вторые сутки. Я вижу, как ты моргаешь.',
+  calm:'«Посплю четыре часа, если ты разбудишь на сигнал»',
+  quiet:'Помотать головой и снова смотреть вперёд',
+  snap:'«Кто тогда поедет? Ты без прав»',
+  lock:'…признать, что не тянешь, — страшнее всего'},
+ {who:'ТЕО',line:'А в Тбилиси есть море? У Даньки есть, он писал.',
+  calm:'«Моря нет. Зато есть горы прямо в городе»',
+  quiet:'Пообещать показать на карте, когда доедем',
+  snap:'«Тео, я сейчас не про море думаю»',
+  lock:'…на разговор про Даньку у тебя нет сил'},
+ {who:'МАРЬЯ',line:'Соседи сзади сигналят каждый раз, как ты глушишь двигатель.',
+  calm:'Выйти и объяснить им спокойно, что экономишь бензин',
+  quiet:'Сделать вид, что не слышишь',
+  snap:'Посигналить в ответ дважды',
+  lock:'…спокойно объяснить уже не получится'},
+ {who:'МАРЬЯ',line:'У Трампа нет справки от ветеринара. Ты знал?',
+  calm:'«Знал. Будем решать на месте, людей пропускают и с кошками»',
+  quiet:'Полезть в папку с документами в четвёртый раз',
+  snap:'«Значит, оставим Трампа. Ты этого хочешь услышать?»',
+  lock:'…фраза про Трампа выходит слишком жестокой'},
+ {who:'МАРЬЯ',line:'Мне холодно. И Тео холодно, он просто не говорит.',
+  calm:'Завести двигатель на десять минут и включить печку',
+  quiet:'Отдать свою куртку назад',
+  snap:'«Бензина на печку у нас ровно до утра»',
+  lock:'…сказать про бензин — значит признать, что просчитался'},
+];
+const AFTER=[
+ ['Ты говоришь громче, чем хотел.','Тео делает вид, что спит.'],
+ ['Фраза выходит короче и злее, чем задумывалась.','В машине становится очень тихо.'],
+ ['Ты слышишь себя со стороны и не узнаёшь голос.','Марья отворачивается к окну.'],
+ ['Трамп перестаёт орать. Это почему-то хуже всего.','Никто не отвечает.'],
+];
+const PASSER=[
+ 'Он идёт вдоль ряда и считает машины вслух.',
+ 'Он ищет рыжую собаку с синим ошейником. Второй час.',
+ 'Он третий раз проходит мимо и заглядывает в твою машину.',
+ 'Он несёт две канистры и делает вид, что они лёгкие.',
+ 'Он громко говорит по телефону: «да нормально всё, мам».',
+];
+
+/* ============ модели машин ============ */
+const MODELS=[
+ {n:'седан',    len:46,wr:5,  wheels:[9,37],
+  body:[[0,6],[0,13],[8,13],[13,23],[31,23],[36,13],[46,13],[46,6]],
+  glass:[[[10,14],[14,22],[21,22],[21,14]],[[23,14],[23,22],[30,22],[34,14]]]},
+ {n:'универсал',len:54,wr:5,  wheels:[10,44],
+  body:[[0,6],[0,13],[8,13],[12,24],[47,24],[49,13],[54,13],[54,6]],
+  glass:[[[14,14],[14,23],[24,23],[24,14]],[[26,14],[26,23],[34,23],[34,14]],[[36,14],[36,23],[45,23],[47,14]]],
+  rack:[14,45]},
+ {n:'нива',     len:41,wr:5.5,wheels:[9,32],
+  body:[[0,7],[0,15],[6,15],[9,27],[33,27],[35,15],[41,15],[41,7]],
+  glass:[[[10,16],[11,26],[20,26],[20,16]],[[22,16],[22,26],[31,26],[33,16]]],
+  rack:[9,32],spare:true},
+ {n:'буханка',  len:49,wr:5.5,wheels:[10,39],
+  body:[[0,7],[0,30],[3,33],[44,33],[49,29],[49,7]],
+  glass:[[[5,20],[5,31],[15,31],[15,20]],[[18,20],[18,31],[28,31],[28,20]],[[31,20],[31,31],[43,31],[46,22]]],
+  rack:[6,42],ladder:true},
+ {n:'микроавтобус',len:60,wr:5.5,wheels:[12,49],
+  body:[[0,7],[0,31],[45,31],[52,26],[54,17],[60,15],[60,7]],
+  glass:[[[4,20],[4,29],[14,29],[14,20]],[[17,20],[17,29],[27,29],[27,20]],[[30,20],[30,29],[40,29],[40,20]],[[44,19],[45,28],[51,26],[53,19]]]},
+ {n:'кроссовер',len:50,wr:5.5,wheels:[10,40],
+  body:[[0,7],[0,15],[8,15],[14,25],[36,25],[44,15],[50,15],[50,7]],
+  glass:[[[12,16],[16,24],[24,24],[24,16]],[[26,16],[26,24],[34,24],[38,16]]],
+  rack:[13,37]},
+ {n:'хэтчбек',  len:42,wr:5,  wheels:[9,34],
+  body:[[0,6],[0,14],[5,14],[11,22],[31,22],[35,14],[42,14],[42,6]],
+  glass:[[[8,15],[13,21],[20,21],[20,15]],[[22,15],[22,21],[29,21],[32,15]]]},
+ {n:'рамный',   len:53,wr:6,  wheels:[11,43],
+  body:[[0,8],[0,17],[9,17],[12,29],[42,29],[47,17],[53,17],[53,8]],
+  glass:[[[14,18],[14,28],[25,28],[25,18]],[[27,18],[27,28],[38,28],[41,18]]],
+  rack:[13,41],bull:true},
+];
+const CARCOL=['#9c4a47','#41608a','#71784f','#98908a','#334349','#8a6540','#b3ada2','#54486a','#6f8894','#a8946a'];
+
+/* ============ мир ============ */
+const HORIZON=76,ROADTOP=104,GROUND=132,SPACING=72,CAR_X=460;
+const LAMP_TOP=ROADTOP-26;
+const CAR_MID=CAR_X+28,SIT_R=62;   /* центр своей машины и радиус посадки */
+const CARS=[];
+for(let i=-6;i<=9;i++){
+  const m=i===0?1:Math.floor(hash(i*3.3)*MODELS.length);
+  CARS.push({i,x:CAR_X+i*SPACING,m,len:MODELS[m].len,
+    col:i===0?'#43705f':CARCOL[Math.floor(hash(i*7.7)*CARCOL.length)],
+    load:hash(i*11.1)>0.35,puff:0});
+}
+const LAMPS=[CAR_X-4*SPACING-30,CAR_X+SPACING+40,CAR_X+6*SPACING+18];
+const SPOTS=[
+ {key:'artem',i:1, label:'Артём',               x:CAR_X+SPACING+52},
+ {key:'mom',  i:-2,label:'Женщина с ребёнком',  x:CAR_X-2*SPACING+52},
+ {key:'gas',  i:3, label:'Мужик с канистрой',   x:CAR_X+3*SPACING+52},
+ {key:'fire', i:-5,label:'Костёр',              x:CAR_X-5*SPACING+38,kind:'fire'},
+ {key:'bike', i:7, label:'Парень с велосипедом',x:CAR_X+7*SPACING+52},
+ {key:'kiosk',i:5, label:'Ларёк: яйца и кофе',  x:CAR_X+5*SPACING+32,kind:'kiosk'},
+ {key:'rock', i:-6,label:'За камень',           x:CAR_X-6*SPACING-12,kind:'rock'},
+];
+const WANDER=[];
+for(let i=0;i<6;i++)WANDER.push({x:CAR_X+rnd(-6,9)*SPACING,d:Math.random()<.5?-1:1,
+  v:rnd(8,16),col:pick(['#8a6455','#63758a','#767555','#875764','#57634f']),ph:rnd(0,6),line:pick(PASSER)});
+const CLOUDS=[];for(let i=0;i<6;i++)CLOUDS.push({x:rnd(0,W),y:rnd(16,54),w:rnd(34,90),h:rnd(5,11),v:rnd(0.5,1.6)});
+
+/* ============ состояние ============ */
+const EPISODE=360;                             /* шесть минут: спека допускает 5–10 */
+let S;
+function reset(){
+  S={scene:'title',mode:'car',overlay:null,t:0,km:12000,left:EPISODE,
+     fuel:30,water:6,batt:100,money:40000,cigs:14,nic:95,
+     stress:18,bladder:10,sleepDebt:0,
+     fam:{happy:62,anx:34},lastCalm:-999,warned:false,alone:false,catOut:false,
+     px:CAR_X+14,face:1,walk:0,
+     bike:false,seen:{},flags:{},evDone:{},fights:0,stalled:0,
+     smokeIn:0,lastSmokeIn:-999,promised:false,lastToxic:null,quietUntil:0,
+     nextAdv:24,honk:false,advAnim:0,bgOff:0,ff:false,dryCount:0,lastSoft:-999,dawnHint:0,dawnToast:0,
+     dialog:null,panel:false,dice:null,pendingEnd:null,
+     nextToxic:rnd(45,110),nextSms:rnd(60,140),misses:0,radio:true,bikePrice:38000,
+     snake:null,shake:0};
+}
+reset();
+const hourNow=()=>(16+S.t/60)%24,dayNow=()=>1+Math.floor((16+S.t/60)/24);
+const isNight=()=>{const h=hourNow();return h<6.2||h>19.4;};
+function smooth(t){t=clamp(t,0,1);return t*t*(3-2*t);}   /* мягкая S-кривая */
+function nightAmt(){const h=hourNow();
+  if(h>=20.5||h<4.5)return 1;
+  if(h>=17)return smooth((h-17)/3.5);      /* сумерки тянутся три с половиной часа */
+  if(h<7.5)return 1-smooth((h-4.5)/3);     /* и рассвет — три */
+  return 0;}
+let NB=0;
+const nmix=(day,ngt)=>mix(day,ngt,NB);     /* цвет плавно переходит день→ночь */
+const craving=()=>clamp((38-S.nic)/38,0,1);
+
+/* ============ UI ============ */
+const dlgEl=document.getElementById('dlg'),panelEl=document.getElementById('panel'),
+      diceEl=document.getElementById('dice'),smsEl=document.getElementById('sms'),
+      wlabel=document.getElementById('wlabel');
+let toastT=0;
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.opacity=1;toastT=2.2;}
+function say(who,lines,opts){S.dialog={who,lines,i:0,opts:opts||null};drawDlg();}
+function closeDlg(){S.dialog=null;dlgEl.style.display='none';S.quietUntil=S.t+70;}
+function optAllowed(o){
+  if(o.max!==undefined&&S.stress>o.max)return false;
+  if(o.min!==undefined&&S.stress<o.min)return false;
+  return true;
+}
+function lockReason(o){
+  if(o.max!==undefined&&S.stress>o.max)
+    return 'недоступно при стрессе выше '+o.max+' · сейчас '+Math.round(S.stress);
+  if(o.min!==undefined&&S.stress<o.min)
+    return 'нужен стресс от '+o.min+' · сейчас '+Math.round(S.stress);
+  return 'недоступно';
+}
+function optHTML(o,k){
+  const ok=optAllowed(o);
+  if(ok) return '<button class="opt'+(o.rage?' rage':'')+'" data-o="'+k+'"><em>'+(k+1)+
+                '</em><span>'+o.t+'</span></button>';
+  return '<button class="opt lock" data-o="'+k+'" disabled><em>'+(k+1)+'</em><span>'+o.t+
+         '<i class="why">'+(o.lockTxt?o.lockTxt+' · ':'')+lockReason(o)+'</i></span></button>';
+}
+function drawDlg(){
+  const d=S.dialog;if(!d)return;
+  const last=d.i>=d.lines.length-1;
+  let h=d.who?'<div class="who">'+d.who+'</div>':'';
+  h+='<div class="say">'+(d.lines[d.i]||'')+'</div>';
+  h+=(last&&d.opts)?'<div class="opts">'+d.opts.map(optHTML).join('')+'</div>'
+    :'<div class="opts"><button class="opt" data-next="1"><em>␣</em><span>'+(last?'дальше':'…')+'</span></button></div>';
+  dlgEl.innerHTML=h;dlgEl.style.display='block';
+  dlgEl.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>choose(+b.dataset.o));
+  dlgEl.querySelectorAll('[data-next]').forEach(b=>b.onclick=nextLine);
+}
+function nextLine(){const d=S.dialog;if(!d)return;
+  if(d.i<d.lines.length-1){d.i++;drawDlg();}else if(!d.opts)closeDlg();}
+function choose(k){const d=S.dialog;if(!d||!d.opts||!d.opts[k])return;
+  const o=d.opts[k];if(!optAllowed(o))return;closeDlg();o.f();}
+function showPanel(title,opts){
+  S.panel=opts;
+  panelEl.innerHTML='<div class="who">'+title+
+    ' <em class="tip">цифра или клик · ESC закрыть</em></div><div class="opts">'+
+    opts.map(optHTML).join('')+'</div>';
+  panelEl.style.display='block';
+  panelEl.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+    const o=S.panel[+b.dataset.o];if(optAllowed(o))o.f();});
+}
+function closePanel(){S.panel=false;panelEl.style.display='none';}
+function sms(who,text){
+  const d=document.createElement('div');d.className='sm';
+  d.innerHTML='<u>'+who+'</u>'+text;
+  smsEl.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
+  setTimeout(()=>{d.classList.remove('on');setTimeout(()=>d.remove(),450);},6000);
+}
+function stress(v){S.stress=clamp(S.stress+v,0,100);}
+function fam(h,a){
+  if(S.alone)return;
+  S.fam.happy=clamp(S.fam.happy+(h||0),0,100);
+  S.fam.anx=clamp(S.fam.anx+(a||0),0,100);
+}
+function calmScale(){const gap=S.t-S.lastCalm;S.lastCalm=S.t;return gap<120?0.35:1;}
+function calmFam(h,a){const k=calmScale();fam(h*k,a*k);if(k<1)toast('ТЕБЯ УЖЕ СЛУШАЛИ ЧАС НАЗАД');}
+
+/* ============ действия ============ */
+function smoke(inside){
+  if(S.cigs<=0){toast('СИГАРЕТ НЕТ');stress(4);return;}
+  S.cigs--;S.nic=clamp(S.nic+40,0,100);S.t+=7;stress(-9);
+  closePanel();
+  if(!inside||S.alone){toast('ЗАКУРИЛ');return;}
+  if(S.t-S.lastSmokeIn>200)S.smokeIn=0;         /* через три часа забывается */
+  S.lastSmokeIn=S.t;S.smokeIn++;
+  if(S.promised){                                /* ты обещал не курить в салоне */
+    fam(-13,17);S.smokeIn=3;
+    say('МАРЬЯ',['— Ты обещал.','Она не поворачивается. Стекло опускает Тео, сам.']);
+    return;
+  }
+  if(S.smokeIn===1){fam(-3,4);toast('ЗАКУРИЛ В МАШИНЕ');}
+  else if(S.smokeIn===2){fam(-6,8);
+    say('',['Марья опускает своё стекло до упора и держит руку на кнопке.',
+            'Тео кашляет — может, взаправду, может, за компанию.']);}
+  else scandal();
+}
+function smokeMenu(){
+  if(S.cigs<=0){toast('СИГАРЕТ НЕТ');stress(3);return;}
+  const n=(S.t-S.lastSmokeIn>200)?0:S.smokeIn;
+  const warn=S.promised?' · ты обещал не курить в салоне'
+            :n>=2?' · Марья считает: будет третья подряд'
+            :n===1?' · Марья уже сделала замечание':'';
+  showPanel('ЗАКУРИТЬ',[
+    {t:'Выйти из машины и закурить на воздухе',
+     f(){closePanel();S.mode='foot';S.px=CAR_X+64;smoke(false);}},
+    {t:'Закурить в салоне'+warn,f(){smoke(true);}},
+    {t:'Передумать',f(){closePanel();}},
+  ]);
+}
+function scandal(){
+  fam(-8,12);S.shake=0.5;
+  say('МАРЬЯ · СКАНДАЛ',
+   ['— Третья за час. В машине ребёнок и Трамп.',
+    '— Я тебе не пепельница на колёсах. Выйди или туши.'],[
+   {t:'Выйти и докурить на улице',
+    f(){S.mode='foot';S.px=CAR_X+64;S.promised=true;calmFam(4,-10);stress(4);
+      say('',['Ты стоишь у собственного багажника и куришь, как подросток во дворе.',
+              'В машине опускают стекло — на этот раз без демонстрации.']);}},
+   {t:'Затушить и извиниться',max:70,lockTxt:'извиняться сейчас нечем',
+    f(){S.nic=clamp(S.nic-22,0,100);S.promised=true;calmFam(5,-13);stress(7);
+      say('МАРЬЯ',['— Спасибо.','Она говорит это в окно, не поворачиваясь, но говорит.']);}},
+   {t:'«Это вообще-то моя машина»',min:45,rage:true,
+    f(){fam(-16,24);stress(-8);
+      say('',['Тео вжимается в дверь. Трамп орёт в переноске так, что слышно соседям.',
+              'Следующие два часа в машине не разговаривают вообще.']);}},
+  ]);
+}
+function pee(){S.bladder=0;stress(-6);S.t+=6;
+  say('',['За камнем ветер и Терек внизу.','Впервые за сутки ты один.']);}
+function drink(){if(S.water<0.25){toast('ВОДЫ НЕТ');return;}
+  S.water-=0.25;S.bladder=clamp(S.bladder+22,0,100);stress(-3);S.t+=3;closePanel();toast('ПОПИЛ ВОДЫ');}
+function scroll(){
+  closePanel();
+  if(S.batt<6){say('ТЕЛЕФОН',['Три процента. Экран гаснет на середине.']);return;}
+  S.batt-=6;S.t+=22;
+  const a=pick(CHAT),b=pick(CHAT.filter(x=>x!==a)),good=Math.random()<0.5;
+  stress(good?-5:7);if(!good)fam(0,7);
+  say('ЧАТ «ВЕРХНИЙ ЛАРС»',['— '+a,'— '+b,
+    good?'Ты закрываешь чат чуть спокойнее, чем открывал.':'Ты закрываешь чат и жалеешь, что открыл.']);
+}
+function callHome(){
+  closePanel();
+  if(S.batt<15){say('ТЕЛЕФОН',['Один процент. Гудки. Всё.']);return;}
+  S.batt-=15;stress(-10);fam(4,-7);S.t+=12;
+  say(...pick([
+    ['ЗВОНОК ДОМОЙ',['— Ты где?','— Стою.','— Ел?','Мать спрашивает про еду, потому что про остальное нельзя.']],
+    ['ЗВОНОК ДОМОЙ',['Связь рвётся на середине слова.','Ты всё равно говоришь до конца.']]]));
+}
+function radioToggle(){S.radio=!S.radio;closePanel();toast(S.radio?'РАДИО ВКЛ':'РАДИО ВЫКЛ');}
+function calmMenu(){
+  if(S.alone){closePanel();say('',['В машине пусто. Трамп спит на пассажирском.']);return;}
+  showPanel('МАРЬЯ И ТЕО',[
+    {t:'Поговорить спокойно',max:60,lockTxt:'голос дрожит',
+     f(){closePanel();S.t+=20;calmFam(6,-15);stress(3);
+       say('МАРЬЯ',['— Ты правда не знаешь, сколько ещё?','— Не знаю.','— Хорошо. Спасибо, что не врёшь.']);}},
+    {t:'Включить Тео мультик (батарея −12)',f(){closePanel();
+       if(S.batt<14){toast('БАТАРЕИ НЕ ХВАТИТ');return;}
+       S.batt-=12;S.t+=25;calmFam(9,-9);toast('ТЕО СМОТРИТ МУЛЬТИК');}},
+    {t:'Выпустить Трампа из переноски',f(){closePanel();S.t+=8;
+       if(S.catOut){toast('ТРАМП УЖЕ НА КОЛЕНЯХ У ТЕО');return;}
+       S.catOut=true;calmFam(8,-10);stress(-5);
+       say('',['Трамп выходит недовольный и сразу ложится Тео на колени.','Первые двадцать минут в машине тихо.']);}},
+    {t:'Сказать, сколько на самом деле стоять',max:75,
+     f(){closePanel();S.t+=10;calmFam(-6,-12);stress(-2);
+       say('',['Ты говоришь: ещё сутки. Может, двое.','Марья молчит и начинает раскладывать еду по порциям.']);}},
+    {t:'Дать воды обоим',f(){closePanel();
+       if(S.water<0.6){toast('ВОДЫ НЕ ХВАТИТ');return;}
+       S.water-=0.6;calmFam(4,-7);toast('НАПОИЛ СЕМЬЮ');}},
+    {t:'Назад',f(){carMenu();}},
+  ]);
+}
+function carMenu(){
+  const o=[
+    {t:'Ждать (перемотка)',f(){S.ff=true;closePanel();toast('ЖДЁШЬ');}},
+    {t:'Успокоить семью',f(){calmMenu();}},
+    {t:'Позвонить домой',f(){callHome();}},
+    {t:'Полистать чат',f(){scroll();}},
+    {t:'Змейка на телефоне',f(){closePanel();startSnake();}},
+    {t:'Попить воды',f(){drink();}},
+    {t:'Закурить',f(){smokeMenu();}},
+    {t:S.radio?'Выключить радио':'Включить радио',f(){radioToggle();}},
+    {t:'Выйти из машины',f(){S.mode='foot';S.px=CAR_X+64;closePanel();}},
+  ];
+  if(S.bike)o.push({t:'Бросить машину и ехать дальше',f(){finish('bike');}});
+  showPanel('МАШИНА',o);
+}
+
+/* ============ разговоры ============ */
+const TALK={
+  artem(){
+    const n=S.seen.artem||0;S.seen.artem=n+1;
+    const opts=[
+      {t:'Угостить сигаретой',f(){
+        if(S.cigs<=0){toast('СИГАРЕТ НЕТ');return;}
+        S.cigs--;S.flags.artemFriend=true;stress(-5);fam(0,-4);
+        say('АРТЁМ',['Он прикуривает от твоей, ладонями от ветра.','— Если что — я сзади. Зови.']);}},
+      {t:'Просто послушать',f(){stress(-2);closeDlg();}},
+      {t:'Сказать, чтобы отвалил',min:55,rage:true,f(){stress(-6);S.flags.artemFriend=false;
+        say('АРТЁМ',['Он смотрит секунду и отходит к своей машине.']);}},
+    ];
+    if(n===0)say('АРТЁМ',['Впереди говорят — восемь часов до шлагбаума.','Вчера тоже говорили восемь.'],opts);
+    else if(n===1)say('АРТЁМ',['Пешеходов пускают быстрее. Проверено.','Машину только жалко, я на ней десять лет.'],opts);
+    else say('АРТЁМ',['Ничего не изменилось. Стоим.'],opts);
+  },
+  mom(){
+    if(S.flags.gaveWater){say('ЖЕНЩИНА',['Спасибо. Он уснул наконец.']);return;}
+    say('ЖЕНЩИНА',['Вода кончилась часа два назад.','Ребёнок не плачет. Просто смотрит.'],[
+      {t:'Отдать полтора литра',f(){
+        if(S.water<1.6){say('','Столько у тебя нет.');return;}
+        S.water-=1.5;stress(-12);fam(7,-7);S.flags.gaveWater=true;
+        say('ЖЕНЩИНА',['Она не говорит спасибо сразу.','Говорит через минуту, уже в спину.']);}},
+      {t:'Сказать, что нет',f(){stress(7);fam(-4,4);
+        say('',['Она кивает так, будто знала ответ заранее.']);}},
+      {t:'Сказать всё, что думаешь про эту очередь',min:65,rage:true,
+        f(){stress(-4);fam(-8,12);say('',['Ты говоришь слишком громко.','Марья смотрит на тебя из машины через стекло.']);}},
+    ]);
+  },
+  gas(){
+    if(S.seen.gas){say('МУЖИК',['Всё, больше нет. Разобрали.']);return;}
+    say('МУЖИК',['— Десять литров. Тысяча за литр.','— Не нравится — стой без бензина.'],[
+      {t:'Купить 10 л (10 000 ₽)',f(){
+        if(S.money<10000){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=10000;S.fuel+=10;S.seen.gas=1;stress(-4);fam(0,-6);
+        say('МУЖИК',['Канистра тяжелее, чем кажется.']);}},
+      {t:'Поторговаться',max:70,f(){
+        if(Math.random()<0.5&&S.money>=7000){S.money-=7000;S.fuel+=10;S.seen.gas=1;fam(0,-6);
+          say('МУЖИК',['— Семь. И иди отсюда.']);}
+        else{stress(6);say('МУЖИК',['— Иди отсюда бесплатно.']);}}},
+      {t:'Схватить канистру',min:70,rage:true,
+       f(){fight('канистра',{winKm:0,loseKm:120,winAnx:20,loseAnx:34,winFuel:10,
+         winTxt:['Канистра оказывается в твоих руках, и ты не помнишь как.','Десять литров. Ты не смотришь по сторонам.']});}},
+    ]);
+  },
+  kiosk(){
+    say('ЛАРЁК',['Варёные яйца и кофе. Очередь человек семьдесят.','Ценник от руки: 400 ₽.'],[
+      {t:'Взять на троих (1200 ₽)',f(){
+        if(S.money<1200){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=1200;S.t+=40;fam(11,-11);stress(-7);
+        say('',['Тео ест яйцо так, будто это лучшее, что было в его жизни.']);}},
+      {t:'Купить сигареты (900 ₽)',f(){
+        if(S.money<900){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=900;S.cigs+=20;S.t+=25;toast('ПАЧКА В КАРМАНЕ');closeDlg();}},
+      {t:'Влезть без очереди',min:55,rage:true,
+       f(){fight('очередь за кофе',{winKm:0,loseKm:0,winAnx:14,loseAnx:26,
+         winTxt:['Тебе отдают стакан молча.','Никто не смотрит в глаза, включая тебя.']});}},
+      {t:'Пройти мимо',f(){closeDlg();}},
+    ]);
+  },
+  fire(){
+    say('КОСТЁР',['Чай в железной кружке.','Никто не спрашивает, куда ты и почему.'],[
+      {t:'Посидеть час',f(){S.t+=60;stress(-16);fam(-2,6);
+        say('',['Час прошёл. Стало теплее и почему-то тише.','Марья пишет: «ты где».']);}},
+      {t:'Позвать Марью и Тео',f(){S.t+=70;stress(-8);calmFam(10,-16);
+        say('',['Тео греет руки о кружку двумя ладонями.','Кто-то даёт ему яблоко.']);}},
+      {t:'Пройти мимо',f(){closeDlg();}},
+    ]);
+  },
+  bike(){
+    if(S.bike){say('ПАРЕНЬ',['Ключи у меня. Иди уже.']);return;}
+    const p=Math.round(S.bikePrice/1000)*1000;
+    say('ПАРЕНЬ',['— Велосипед. До шлагбаума докатишь, дальше пешком.',
+      '— '+p.toLocaleString('ru-RU')+' ₽. Через час будет дороже.'],[
+      {t:'Купить ('+p.toLocaleString('ru-RU')+' ₽)',f(){
+        if(S.money<p){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=p;S.bike=true;fam(-5,-10);toast('В МЕНЮ МАШИНЫ: БРОСИТЬ МАШИНУ');
+        say('',['Он записывает твой номер на пачке сигарет.',
+                'Марья спрашивает: «а мы вчетвером на нём как?» — и сама отвечает: «пешком, рядом».',
+                'Теперь в меню машины (E) есть пункт «бросить машину и ехать дальше».']);}},
+      {t:'Сказать, что это грабёж',min:60,rage:true,f(){stress(-3);S.bikePrice*=1.15;
+        say('ПАРЕНЬ',['— Ну стой тогда. Цена только что выросла.']);}},
+      {t:'Отказаться',f(){closeDlg();}},
+    ]);
+  },
+  rock(){pee();},
+};
+function talkPasser(w){
+  say('ПРОХОЖИЙ',[w.line],[
+    {t:'Спросить, как там впереди',f(){stress(-2);S.t+=8;
+      say('ПРОХОЖИЙ',[pick([
+        '— Сутки. Может, полтора. Никто не считает.',
+        '— У шлагбаума пешеходов пускают. Машины — как повезёт.',
+        '— Не верь чату. Там половина сидит дома и пишет.'])]);}},
+    {t:'Попросить сигарету',f(){
+      if(Math.random()<0.5){S.cigs+=2;stress(-4);
+        say('ПРОХОЖИЙ',['Он достаёт мятую пачку и даёт две.','— Бери. Всё равно бросаю с понедельника.']);}
+      else{stress(3);say('ПРОХОЖИЙ',['— Сам стреляю, брат.']);}}},
+    {t:'Угостить сигаретой',f(){
+      if(S.cigs<=0){toast('СИГАРЕТ НЕТ');return;}
+      S.cigs--;stress(-4);fam(0,-2);
+      say('ПРОХОЖИЙ',['Он кивает и стоит рядом молча, пока не докурит.']);}},
+    {t:'Толкнуть его',min:40,rage:true,
+     f(){fight('прохожий',{winKm:0,loseKm:130,winAnx:18,loseAnx:32,
+       winTxt:['Он отступает и уходит, оглядываясь.','Драка ничего тебе не дала. Совсем ничего.'],
+       loseTxt:['Тебя роняют на щебень при всём ряду.','Кто-то снимает это на телефон.']});}},
+  ]);
+}
+
+/* ============ драка на кубиках ============ */
+function fight(reason,cfg){
+  cfg=cfg||{};const mods=[];let mod=0;
+  if(S.flags.artemFriend){mod+=1;mods.push('Артём рядом +1');}
+  if(S.stress>=60&&S.stress<=80){mod+=1;mods.push('злость +1');}
+  if(S.stress>80){mod-=1;mods.push('руки трясутся −1');}
+  if(craving()>0.6){mod-=1;mods.push('ломка −1');}
+  if(S.fights>0){mod-=1;mods.push('тебя уже запомнили −1');}
+  const d1=1+Math.floor(Math.random()*6),d2=1+Math.floor(Math.random()*6);
+  const sum=d1+d2+mod;
+  S.dice={d1,d2,mod,mods,sum,win:sum>=9,cfg,reason,t:0,phase:'roll'};
+  diceEl.style.display='flex';
+  document.getElementById('dice-r').textContent='';
+  document.getElementById('dice-c').textContent='';
+}
+const FACE=['','⚀','⚁','⚂','⚃','⚄','⚅'];
+function diceStep(dt){
+  const D=S.dice;if(!D)return;D.t+=dt;
+  const f=document.getElementById('dice-f');
+  if(D.phase==='roll'){
+    f.textContent=FACE[1+Math.floor(Math.random()*6)]+' '+FACE[1+Math.floor(Math.random()*6)];
+    if(D.t>0.9){
+      D.phase='done';f.textContent=FACE[D.d1]+' '+FACE[D.d2];
+      document.getElementById('dice-c').innerHTML=
+        D.reason.toUpperCase()+'<br>бросок '+D.d1+'+'+D.d2+(D.mod?(D.mod>0?' +':' ')+D.mod:'')+
+        ' = <b>'+D.sum+'</b> · нужно 9<br>'+(D.mods.length?D.mods.join(' · '):'без модификаторов');
+      const r=document.getElementById('dice-r');
+      r.textContent=D.win?'ПОЛУЧИЛОСЬ':'НЕ ПОЛУЧИЛОСЬ';
+      r.className='res '+(D.win?'win':'lose');
+      applyFight(D);
+    }
+  }else if(D.t>2.6)endDice();
+}
+function applyFight(D){
+  const c=D.cfg;S.shake=1;S.fights++;
+  if(D.win){S.km-=(c.winKm!==undefined?c.winKm:160);if(c.winFuel)S.fuel+=c.winFuel;
+    stress(-12);fam(-10,c.winAnx!==undefined?c.winAnx:22);}
+  else{S.km+=(c.loseKm!==undefined?c.loseKm:260);stress(22);
+    fam(-14,c.loseAnx!==undefined?c.loseAnx:38);}
+}
+function endDice(){
+  const D=S.dice;S.dice=null;diceEl.style.display='none';
+  const c=D.cfg;
+  if(D.win)say('',c.winTxt||['Он отходит. Кто-то в ряду хлопает — один раз, неуверенно.',
+                             'Тео смотрит на тебя из заднего окна и не отворачивается.']);
+  else say('',c.loseTxt||['Ты сидишь на обочине и не сразу понимаешь, что губа разбита.',
+                          'Марья не выходит из машины.']);
+}
+
+/* ============ змейка ============ */
+function startSnake(){S.overlay='snake';
+  S.snake={g:[{x:6,y:4}],dir:{x:1,y:0},nd:{x:1,y:0},food:{x:10,y:3},acc:0,score:0,dead:false,cols:14,rows:8};}
+function snakeStep(dt){
+  const s=S.snake;if(!s)return;
+  S.batt=clamp(S.batt-dt*0.55,0,100);
+  if(s.dead){s.acc+=dt;if(s.acc>1.4)stopSnake();return;}
+  s.acc+=dt;if(s.acc<0.16)return;s.acc=0;
+  s.dir=s.nd;
+  const h={x:s.g[0].x+s.dir.x,y:s.g[0].y+s.dir.y};
+  if(h.x<0||h.y<0||h.x>=s.cols||h.y>=s.rows||s.g.some(p=>p.x===h.x&&p.y===h.y)){s.dead=true;stress(5);return;}
+  s.g.unshift(h);
+  if(h.x===s.food.x&&h.y===s.food.y){s.score++;stress(-3);
+    s.food={x:Math.floor(Math.random()*s.cols),y:Math.floor(Math.random()*s.rows)};}
+  else s.g.pop();
+}
+function stopSnake(){const sc=S.snake?S.snake.score:0;S.snake=null;S.overlay=null;toast('ЗМЕЙКА: '+sc);}
+
+/* ============ три обязательных события (порядок по спецификации) ============ */
+function ev_closed(){
+  S.evDone.closed=1;
+  sms('ЧАТ','пункт пропуска встал. подтверждений нет');
+  say('ОЧЕРЕДЬ ВСТАЛА',
+   ['Впереди не двигаются сорок минут. По ряду идёт слово: «закрыли».',
+    'Марья смотрит на тебя и ждёт решения. Тео уже спрашивал дважды.'],[
+   {t:'Ждать в ряду и объяснить почему',max:65,
+    f(){calmFam(-3,-13);stress(5);S.t+=30;
+      say('',['Ты говоришь: слухи ходят с первого дня.','Через сорок минут ряд трогается. В этот раз ты угадал.']);}},
+   {t:'Пойти вперёд узнать (10 минут пешком)',
+    f(){S.mode='foot';S.px=CAR_X+120;S.t+=25;stress(6);fam(-4,6);
+      say('',['У шлагбаума говорят: не закрыли, меняется смена.','Ты идёшь обратно и слышишь сигналы задолго до своей машины.']);
+      S.nextAdv=S.t+4;}},
+   {t:'Заплатить за место ближе (15 000 ₽)',
+    f(){if(S.money<15000){toast('ДЕНЕГ НЕ ХВАТАЕТ');stress(8);return;}
+      S.money-=15000;S.km-=700;fam(-6,-8);stress(-4);
+      say('',['Мужчина на «Ниве» молча пускает тебя перед собой.','Сзади сигналят. Ты не оборачиваешься.']);}},
+  ]);
+}
+function ev_health(){
+  S.evDone.health=1;
+  say('ТЕО',['Тео горячий и его тошнит второй раз.','До ближайшей больницы — назад через всю пробку.'],[
+   {t:'Вода и жаропонижающее из аптечки',f(){
+      if(S.water<0.5){toast('ВОДЫ НЕТ');fam(-10,26);stress(16);
+        say('',['Воды нет. Ты идёшь просить к соседним машинам.']);return;}
+      S.water-=0.5;S.t+=50;calmFam(4,-12);stress(6);
+      say('',['К утру температура спадает.','Марья впервые за сутки берёт тебя за руку.']);}},
+   {t:'Греть машину и не глушить двигатель',f(){
+      S.fuel-=5;S.t+=60;calmFam(2,-8);stress(4);
+      say('',['Печка работает всю ночь. Тео засыпает в тепле.','Стрелка бензина уходит заметно.']);}},
+   {t:'Просить помощи у соседей',f(){
+      if(S.flags.artemFriend||Math.random()<0.6){S.t+=40;calmFam(12,-22);stress(-6);
+        say('',['Через десять минут у машины трое: чай, детский нурофен, чужое одеяло.',
+                'Женщина из «буханки» говорит: «у меня двое, я знаю».']);}
+      else{S.t+=40;fam(-8,20);stress(12);
+        say('',['Все спят или делают вид.','Ты возвращаешься с пустыми руками.']);}}},
+  ]);
+}
+function ev_crowd(){
+  S.evDone.crowd=1;S.shake=0.7;
+  say('АГРЕССИЯ В РЯДУ',
+   ['Чёрный седан лезет с обочины прямо перед тобой. Из него выходят двое.',
+    'Один уже кричит. Марья закрывает Тео ладонью окно.'],[
+   {t:'Деэскалация: отойти и говорить тихо',max:75,
+    lockTxt:'ты уже не можешь говорить тихо',
+    f(){stress(8);calmFam(3,-10);S.km+=60;
+      say('',['Ты говоришь тише, чем он. Через минуту он тоже говорит тише.','Машину он всё-таки впихивает. Шестьдесят метров — небольшая цена.']);}},
+   {t:'Встать между ним и машиной',
+    f(){stress(12);fam(6,10);
+      say('',['Ты просто стоишь и не двигаешься. Он объезжает.','Тео видел всё до последней секунды.']);}},
+   {t:'Держать позицию любой ценой',rage:true,min:35,
+    f(){fight('обочина',{winKm:-240,loseKm:280,winAnx:22,loseAnx:36});}},
+  ]);
+}
+function ev_voenkom(){
+  S.evDone.voenkom=1;
+  say('ПО РЯДУ ИДУТ ДВОЕ',
+   ['Форма, планшет со списками. Останавливаются у каждой третьей машины.'],[
+   {t:'Спокойно отдать документы',max:70,
+    f(){if(Math.random()<0.75){fam(2,12);stress(9);
+        say('',['Смотрят паспорт дольше, чем нужно. Отдают.','Тео спрашивает, кто это был. Ты говоришь: проверка.']);}
+      else{fam(-6,30);stress(18);
+        say('',['Фамилию находят в списке.','Тебе объясняют, что повестка — это ещё не приказ.']);}}},
+   {t:'Отправить говорить Марью',
+    f(){fam(-16,18);stress(6);
+      say('',['Марья говорит с ними одна, три минуты, спиной к машине.','Она возвращается и весь следующий час молчит.']);}},
+  ]);
+}
+function checkEvents(){
+  if(S.dialog||S.panel||S.dice||S.overlay||S.scene!=='play')return;
+  if(S.t<S.quietUntil)return;                 /* пауза после предыдущей сцены */
+  if(!S.evDone.closed&&S.km<9600){ev_closed();return;}
+  if(!S.evDone.health&&S.km<7000){ev_health();return;}
+  if(!S.evDone.voenkom&&S.km<5200&&Math.random()<0.5){ev_voenkom();return;}
+  if(!S.evDone.crowd&&S.km<3600){ev_crowd();return;}
+}
+function pickToxic(){
+  let T,n=0;
+  do{T=pick(TOXIC);n++;}while(T===S.lastToxic&&n<8);
+  S.lastToxic=T;return T;
+}
+function toxic(){
+  if(S.alone)return;
+  const T=pickToxic();
+  say(T.who+' · В МАШИНЕ',[T.line],[
+    {t:T.calm,max:58,lockTxt:T.lock,
+     f(){calmFam(6,-12);stress(3);closeDlg();toast(T.who==='ТЕО'?'ТЕО КИВАЕТ':'МАРЬЯ КИВАЕТ');}},
+    {t:T.quiet,f(){fam(-2,5);stress(5);closeDlg();}},
+    {t:T.snap,min:45,rage:true,f(){fam(-9,12);stress(-6);say('',pick(AFTER));}},
+  ]);
+}
+
+/* ============ мягкие последствия вместо game over ============ */
+function softFuel(){
+  S.stalled=1;S.lastSoft=S.t;S.t+=25;
+  const price=4000+S.dryCount*2500;
+  S.dryCount++;
+  const o=[];
+  if(S.money>=price)o.push({t:'Купить 8 л у соседа ('+price.toLocaleString('ru-RU')+' ₽)',
+    f(){closePanel();S.money-=price;S.fuel+=8;S.t+=20;fam(-3,6);stress(4);
+      say('',['Канистру он приносит из багажника и держит воронку сам.',
+              'Восемь литров. Стрелка отрывается от нуля.']);}});
+  o.push({t:'Попросить бесплатно у тех, кому давал воду',
+    f(){closePanel();
+      if(S.flags.gaveWater||S.flags.artemFriend){S.fuel+=6;S.t+=35;calmFam(6,-8);stress(-4);
+        say('',['Артём сливает шесть литров и машет рукой, когда ты лезешь за деньгами.',
+                '— Сочтёмся на той стороне.']);}
+      else{S.t+=40;stress(14);fam(-6,12);S.fuel+=2;
+        say('',['Просить у незнакомых оказывается труднее, чем ты думал.',
+                'Двое отказывают, третий сливает пару литров и сразу уходит.']);}}});
+  o.push({t:'Толкать машину руками до следующего рывка',
+    f(){closePanel();S.fuel+=3;S.t+=50;stress(18);fam(-8,14);S.km+=120;
+      say('',['Толкаете втроём: ты, Артём и кто-то из «буханки».',
+              'Сто метров, потом ещё сто. На заправке в семи километрах отсюда бензин есть.']);}});
+  showPanel('СУХОЙ БАК · РЯД УХОДИТ БЕЗ ТЕБЯ',o);
+}
+function softStress(){
+  S.stress=52;S.t+=25;S.km+=120;S.lastSoft=S.t;
+  say('ТЫ ВЫШЕЛ ИЗ РЯДА',
+   ['Ты просто идёшь по обочине минут двадцать и ни на кого не смотришь.',
+    'Возвращаешься спокойнее. Место сзади уже занято.']);
+}
+function softFamily(){
+  S.alone=true;S.fam.anx=100;
+  if(S.mode==='car'){
+    say('МАРЬЯ СОБИРАЕТ РЮКЗАК',
+     ['— Пеших пускают быстрее. Мы пойдём.',
+      'Она говорит это при Тео, спокойно, и это страшнее крика.',
+      'Ты остаёшься в машине с Трампом и ключами в руке. Дорога продолжается.']);
+  }else{
+    sms('МАРЬЯ','мы с тео пойдём пешком. рюкзак я собрала. не ищи, догоняй на той стороне');
+    say('ТЫ ВИДИШЬ ЭТО ИЗДАЛЕКА',
+     ['Пока ты стоишь у чужой машины, дверь твоей открывается.',
+      'Марья вытаскивает рюкзак, берёт Тео за руку и идёт вдоль ряда вперёд, не оборачиваясь.',
+      'Когда ты добегаешь, в салоне только Трамп и ключи в замке.']);
+  }
+}
+
+/* ============ очередь и тик ============ */
+function advance(){
+  if(S.stalled){S.stalled=0;toast('РЯД УШЁЛ БЕЗ ТЕБЯ');S.nextAdv=S.t+rnd(20,40);return;}
+  if(S.mode==='foot'&&Math.abs(S.px-CAR_MID)>210){
+    S.km+=70;stress(8);fam(-3,7);S.misses++;toast('ТЫ БЫЛ СЛИШКОМ ДАЛЕКО ОТ МАШИНЫ');
+  }else{const d=rnd(120,520);S.km-=d;S.fuel-=0.3;S.bgOff+=d*0.05;S.advAnim=1;stress(-3);fam(2,-4);}
+  S.nextAdv=S.t+rnd(22,58);S.honk=false;
+}
+function step(dt){
+  if(S.scene!=='play')return;
+  const busy=S.dialog||S.panel||S.dice||S.overlay;
+  /* таймер эпизода: во время чтения идёт втрое медленнее */
+  S.left-=busy?0:dt;                    /* пока открыт диалог, время не идёт */
+  if(S.left<=0&&!busy){S.left=0;finish('open');return;}
+  if(S.dice){diceStep(dt);return;}
+  if(S.overlay==='snake'){snakeStep(dt);S.t+=dt*6;return;}
+  const rate=(S.ff&&!busy)?26:5;
+  if(!busy||S.ff)S.t+=dt*rate;
+  const dm=dt*rate,night=isNight(),cr=craving();
+  S.fuel-=dm*(night?0.012:0.007);
+  S.water-=dm*0.0026;
+  S.batt-=dm*(0.010+(S.radio?0.004:0));
+  S.nic-=dm*0.055;                     /* сигареты хватает примерно на треть эпизода */
+  S.bladder+=dm*0.038;
+  stress(dm*(0.008+cr*0.02+(S.bladder>75?0.03:0)+(S.water<=0?0.06:0)+(S.fam.anx>70?0.025:0)+(night?0.005:0)));
+  if(!S.alone){
+    S.fam.anx=clamp(S.fam.anx+dm*(0.010+(100-S.fam.happy)/8000+(night?0.005:0)+(S.fuel<4?0.02:0)),0,100);
+    S.fam.happy=clamp(S.fam.happy-dm*0.004,0,100);
+  }
+  S.fuel=Math.max(0,S.fuel);S.water=Math.max(0,S.water);
+  S.batt=clamp(S.batt,0,100);S.nic=clamp(S.nic,0,100);S.bladder=clamp(S.bladder,0,100);
+  S.bikePrice=Math.min(100000,38000+S.t*38);
+  if(S.shake>0)S.shake=Math.max(0,S.shake-dt*1.5);
+  if(!S.alone&&!S.warned&&S.fam.anx>76){S.warned=true;
+    sms('МАРЬЯ · ИЗ МАШИНЫ','если так будет ещё час, мы пойдём пешком. я серьёзно');
+    toast('СЕМЬЯ НА ПРЕДЕЛЕ — УСПОКОЙТЕ ИХ');}
+  if(S.warned&&S.fam.anx<62)S.warned=false;
+  if(!S.honk&&S.t>S.nextAdv-26){S.honk=true;if(S.mode==='foot')toast('СИГНАЛЯТ СЗАДИ');}
+  if(S.t>=S.nextAdv){advance();S.ff=false;}
+  if(S.advAnim>0)S.advAnim=Math.max(0,S.advAnim-dt*1.6);
+  if(S.t>S.nextSms){S.nextSms=S.t+rnd(260,460);
+    if(S.batt>3){const m=pick(SMSES);sms(m.w,m.t);stress(2);}}
+  if(S.t>S.nextToxic&&S.t>S.quietUntil&&S.mode==='car'&&!busy&&!S.alone){S.nextToxic=S.t+rnd(240,420);toxic();}
+  if(S.mode==='foot'){
+    if(keys['ArrowLeft']){S.px-=66*dt;S.face=-1;S.walk+=dt*9;}
+    if(keys['ArrowRight']){S.px+=66*dt;S.face=1;S.walk+=dt*9;}
+    S.px=clamp(S.px,CAR_X-6*SPACING-40,CAR_X+9*SPACING+70);
+  }
+  for(const w of WANDER){w.x+=w.d*w.v*dt;w.ph+=dt*7;
+    if(w.x<CAR_X-6*SPACING||w.x>CAR_X+9*SPACING){w.d*=-1;w.line=pick(PASSER);}}
+  for(const c of CARS){if(Math.random()<0.0015)c.puff=1;if(c.puff>0)c.puff-=dt*0.7;}
+  for(const cl of CLOUDS){cl.x-=cl.v*dt*2;if(cl.x<-cl.w){cl.x=W+cl.w;cl.y=rnd(16,54);}}
+  if(!busy){
+    const softOk=S.t-S.lastSoft>150;      /* не чаще раза в два с половиной часа */
+    if(S.fuel<=0&&!S.stalled&&softOk)softFuel();
+    else if(S.stress>=100&&softOk)softStress();
+    else if(!S.alone&&(S.fam.anx>=100||S.fam.happy<=0))softFamily();
+    else checkEvents();
+  }
+  if(S.km<=0&&!busy)finish('border');
+}
+
+/* ============ рефлексия и прибытие ============ */
+/* сцена 1: как именно вы прошли границу */
+const CROSSING={
+ border:['Шлагбаум поднимается в двадцать минут седьмого.',
+         'Восемьдесят метров ничьей земли вы идёте пешком — так почему-то честнее.',
+         'Пограничник смотрит в паспорт дольше, чем нужно, и отдаёт его.'],
+ open:  ['В четыре утра на пункте меняется смена.',
+         'Ряд трогается и идёт не останавливаясь. Никто не объясняет почему.',
+         'Шлагбаум вы проезжаете уже на рассвете, не веря, что это происходит.'],
+ bike:  ['Машина остаётся в ряду с ключами в замке зажигания.',
+         'Дальше — по обочине, мимо всех, кого ты знал последние сутки.',
+         'Велосипед ты бросаешь сразу за шлагбаумом, у грузинского поста.'],
+};
+/* сцена 2: гостиница и рефлексия */
+const REFLECT=[
+ ['Всю дорогу ты решал за всех.','Впервые за двое суток никто ничего не спрашивает.'],
+ ['Ты привык быть тем, кто держит. Держал.','Только сейчас замечаешь, что руки не разжимаются.'],
+ ['Здесь пахнет чужим стиральным порошком и работает горячая вода.','Ты садишься на край кровати и десять минут просто сидишь.'],
+];
+const ARRIVALS={
+ border:{h:'Перешли',t:'Гостиница нашлась на третьем этаже старого дома в Тбилиси: две кровати, окно во двор, ключ на деревянной груше.'},
+ open:  {h:'Границу открыли',t:'Гостиница нашлась на третьем этаже старого дома в Тбилиси: две кровати, окно во двор, ключ на деревянной груше.'},
+ bike:  {h:'Налегке',t:'Гостиницу вы находите к ночи, без машины и почти без вещей. Третий этаж, окно во двор, ключ на деревянной груше.'},
+};
+function finish(k){
+  if(S.scene!=='play')return;
+  S.scene='reflect';closePanel();closeDlg();S.ff=false;S.overlay=null;
+  diceEl.style.display='none';wlabel.style.display='none';
+  document.getElementById('carlabel').style.display='none';
+  S.pendingEnd=k;
+  say('ГРАНИЦА',CROSSING[k]||CROSSING.open,[{t:'Ехать в Тбилиси',f(){arrive(k);}}]);
+}
+function arrive(k){
+  const lines=['Дорога до города занимает три часа. Тео спит с первой минуты.'];
+  if(S.alone)lines[0]='Дорога до города занимает три часа. Ты едешь один, Трамп спит на пассажирском.';
+  say('ГОСТИНИЦА · ТБИЛИСИ',lines.concat(pick(REFLECT)),
+      [{t:'Закрыть дверь номера',f(){showEnd(k);}}]);
+}
+function showEnd(k){
+  S.scene='ending';closeDlg();
+  const e=ARRIVALS[k]||ARRIVALS.open;
+  document.getElementById('end-h').textContent=e.h;
+  document.getElementById('end-t').textContent=
+    (S.alone?'Ты открываешь номер один. Трамп выходит первым и сразу лезет под кровать. ':'')+e.t;
+  const bits=['В очереди: '+Math.floor(S.t/60)+' ч'];
+  if(S.misses)bits.push('пропущено продвижений: '+S.misses);
+  if(S.fights)bits.push('драк: '+S.fights);
+  if(S.dryCount)bits.push('сухой бак: '+S.dryCount);
+  bits.push('бензин: '+S.fuel.toFixed(0)+' л');
+  bits.push('осталось: '+Math.round(S.money).toLocaleString('ru-RU')+' ₽');
+  document.getElementById('end-s').textContent=bits.join(' · ');
+  const f=S.fam;let v;
+  if(S.alone)v='Марья и Тео перешли границу пешком на четыре часа раньше тебя. Вы встретитесь завтра, и это будет другой разговор.';
+  else if(f.happy>60&&f.anx<40)v='Перешли вместе. Тео на той стороне первым делом спрашивает, где тут едят. Лучший исход из возможных.';
+  else if(f.anx<70&&f.happy>25)v='Перешли вместе, но следующие несколько недель об этой дороге дома говорить не будут.';
+  else v='Перешли вместе — формально. Марья не разговаривает с тобой уже шесть часов.';
+  document.getElementById('end-v').textContent=v;
+  document.getElementById('end').style.display='flex';
+}
+
+/* ============ ФОН (вектор, сглаженный) ============ */
+const SKY=[{h:0,a:'#060a16',b:'#111d33'},{h:5,a:'#1b2547',b:'#775a6a'},
+ {h:7,a:'#5c86b8',b:'#e2bd97'},{h:11,a:'#84bce4',b:'#dcecf4'},
+ {h:17,a:'#7fadd8',b:'#f0dcc0'},{h:19,a:'#3c355f',b:'#e08d5f'},
+ {h:21,a:'#0e1729',b:'#212c47'},{h:24,a:'#060a16',b:'#111d33'}];
+function sky(h){for(let i=0;i<SKY.length-1;i++)if(h>=SKY[i].h&&h<=SKY[i+1].h){
+  const t=(h-SKY[i].h)/(SKY[i+1].h-SKY[i].h);
+  return [mix(SKY[i].a,SKY[i+1].a,t),mix(SKY[i].b,SKY[i+1].b,t)];}
+  return [SKY[0].a,SKY[0].b];}
+function ridge(x,seed,amp){return Math.sin(x*0.0085+seed)*amp+Math.sin(x*0.025+seed*2.3)*amp*0.45
+  +Math.sin(x*0.058+seed*4.1)*amp*0.18;}
+function vRidge(off,base,amp,col,seed){
+  bctx.fillStyle=col;bctx.beginPath();bctx.moveTo(-6,H);
+  let px=-6,py=base-Math.abs(ridge(off-6,seed,amp))-6;bctx.lineTo(px,py);
+  for(let x=4;x<=W+6;x+=4){
+    const y=base-Math.abs(ridge(x+off,seed,amp))-6;
+    bctx.quadraticCurveTo(px,py,(px+x)/2,(py+y)/2);px=x;py=y;}
+  bctx.lineTo(W+6,py);bctx.lineTo(W+6,H);bctx.closePath();bctx.fill();
+}
+function vTrees(off,base,col,seed){
+  /* мягкая кромка леса: округлые кроны, пониженный контраст, лёгкое размытие */
+  bctx.save();
+  if('filter' in bctx)bctx.filter='blur(0.7px)';
+  bctx.globalAlpha=0.8;bctx.fillStyle=col;
+  for(let x=-10;x<W+10;x+=4){
+    const k=hash(Math.round(x+off));
+    if(k<0.3)continue;
+    const y=base-Math.abs(ridge(x+off,seed,10))-5,hh=2.5+k*4.5,w=1.4+k*1.2;
+    bctx.beginPath();
+    bctx.moveTo(x-w,y+1);
+    bctx.quadraticCurveTo(x-w*0.6,y-hh*0.55,x,y-hh);
+    bctx.quadraticCurveTo(x+w*0.6,y-hh*0.55,x+w,y+1);
+    bctx.closePath();bctx.fill();
+  }
+  bctx.restore();
+}
+function renderBG(t){
+  const h=hourNow(),N=nightAmt(),cx=camX();NB=N;
+  const [s1,s2]=sky(h);
+  const g=bctx.createLinearGradient(0,0,0,HORIZON+22);
+  g.addColorStop(0,s1);g.addColorStop(1,s2);
+  bctx.fillStyle=g;bctx.fillRect(0,0,W,H);
+  if(N>0.35)for(let i=0;i<50;i++){
+    const sx=hash(i)*W,sy=hash(i+9)*66,r=0.3+hash(i+4)*0.5;
+    bctx.fillStyle='rgba(255,255,255,'+((0.3+hash(i+2)*0.6)*N)+')';
+    bctx.beginPath();bctx.arc(sx,sy,r,0,6.2832);bctx.fill();}
+  bctx.fillStyle=nmix('#f6f9fa','#38486a');bctx.globalAlpha=0.45;
+  for(const cl of CLOUDS){
+    bctx.beginPath();bctx.ellipse(cl.x,cl.y,cl.w/2,cl.h/2,0,0,6.2832);bctx.fill();
+    bctx.beginPath();bctx.ellipse(cl.x+cl.w*0.22,cl.y+cl.h*0.18,cl.w/3,cl.h/2.6,0,0,6.2832);bctx.fill();}
+  bctx.globalAlpha=1;
+  const off=S.bgOff+cx*0.08;
+  vRidge(off*0.20,HORIZON+2,42,mix('#8fa0ae','#2f4260',NB*0.9+0.1),0.9);
+  vRidge(off*0.34,HORIZON+8,33,mix('#657a8c','#22344c',NB*0.85+0.15),1.7);
+  const hz=bctx.createLinearGradient(0,HORIZON-24,0,HORIZON+24);
+  hz.addColorStop(0,'rgba(180,198,210,0)');
+  hz.addColorStop(1,nmix('#c2d2dc','#1c283c'));
+  bctx.fillStyle=hz;bctx.fillRect(0,HORIZON-24,W,48);
+  vRidge(off*0.58,HORIZON+18,23,mix('#41525f','#182437',NB*0.8+0.2),4.2);
+  vTrees(off*0.58,HORIZON+18,mix('#33443a','#141d28',NB*0.85+0.15),4.2);
+  const fg=bctx.createLinearGradient(0,HORIZON-8,0,ROADTOP+2);
+  fg.addColorStop(0,'rgba(160,180,196,'+(0.03+0.12*N)+')');
+  fg.addColorStop(1,'rgba(96,116,140,'+(0.10+0.30*N)+')');
+  bctx.fillStyle=fg;bctx.fillRect(0,HORIZON-8,W,ROADTOP-HORIZON+10);
+  const slope=bctx.createLinearGradient(0,ROADTOP-20,0,ROADTOP+2);
+  slope.addColorStop(0,nmix('#44522f','#161c14'));slope.addColorStop(1,nmix('#333d20','#101409'));
+  bctx.fillStyle=slope;bctx.fillRect(0,ROADTOP-20,W,22);
+}
+
+/* ============ ПЕРЕДНИЙ ПЛАН (пиксель) ============ */
+function drawCar(x,y,c,famIn){
+  x=Math.round(x);y=Math.round(y);
+  const M=MODELS[c.m],fx=lx=>x+(M.len-lx),base=c.col;
+  ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(x-2,y,M.len+4,2);
+  ctx.fillStyle='#101216';
+  for(const wx of M.wheels)pxCircle(fx(wx),y-M.wr+1,M.wr);
+  ctx.fillStyle='#5b6068';
+  for(const wx of M.wheels)pxCircle(fx(wx),y-M.wr+1,M.wr*0.42);
+  const top=Math.max.apply(null,M.body.map(p=>p[1]));
+  const bg=ctx.createLinearGradient(0,y-top,0,y);
+  bg.addColorStop(0,shade(base,0.34));bg.addColorStop(0.55,base);bg.addColorStop(1,shade(base,-0.42));
+  ctx.fillStyle=bg;pxPoly(M.body.map(p=>[fx(p[0]),y-p[1]]));
+  const gg=ctx.createLinearGradient(0,y-top,0,y-top*0.4);
+  gg.addColorStop(0,nmix('#e3f0f7','#1c2a3e'));gg.addColorStop(1,nmix('#89a7bb','#0a0f18'));
+  ctx.fillStyle=gg;
+  for(const gp of M.glass)pxPoly(gp.map(p=>[fx(p[0]),y-p[1]]));
+  if(famIn){ctx.fillStyle=nmix('#7b6851','#48505f');const g0=M.glass[0];
+    pxCircle(fx(g0[0][0]+4),y-g0[0][1]-5,2);
+    if(!S.alone){pxCircle(fx(g0[0][0]+9),y-g0[0][1]-4,2);
+      if(S.catOut){ctx.fillStyle=nmix('#8a7a63','#3b3f4a');pxCircle(fx(g0[0][0]+13),y-g0[0][1]-2,1);}}}
+  if(M.rack){ctx.fillStyle='#57503f';
+    const rx1=fx(M.rack[1]),rx2=fx(M.rack[0]);
+    ctx.fillRect(rx1,y-top-3,rx2-rx1,2);
+    if(c.load){ctx.fillStyle='#9b9078';ctx.fillRect(rx1+2,y-top-8,(rx2-rx1)-6,5);
+      ctx.fillStyle='#736a58';ctx.fillRect(rx1+5,y-top-10,7,2);}}
+  if(M.spare){ctx.fillStyle='#191c21';pxCircle(x+4,y-Math.round(top*0.55),4);}
+  if(M.ladder){ctx.fillStyle='#5a5343';
+    ctx.fillRect(x+2,y-top+2,1,top-8);ctx.fillRect(x+5,y-top+2,1,top-8);
+    for(let q=0;q<4;q++)ctx.fillRect(x+2,y-9-q*5,4,1);}
+  if(M.bull){ctx.fillStyle='#9a958a';ctx.fillRect(x+M.len+1,y-15,2,11);}
+  if(NB>0.15){ctx.globalAlpha=Math.min(1,NB*1.6);
+    ctx.fillStyle='#fff0c4';ctx.fillRect(x+M.len-2,y-M.wr-6,3,3);
+    ctx.fillStyle='#d1503c';ctx.fillRect(x,y-M.wr-6,2,3);ctx.globalAlpha=1;}
+  if(c.puff>0){ctx.fillStyle='rgba(210,210,210,'+(c.puff*0.45)+')';
+    pxCircle(x-4,y-8-(1-c.puff)*8,Math.round(2+(1-c.puff)*3));}
+}
+function drawPerson(x,y,col,phase,face,k){
+  x=Math.round(x);y=Math.round(y);
+  const s=k||1,h=Math.round(16*s),w=Math.max(3,Math.round(6*s)),st=Math.floor(phase)%2;
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(x-1,y,w+2,1);
+  ctx.fillStyle='#c1996f';ctx.fillRect(x+Math.round(s),y-h,Math.round(4*s),Math.round(4*s));
+  ctx.fillStyle=col;ctx.fillRect(x,y-h+Math.round(4*s),w,Math.round(7*s));
+  ctx.fillStyle=shade(col,-0.25);ctx.fillRect(x,y-h+Math.round(4*s),1,Math.round(7*s));
+  ctx.fillStyle='#242938';
+  const ly=y-Math.round(5*s),lh=Math.round(5*s),lw=Math.max(1,Math.round(2*s));
+  if(st){ctx.fillRect(x,ly,lw,lh);ctx.fillRect(x+w-lw,ly,lw,lh);}
+  else{ctx.fillRect(x+lw-1,ly,lw,lh);ctx.fillRect(x+w-lw-1,ly,lw,lh);}
+  ctx.fillStyle=col;ctx.fillRect(face>0?x+w:x-1,y-h+Math.round(5*s),1,Math.round(5*s));
+}
+function drawFire(x,y,t){
+  x=Math.round(x);y=Math.round(y);
+  ctx.fillStyle='#3a3128';ctx.fillRect(x-6,y-3,13,3);
+  const f=Math.round(Math.sin(t*9)*1.5);
+  ctx.fillStyle='#e0703c';ctx.fillRect(x-2,y-9+f,5,7);
+  ctx.fillStyle='#ffc257';ctx.fillRect(x-1,y-7+f,3,5);
+  ctx.fillStyle='#fff0b8';ctx.fillRect(x,y-5+f,1,3);
+}
+function camX(){
+  if(S.mode==='car')return CAR_X-W/2+26;
+  return clamp(S.px-W/2,CAR_X-6*SPACING-70,CAR_X+9*SPACING-W+130);
+}
+function renderFG(t){
+  ctx.clearRect(0,0,W,H);
+  const N=nightAmt(),cx=camX();NB=N;
+  const road=ctx.createLinearGradient(0,ROADTOP,0,GROUND+10);
+  road.addColorStop(0,nmix('#53555e','#23262e'));road.addColorStop(1,nmix('#33353b','#131519'));
+  ctx.fillStyle=road;ctx.fillRect(0,ROADTOP,W,GROUND-ROADTOP+12);
+  ctx.fillStyle=nmix('#cfcbb4','#3a3d44');
+  for(let x=0;x<W;x+=22)ctx.fillRect(x,GROUND+6,11,1);
+  ctx.fillStyle=nmix('#635840','#221d15');ctx.fillRect(0,GROUND+12,W,H-GROUND-12);
+  ctx.fillStyle=nmix('#736648','#2a2419');ctx.fillRect(0,GROUND+12,W,2);
+  for(let wx=Math.floor((cx-44)/44)*44;wx<cx+W+44;wx+=44){
+    const x=Math.round(wx-cx);
+    ctx.fillStyle=nmix('#7b7c84','#1b2027');ctx.fillRect(x,ROADTOP-9,2,9);}
+  ctx.fillStyle=nmix('#95969d','#252b33');ctx.fillRect(0,ROADTOP-10,W,2);
+  for(const lp of LAMPS){const x=Math.round(lp-cx);if(x<-14||x>W+14)continue;
+    ctx.fillStyle=nmix('#43454a','#1a1d22');
+    ctx.fillRect(x,LAMP_TOP,2,GROUND+8-LAMP_TOP);ctx.fillRect(x,LAMP_TOP-1,10,2);
+    if(N>0.05){ctx.fillStyle='rgba(255,226,168,'+(0.4+0.6*N)+')';ctx.fillRect(x+7,LAMP_TOP+1,5,2);}}
+  const shk=Math.round((S.advAnim>0?Math.sin(t*40)*S.advAnim*1.2:0)+(S.shake>0?rnd(-2,2)*S.shake:0));
+  if(N>0.15){
+    ctx.globalCompositeOperation='lighter';
+    for(const c of CARS){const x=c.x-cx+shk+c.len;if(x<-60||x>W+60)continue;
+      const gg=ctx.createRadialGradient(x+18,GROUND+4,0,x+18,GROUND+4,34);
+      gg.addColorStop(0,'rgba(255,196,120,'+(0.32*N)+')');gg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gg;ctx.fillRect(x-16,GROUND-26,68,34);}
+    ctx.globalCompositeOperation='source-over';
+  }
+  for(const c of CARS){const x=c.x-cx+shk;if(x<-90||x>W+20)continue;
+    if(c.i===0&&S.mode==='foot'){                 /* контур своей машины */
+      const M=MODELS[c.m],pulse=0.35+0.25*Math.sin(t*3);
+      ctx.fillStyle='rgba(150,225,180,'+pulse+')';
+      for(const d of [[-1,0],[1,0],[0,-1],[0,1]])
+        pxPoly(M.body.map(p=>[Math.round(x)+(M.len-p[0])+d[0],GROUND-p[1]+d[1]]));
+    }
+    drawCar(x,GROUND,c,c.i===0&&S.mode==='car');}
+  for(const sp of SPOTS){
+    const x=sp.x-cx+shk;if(x<-40||x>W+40)continue;
+    if(sp.kind==='fire')drawFire(x,GROUND+8,t);
+    else if(sp.kind==='rock'){ctx.fillStyle=nmix('#5f5c4f','#242830');pxEllipse(x,GROUND+3,13,8);
+      ctx.fillStyle=nmix('#736f60','#2e333c');pxEllipse(x-3,GROUND-3,7,6);}
+    else if(sp.kind==='kiosk'){ctx.fillStyle=nmix('#7a684e','#2e2822');ctx.fillRect(Math.round(x)-11,GROUND-26,26,26);
+      ctx.fillStyle=nmix('#a68f60','#53411f');ctx.fillRect(Math.round(x)-8,GROUND-21,20,9);
+      ctx.fillStyle=nmix('#5b4e3a','#1d1a15');ctx.fillRect(Math.round(x)-11,GROUND-28,26,3);
+      for(let q=0;q<4;q++)drawPerson(x+20+q*7,GROUND+5,'#6b6555',q,-1,0.8);}
+    else{
+      drawPerson(x,GROUND+5,['#8d6759','#63758a','#767555','#875764'][Math.abs(sp.i)%4],0,-1,1);
+      if(sp.key==='mom')drawPerson(x+10,GROUND+5,'#a89a72',0,-1,0.62);
+      if(sp.key==='bike'){ctx.fillStyle='#33384a';
+        ctx.fillRect(Math.round(x)+8,GROUND,14,1);ctx.fillRect(Math.round(x)+8,GROUND-4,1,5);
+        ctx.fillRect(Math.round(x)+21,GROUND-4,1,5);ctx.fillRect(Math.round(x)+13,GROUND-6,6,1);}
+    }
+  }
+  for(const w of WANDER){const x=w.x-cx+shk;if(x<-30||x>W+30)continue;
+    drawPerson(x,GROUND+5,w.col,w.ph,w.d,1);}
+  if(S.mode==='foot')drawPerson(S.px-cx+shk,GROUND+5,'#9a7550',S.walk,S.face,1);
+  if(N>0.05){
+    ctx.globalCompositeOperation='lighter';
+    const glow=(x,y,r,c,a)=>{if(x<-r||x>W+r)return;
+      const gg=ctx.createRadialGradient(x,y,0,x,y,r);
+      gg.addColorStop(0,'rgba('+c+','+a+')');gg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gg;ctx.fillRect(x-r,y-r,r*2,r*2);};
+    for(const c of CARS)glow(c.x-cx+shk+c.len,GROUND-14,34,'255,214,150',0.34*N);
+    for(const lp of LAMPS)glow(lp-cx+9,LAMP_TOP+2,70,'255,200,124',0.34*N);
+    const fs=SPOTS.find(s=>s.key==='fire');
+    glow(fs.x-cx,GROUND+2,42,'255,150,70',0.4+0.06*Math.sin(t*9));
+    ctx.globalCompositeOperation='source-over';
+  }
+  if(N>0.02){
+    const gf=ctx.createLinearGradient(0,GROUND-18,0,H);
+    gf.addColorStop(0,'rgba(0,0,0,0)');gf.addColorStop(1,'rgba(170,188,204,'+(0.14*N)+')');
+    ctx.fillStyle=gf;ctx.fillRect(0,GROUND-18,W,H-GROUND+18);
+  }
+  ctx.fillStyle=nmix('#1b2015','#070a0c');
+  const fx0=Math.round(cx*1.5)%40;
+  for(let x=-fx0-40;x<W+40;x+=40){
+    const k=hash(Math.round(x+fx0));pxEllipse(x+12,H-1,Math.round(15+k*10),Math.round(6+k*4));}
+  if(S.overlay==='snake')drawSnake();
+}
+function drawSnake(){
+  const s=S.snake;if(!s)return;
+  ctx.fillStyle='rgba(4,6,10,0.92)';ctx.fillRect(0,0,W,H);
+  const cell=9,gw=s.cols*cell,gh=s.rows*cell,ox=Math.round((W-gw)/2),oy=Math.round((H-gh)/2);
+  ctx.fillStyle='#0f130d';ctx.fillRect(ox-8,oy-16,gw+16,gh+28);
+  ctx.fillStyle='#22321a';ctx.fillRect(ox,oy,gw,gh);
+  ctx.fillStyle='#9dc27e';ctx.fillRect(ox+s.food.x*cell+2,oy+s.food.y*cell+2,cell-4,cell-4);
+  ctx.fillStyle='#e2f0cc';
+  for(const p of s.g)ctx.fillRect(ox+p.x*cell+1,oy+p.y*cell+1,cell-2,cell-2);
+  ctx.fillStyle='#a89e85';ctx.font='7px monospace';
+  ctx.fillText('ЯБЛОКИ: '+s.score,ox,oy-5);
+  if(s.dead){ctx.fillStyle='#eda169';ctx.fillText('ВСЁ',ox+gw-18,oy-5);}
+}
+/* сборка кадра: гладкий фон + пиксельный фронт + грейд */
+function compose(t){
+  const cw=W*kDev,ch=H*kDev;
+  dctx.imageSmoothingEnabled=true;
+  dctx.drawImage(bgc,0,0,bgc.width,bgc.height,0,0,cw,ch);
+  dctx.imageSmoothingEnabled=false;
+  dctx.drawImage(buf,0,0,W,H,0,0,cw,ch);
+  const cr=craving();
+  if(cr>0.02){
+    dctx.globalCompositeOperation='saturation';dctx.globalAlpha=cr*0.85;
+    dctx.fillStyle='hsl(0,0%,50%)';dctx.fillRect(0,0,cw,ch);
+    dctx.globalCompositeOperation='multiply';dctx.globalAlpha=cr*0.4;
+    dctx.fillStyle='#d3bf8b';dctx.fillRect(0,0,cw,ch);
+    dctx.globalCompositeOperation='source-over';dctx.globalAlpha=1;
+    const p=0.6+0.4*Math.sin(t*2.4);
+    const vg=dctx.createRadialGradient(cw/2,ch/2,cw*0.08,cw/2,ch/2,cw*0.68);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(26,17,9,'+(0.55*cr*p)+')');
+    dctx.fillStyle=vg;dctx.fillRect(0,0,cw,ch);
+  }
+  if(S.stress>68){
+    const k=(S.stress-68)/32,p=0.5+0.5*Math.sin(t*3.6);
+    const vg=dctx.createRadialGradient(cw/2,ch/2,cw*0.11,cw/2,ch/2,cw*0.7);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(120,30,20,'+(0.3*k*p)+')');
+    dctx.fillStyle=vg;dctx.fillRect(0,0,cw,ch);
+  }
+  if(S.honk&&S.mode==='foot'){dctx.fillStyle='rgba(255,170,110,0.10)';dctx.fillRect(0,0,cw,ch);}
+}
+
+/* ============ шкалы ============ */
+const GAUGES=[
+ {id:'fuel',  lb:'БЕНЗ',   max:30, val:()=>S.fuel,       fmt:v=>v.toFixed(0)+' Л'},
+ {id:'water', lb:'ВОДА',   max:6,  val:()=>S.water,      fmt:v=>v.toFixed(1)+' Л'},
+ {id:'batt',  lb:'ТЕЛЕФОН',max:100,val:()=>S.batt,       fmt:v=>Math.round(v)+'%'},
+ {id:'stress',lb:'СТРЕСС', max:100,val:()=>S.stress,     fmt:v=>Math.round(v),inv:true},
+ {id:'nic',   lb:'ТЯГА',   max:100,val:()=>craving()*100,fmt:v=>Math.round(v),inv:true},
+ {id:'happy', lb:'СЕМЬЯ',  max:100,val:()=>S.fam.happy,  fmt:v=>Math.round(v)},
+ {id:'anx',   lb:'ТРЕВОГА',max:100,val:()=>S.fam.anx,    fmt:v=>Math.round(v),inv:true},
+];
+const gaugeEls={};
+(function(){
+  const box=document.getElementById('gauges');
+  for(const g of GAUGES){
+    const d=document.createElement('div');d.className='g';
+    d.innerHTML='<span class="lb">'+g.lb+'</span><span class="seg">'+'<i></i>'.repeat(10)+
+      '</span><span class="vl"></span>';
+    box.appendChild(d);
+    gaugeEls[g.id]={root:d,segs:[].slice.call(d.querySelectorAll('i')),vl:d.querySelector('.vl'),n:-1,txt:'',cls:''};
+  }
+})();
+function updateGauges(){
+  for(const g of GAUGES){
+    const e=gaugeEls[g.id],v=g.val(),r=clamp(v/g.max,0,1),n=Math.round(r*10);
+    if(n!==e.n){for(let i=0;i<10;i++)e.segs[i].className=i<n?'on':'';e.n=n;}
+    const txt=String(g.fmt(v));
+    if(txt!==e.txt){e.vl.textContent=txt;e.txt=txt;}
+    let cls='g';
+    if(g.inv)cls+=r>0.8?' bad':r>0.55?' warn':'';
+    else cls+=r<0.2?' bad':r<0.4?' warn':' good';
+    if(cls!==e.cls){e.root.className=cls;e.cls=cls;}
+  }
+  const st='СИГАРЕТ '+S.cigs+' · '+Math.round(S.money).toLocaleString('ru-RU')+' ₽'+
+           (S.bike?' · ВЕЛОСИПЕД':'')+(S.alone?' · ОДИН':'')+(S.promised?' · НЕ КУРИТЬ В САЛОНЕ':'')+(S.bladder>65?' · НУЖНО ОТЛИТЬ':'');
+  const se=document.getElementById('stuff');
+  if(se.textContent!==st)se.textContent=st;
+}
+let hudT=0;
+function hud(){
+  const km=(Math.max(0,S.km)/1000).toFixed(1)+' КМ',kel=document.getElementById('km');
+  if(kel.textContent!==km)kel.textContent=km;
+  const hh=Math.floor(hourNow()),mm=Math.floor((hourNow()%1)*60);
+  const cl='ДЕНЬ '+dayNow()+' · '+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  const cel=document.getElementById('clock');if(cel.textContent!==cl)cel.textContent=cl;
+  const lm=Math.floor(S.left/60),ls=Math.floor(S.left%60);
+  const lt=lm+':'+String(ls).padStart(2,'0'),lel=document.getElementById('left');
+  if(lel.textContent!==lt)lel.textContent=lt;
+  lel.classList.toggle('hot',S.left<60);
+  updateGauges();
+  const busy=S.dialog||S.panel||S.dice||S.overlay||S.scene!=='play';
+  const sp=(!busy&&S.mode==='foot')?near():null;
+  /* где моя машина: метка над ней или стрелка у края экрана */
+  const carEl=document.getElementById('carlabel');
+  if(!busy&&S.mode==='foot'){
+    const sx=CAR_MID-camX(),d=Math.abs(S.px-CAR_MID),m=Math.round(d*0.09);
+    let txt,px;
+    if(sx>14&&sx<W-14){txt=(d<SIT_R?'<b>[ E ]</b> &nbsp;сесть в машину':'ваша машина');px=sx;}
+    else if(sx<=14){txt='<b>◀</b> ваша машина · '+m+' м';px=26;}
+    else{txt='ваша машина · '+m+' м <b>▶</b>';px=W-26;}
+    carEl.style.display='block';carEl.innerHTML=txt;
+    carEl.style.left=Math.round(px*kCss)+'px';
+    carEl.style.top=Math.round((GROUND-46)*kCss)+'px';
+  } else carEl.style.display='none';
+  if(sp){
+    const wx=(sp.ref?sp.ref.x:sp.x)-camX();
+    wlabel.style.display='block';
+    wlabel.innerHTML='<b>[ E ]</b> &nbsp;'+sp.label;
+    wlabel.style.left=Math.round(wx*kCss)+'px';
+    wlabel.style.top=Math.round((GROUND-30)*kCss)+'px';
+  } else wlabel.style.display='none';
+  const hint=document.getElementById('hint');let ht='';
+  if(!busy){
+    if(S.mode==='car')ht='Вы в машине · E — меню · C — закурить · F — выйти';
+    else ht=sp?'':(Math.abs(S.px-CAR_MID)<SIT_R?'E — сесть в машину'
+                   :'Вы снаружи · ← → идти · E — подойти и поговорить');
+  }
+  if(hint.textContent!==ht)hint.textContent=ht;
+  const kk=document.getElementById('keys'),kw=busy?'none':'flex';
+  if(kk.style.display!==kw)kk.style.display=kw;
+  const tp=document.getElementById('tip'),tt=busy?'':currentTip();
+  if(tp.textContent!==tt)tp.textContent=tt;
+  const tk=document.getElementById('ticker'),want=S.radio?'block':'none';
+  if(tk.style.display!==want)tk.style.display=want;
+}
+/* самая срочная подсказка: игра сама говорит, что можно сделать */
+function currentTip(){
+  const rock=SPOTS.find(x=>x.key==='rock');
+  const dR=Math.round(Math.abs(S.px-rock.x)*0.09);
+  if(S.honk&&S.mode==='foot'&&Math.abs(S.px-CAR_MID)>150)
+    return 'Ряд сейчас тронется · бегом к своей машине';
+  if(S.bike)return 'Велосипед куплен · E — меню машины, «бросить машину и ехать дальше»';
+  if(S.bladder>65)
+    return S.mode==='car'?'Нужно отлить · F — выйти, потом идти налево к камню'
+                         :'Нужно отлить · камень слева, '+dR+' м';
+  if(!S.alone&&S.fam.anx>70)
+    return S.mode==='car'?'Марья на пределе · E — меню машины, «Успокоить семью»'
+                         :'Марья на пределе · вернитесь в машину и поговорите';
+  if(!S.alone&&S.fam.happy<30)
+    return S.mode==='car'?'Семье тяжело · мультик Тео или вода помогают'
+                         :'Семье тяжело · ларёк с едой справа по ряду';
+  if(craving()>0.7)return 'Тяга · C — закурить, снаружи это бесплатно';
+  if(S.stress>75)return 'Стресс высокий · костёр слева, сигарета или разговор снимают';
+  if(S.water<1.2)return 'Вода кончается · ларёк справа по ряду';
+  if(S.fuel<6)return 'Бензин кончается · мужик с канистрой справа';
+  if(S.batt<20)return 'Телефон садится · выключите радио в меню машины';
+  return '';
+}
+function near(){
+  if(Math.abs(S.px-CAR_MID)<SIT_R)return null;
+  for(const sp of SPOTS)if(Math.abs(S.px-sp.x)<28)return sp;
+  for(const w of WANDER)if(Math.abs(S.px-w.x)<22)return {kind:'passer',label:'Прохожий',ref:w};
+  return null;
+}
+const tickTxt=document.getElementById('tick-txt');
+tickTxt.textContent=NEWS.join('   ·   ')+'   ·   ';
+let tickX=600;
+function tickerStep(dt){
+  if(!S.radio)return;
+  tickX-=dt*30;
+  const w=tickTxt.offsetWidth||900;
+  if(tickX<-w)tickX=stage.clientWidth;
+  tickTxt.style.transform='translateX('+Math.round(tickX)+'px)';
+}
+
+/* ============ ввод ============ */
+const keys={};
+addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
+  keys[e.code]=true;press(e.code);});
+addEventListener('keyup',e=>keys[e.code]=false);
+document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;press(k);});
+  b.addEventListener('pointerup',e=>{e.preventDefault();keys[k]=false;});
+  b.addEventListener('pointerleave',()=>keys[k]=false);});
+function press(code){
+  if(S.scene!=='play'&&S.scene!=='reflect')return;
+  if(S.dice){if(S.dice.phase==='done')endDice();return;}
+  if(S.overlay==='snake'){
+    const s=S.snake;if(!s)return;
+    if(code==='ArrowLeft'&&s.dir.x===0)s.nd={x:-1,y:0};
+    if(code==='ArrowRight'&&s.dir.x===0)s.nd={x:1,y:0};
+    if(code==='ArrowUp'&&s.dir.y===0)s.nd={x:0,y:-1};
+    if(code==='ArrowDown'&&s.dir.y===0)s.nd={x:0,y:1};
+    if(code==='Escape'||code==='KeyE')stopSnake();
+    return;}
+  if(S.ff&&code!=='Space')S.ff=false;
+  if(S.dialog){
+    if(code==='Escape'){
+      if(S.dialog.opts)toast('НУЖНО ВЫБРАТЬ ОТВЕТ — 1, 2 ИЛИ 3');
+      else closeDlg();
+      return;}
+    if(code==='Space')nextLine();
+    if(S.dialog&&S.dialog.opts&&/^Digit[1-9]$/.test(code))choose(+code.slice(5)-1);
+    return;}
+  if(S.scene!=='play')return;
+  if(code==='KeyC'){
+    if(S.mode==='car')smokeMenu();          /* в машине всегда спрашиваем, где курить */
+    else smoke(false);
+    return;}
+  if(S.panel){
+    if(/^Digit[1-9]$/.test(code)){const k=+code.slice(5)-1;
+      if(S.panel[k]&&optAllowed(S.panel[k]))S.panel[k].f();}
+    if(code==='KeyF'||code==='Escape')closePanel();
+    return;}
+  if(code==='KeyE'){
+    if(S.mode==='car'){carMenu();return;}
+    const sp=near();
+    if(sp&&sp.kind==='passer')talkPasser(sp.ref);
+    else if(sp)TALK[sp.key]();
+    else if(Math.abs(S.px-CAR_MID)<SIT_R){S.mode='car';toast('ВЫ СЕЛИ В МАШИНУ');}}
+  if(code==='KeyF'&&S.mode==='car'){S.mode='foot';S.px=CAR_X+64;}
+  if(code==='Space'&&S.mode==='car')S.ff=!S.ff;
+}
+const mtext=document.getElementById('mtext');
+document.getElementById('m-ctrl').onclick=()=>{mtext.style.display='block';mtext.innerHTML=
+  '<div class="head">КЛАВИШИ</div>'+
+  '<div class="keys">'+
+   '<span><kbd>←</kbd> <kbd>→</kbd> идти вдоль ряда</span>'+
+   '<span><kbd>E</kbd> действие или разговор</span>'+
+   '<span><kbd>F</kbd> выйти из машины</span>'+
+   '<span><kbd>C</kbd> закурить</span>'+
+   '<span><kbd>ПРОБЕЛ</kbd> перемотка и реплика</span>'+
+   '<span><kbd>1</kbd>…<kbd>9</kbd> выбор ответа</span>'+
+   '<span><kbd>ESC</kbd> закрыть меню</span>'+
+  '</div>'+
+  '<p>Очередь идёт рывками и без предупреждения. Всё интересное — вне машины: '+
+  'люди, костёр, вода, бензин, слухи. Отойдёте далеко — вас объедут. Подойдёте к человеку — '+
+  'над ним появится его имя и клавиша.</p>'+
+  '<div class="head">ЧТО ЗНАЧАТ ШКАЛЫ</div>'+
+  '<div class="leg"><u>БЕНЗ</u>Тридцать литров. Ночью печка съедает вдвое больше движения. '+
+    'На нуле — вынужденная остановка: сосед сольёт пять литров и возьмёт за них четыре тысячи.</div>'+
+  '<div class="leg"><u>ВОДА</u>Шесть литров на четверых, считая Трампа. Ею сбивают температуру, '+
+    'ею же платят за чужую помощь.</div>'+
+  '<div class="leg"><u>ТЕЛЕФОН</u>Единственная связь с домом и единственный источник слухов. '+
+    'Радио, чат и мультики для Тео сажают его одинаково быстро.</div>'+
+  '<div class="leg"><u>СТРЕСС</u>Растёт от ожидания, ночи, ломки и полного мочевого пузыря. '+
+    'Чем он выше, тем меньше у вас спокойных реплик и тем больше злых: часть ответов просто '+
+    'перестаёт находиться.</div>'+
+  '<div class="leg"><u>ТЯГА</u>Никотин. Пока не курите, картинка выцветает и желтеет, '+
+    'а в драке идёт минус к броску. Сигарета — ещё и валюта: угощённый однажды помогает потом. '+
+    'Клавиша C всегда спрашивает, где курить: на воздухе — бесплатно, в салоне — Марья считает, и на третьей подряд будет скандал.</div>'+
+  '<div class="leg"><u>СЕМЬЯ</u>Настроение Марьи и Тео. Само по себе оно только падает — '+
+    'от одного стояния.</div>'+
+  '<div class="leg"><u>ТРЕВОГА</u>Насколько им страшно. Растёт быстрее при низком настроении, '+
+    'ночью и когда пустеет бак. На ста они выходят и идут через границу пешком — без вас.</div>'+
+  '<p>Драки решаются броском двух кубиков: нужно девять. Злость помогает, ломка, '+
+  'трясущиеся руки и репутация — мешают. Модификаторы показываются перед результатом.</p>';};
+document.getElementById('m-about').onclick=()=>{mtext.style.display='block';mtext.innerHTML=
+  '<p>Двадцать четвёртое сентября две тысячи двадцать второго года, шестнадцать ноль-ноль. '+
+  'Иван сорок один год решал чужие проблемы — у него это выходило лучше всего, '+
+  'и за это ему платили. Позавчера он в последний раз закрыл рабочий ноутбук. Сегодня он стоит '+
+  'в двенадцати километрах от шлагбаума и впервые не знает, что сказать своей семье.</p>'+
+  '<p>В машине Марья, девятилетний Тео, кот Трамп в переноске и багажник, собранный '+
+  'за шесть часов. Впереди — тридцать километров чужих машин, ночь около нуля, бензин по тысяче '+
+  'за литр и люди, которые ещё вчера были просто соседями по дороге.</p>'+
+  '<p>Дойти до границы несложно. Дойти до неё всем вместе — совсем другая задача. '+
+  'Каждый час ожидания что-то отнимает: у него — самообладание, у них — уверенность, '+
+  'что он знает, что делает.</p>'+
+  '<p>Игра не про правые стороны. Она про воду, бензин, чужих детей и про то, сколько человек '+
+  'выдерживает, прежде чем перестаёт быть своим. Это первая из трёх историй.</p>';};
+
+document.getElementById('start').onclick=()=>{
+  document.getElementById('title').style.display='none';S.scene='play';
+  const op=pick(OPENERS);say(op[0],op[1]);
+  setTimeout(()=>sms('МАРЬЯ · ИЗ МАШИНЫ',pick([
+    'тео спрашивает надолго ли это. что ему сказать',
+    'у меня телефон садится. дай знать если что',
+    'я посчитала воду. на сутки хватит, если экономить'])),9000);};
+document.getElementById('again').onclick=()=>{
+  reset();document.getElementById('end').style.display='none';
+  closeDlg();closePanel();smsEl.innerHTML='';S.scene='play';};
+
+/* ============ цикл ============ */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  step(dt);renderBG(now/1000);renderFG(now/1000);compose(now/1000);tickerStep(dt);
+  hudT-=dt;if(hudT<=0){hud();hudT=0.12;}
+  if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').style.opacity=0;}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
