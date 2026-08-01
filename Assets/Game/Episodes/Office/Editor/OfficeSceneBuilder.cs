@@ -40,20 +40,30 @@ namespace Jam.Episodes.Office.Editor
             BuildFurniture(palette, furnitureRoot);
             BuildBackgroundScale(palette, backgroundRoot);
 
-            var episodeController = new GameObject("OfficeEpisodeController")
-                .AddComponent<OfficeEpisodeController>();
-            episodeController.transform.SetParent(gameplayRoot, false);
+            var episodeObject = new GameObject("OfficeEpisodeController", typeof(OfficeEpisodeController), typeof(OfficeMomentum), typeof(OfficeRunController));
+            episodeObject.transform.SetParent(gameplayRoot, false);
+            var episodeController = episodeObject.GetComponent<OfficeEpisodeController>();
+            var momentum = episodeObject.GetComponent<OfficeMomentum>();
+            var runController = episodeObject.GetComponent<OfficeRunController>();
 
             var player = CreatePlayer(palette, gameplayRoot);
             var camera = CreateCamera(player.transform, lightingRoot);
             var inputActions = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/InputSystem_Actions.inputactions");
-            player.GetComponent<OfficePlayerController>().Configure(inputActions, camera, "Player", "Move");
+            var playerController = player.GetComponent<OfficePlayerController>();
+            playerController.Configure(inputActions, camera, "Player", "Move", momentum);
 
             // Карта `Office` ещё не создана интегратором: `Primary` временно берётся из
             // существующего `Player/Attack`, общий input asset не изменяется.
             var handAnchor = player.transform.Find("Hand Anchor");
-            player.GetComponent<OfficeCarryController>()
-                .Configure(inputActions, "Player", "Attack", handAnchor, episodeController);
+            var carryController = player.GetComponent<OfficeCarryController>();
+            carryController.Configure(inputActions, "Player", "Attack", handAnchor, episodeController, momentum);
+
+            runController.Configure(
+                player.transform,
+                player.GetComponent<CharacterController>(),
+                playerController,
+                carryController,
+                episodeController);
 
             var laptop = CreateLaptop(palette, gameplayRoot, new Vector3(0f, 0.78f, -6f));
             laptop.GetComponent<OfficeCollectible>().Configure(episodeController, OfficeCollectibleType.Laptop);
@@ -66,7 +76,10 @@ namespace Jam.Episodes.Office.Editor
 
             var propsRoot = CreateGroup("Props", gameplayRoot);
             BuildCarryables(palette, propsRoot);
-            BuildBreakables(palette, propsRoot, episodeController);
+            BuildBreakables(palette, propsRoot, episodeController, momentum);
+
+            var enemyRoot = CreateGroup("Enemies", gameplayRoot);
+            BuildChasers(palette, enemyRoot, player.transform, runController, momentum, episodeController);
 
             var hudPrefab = CreateOrUpdatePrefab("OfficeHud", BuildHudTemplate);
             var hudInstance = (GameObject)PrefabUtility.InstantiatePrefab(hudPrefab, sceneRoot);
@@ -76,7 +89,13 @@ namespace Jam.Episodes.Office.Editor
                 hudBinding.Objective,
                 hudBinding.Carry,
                 hudBinding.Status,
-                exitGate);
+                hudBinding.Integrity,
+                hudBinding.Momentum,
+                hudBinding.MomentumFill,
+                hudBinding.DownPanel,
+                hudBinding.DownText,
+                exitGate,
+                momentum);
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -364,7 +383,7 @@ namespace Jam.Episodes.Office.Editor
             scaler.matchWidthOrHeight = 0.5f;
 
             var topPanel = CreateUiPanel("Objective Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
-            SetRect(topPanel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -22f), new Vector2(720f, 196f), new Vector2(0f, 1f));
+            SetRect(topPanel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -22f), new Vector2(720f, 250f), new Vector2(0f, 1f));
             var accent = CreateUiPanel("Accent", topPanel.transform, Hex("D8241D"));
             SetRect(accent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(6f, 0f), new Vector2(0f, 0.5f));
 
@@ -374,6 +393,9 @@ namespace Jam.Episodes.Office.Editor
             SetRect(objective.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -64f), new Vector2(-50f, 48f), new Vector2(0f, 1f));
             var carry = CreateUiText("Carry", topPanel.transform, 18, FontStyle.Normal, Hex("9FB0C8"), TextAnchor.MiddleLeft);
             SetRect(carry.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -118f), new Vector2(-50f, 44f), new Vector2(0f, 1f));
+            var integrity = CreateUiText("Integrity", topPanel.transform, 19, FontStyle.Bold, Hex("CFCABC"), TextAnchor.MiddleLeft);
+            SetRect(integrity.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -168f), new Vector2(-50f, 44f), new Vector2(0f, 1f));
+            integrity.text = "РАБОТОСПОСОБНОСТЬ ■■■   ПОПЫТКА 1";
 
             var statusPanel = CreateUiPanel("Status Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
             SetRect(statusPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 34f), new Vector2(1180f, 58f), new Vector2(0.5f, 0f));
@@ -381,7 +403,35 @@ namespace Jam.Episodes.Office.Editor
             SetRect(status.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-24f, -10f), new Vector2(0.5f, 0.5f));
             status.text = "WASD / СТРЕЛКИ • ДВИГАЙСЯ К EXIT";
 
-            canvasObject.GetComponent<OfficeHudBinding>().Configure(zone, objective, carry, status);
+            var momentumPanel = CreateUiPanel("Momentum Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
+            SetRect(momentumPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 102f), new Vector2(1180f, 56f), new Vector2(0.5f, 0f));
+            var momentumLabel = CreateUiText("Momentum", momentumPanel.transform, 18, FontStyle.Bold, Hex("FF5A3C"), TextAnchor.MiddleLeft);
+            SetRect(momentumLabel.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(20f, 0f), new Vector2(320f, -14f), new Vector2(0f, 0.5f));
+            momentumLabel.text = "ТЕМП 0%   ПРОСТОЙ";
+
+            var momentumTrack = CreateUiPanel("Momentum Track", momentumPanel.transform, new Color(0.08f, 0.08f, 0.1f, 1f));
+            SetRect(momentumTrack.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(360f, 0f), new Vector2(-380f, 18f), new Vector2(0f, 0.5f));
+            var momentumFill = CreateUiPanel("Momentum Fill", momentumTrack.transform, Hex("6E1512"));
+            // Ширину задаёт якорь, поэтому полоса работает без sprite и Image.Type.Filled.
+            SetRect(momentumFill.rectTransform, Vector2.zero, new Vector2(0f, 1f), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f));
+
+            var downPanel = CreateUiPanel("Down Panel", canvasObject.transform, new Color(0.02f, 0.02f, 0.03f, 0.86f));
+            SetRect(downPanel.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f));
+            var downText = CreateUiText("Down Text", downPanel.transform, 34, FontStyle.Bold, Hex("D8241D"), TextAnchor.MiddleCenter);
+            SetRect(downText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100f, 220f), new Vector2(0.5f, 0.5f));
+            downText.text = "ПРОИЗВОДИТЕЛЬНОСТЬ НЕУДОВЛЕТВОРИТЕЛЬНА";
+            downPanel.gameObject.SetActive(false);
+
+            canvasObject.GetComponent<OfficeHudBinding>().Configure(
+                zone,
+                objective,
+                carry,
+                status,
+                integrity,
+                momentumLabel,
+                momentumFill,
+                downPanel.gameObject,
+                downText);
             return canvasObject;
         }
 
@@ -427,14 +477,18 @@ namespace Jam.Episodes.Office.Editor
             return root;
         }
 
-        private static void BuildBreakables(Palette p, Transform root, OfficeEpisodeController controller)
+        private static void BuildBreakables(
+            Palette p,
+            Transform root,
+            OfficeEpisodeController controller,
+            OfficeMomentum momentum)
         {
             var prefab = CreateOrUpdatePrefab("Printer", () => BuildPrinterTemplate(p));
 
-            CreatePrinter(prefab, "Printer Open L", new Vector3(-3.3f, 0f, -19f), root, controller);
-            CreatePrinter(prefab, "Printer Open R", new Vector3(3.3f, 0f, -13f), root, controller);
-            CreatePrinter(prefab, "Printer Server", new Vector3(0f, 0f, 14.5f), root, controller);
-            CreatePrinter(prefab, "Printer Reception", new Vector3(-3.4f, 0f, 24.6f), root, controller);
+            CreatePrinter(prefab, "Printer Open L", new Vector3(-3.3f, 0f, -19f), root, controller, momentum);
+            CreatePrinter(prefab, "Printer Open R", new Vector3(3.3f, 0f, -13f), root, controller, momentum);
+            CreatePrinter(prefab, "Printer Server", new Vector3(0f, 0f, 14.5f), root, controller, momentum);
+            CreatePrinter(prefab, "Printer Reception", new Vector3(-3.4f, 0f, 24.6f), root, controller, momentum);
         }
 
         private static void CreatePrinter(
@@ -442,10 +496,123 @@ namespace Jam.Episodes.Office.Editor
             string name,
             Vector3 position,
             Transform parent,
-            OfficeEpisodeController controller)
+            OfficeEpisodeController controller,
+            OfficeMomentum momentum)
         {
             var instance = InstantiatePrefab(prefab, name, position, parent);
-            instance.GetComponent<OfficeBreakable>().SetEpisodeController(controller);
+            instance.GetComponent<OfficeBreakable>().SetSceneReferences(controller, momentum);
+        }
+
+        private static void BuildChasers(
+            Palette p,
+            Transform root,
+            Transform player,
+            OfficeRunController runController,
+            OfficeMomentum momentum,
+            OfficeEpisodeController controller)
+        {
+            var prefab = CreateOrUpdatePrefab("HostileChair", () => BuildChaserTemplate(p));
+
+            // Один тип противника на весь срез. Кресла стоят в открытых частях маршрута,
+            // где у героя есть место для уклонения и лежит предмет для ответного броска.
+            CreateChaser(prefab, "Hostile Chair Open N", new Vector3(-2.6f, 0f, -22.5f), 20f, root, player, runController, momentum, controller);
+            CreateChaser(prefab, "Hostile Chair Open S", new Vector3(3.1f, 0f, -16.5f), -150f, root, player, runController, momentum, controller);
+            CreateChaser(prefab, "Hostile Chair Server", new Vector3(-1.8f, 0f, 12.5f), 90f, root, player, runController, momentum, controller);
+            CreateChaser(prefab, "Hostile Chair Reception", new Vector3(2.4f, 0f, 27.5f), 180f, root, player, runController, momentum, controller);
+        }
+
+        private static void CreateChaser(
+            GameObject prefab,
+            string name,
+            Vector3 position,
+            float yRotation,
+            Transform parent,
+            Transform player,
+            OfficeRunController runController,
+            OfficeMomentum momentum,
+            OfficeEpisodeController controller)
+        {
+            var instance = InstantiatePrefab(prefab, name, position, parent, Quaternion.Euler(0f, yRotation, 0f));
+            instance.GetComponent<OfficeChaser>().SetSceneReferences(player, runController, momentum, controller);
+        }
+
+        private static GameObject BuildChaserTemplate(Palette p)
+        {
+            var root = new GameObject("Hostile Chair", typeof(BoxCollider), typeof(Rigidbody), typeof(OfficeChaser));
+            var t = root.transform;
+
+            // Силуэт остаётся офисным креслом, но крупнее и с красной боевой линией,
+            // чтобы противник читался с одного взгляда среди обычной мебели.
+            var intact = CreateGroup("Intact", t);
+            CreateCube("Seat", Vector3.zero, new Vector3(1.05f, 0.22f, 1.05f), p.panel, intact, false)
+                .transform.localPosition = new Vector3(0f, 0.62f, 0f);
+            CreateCube("Back", Vector3.zero, new Vector3(1.05f, 1.25f, 0.18f), p.panel, intact, false)
+                .transform.localPosition = new Vector3(0f, 1.25f, -0.44f);
+            CreateCube("Back Glow", Vector3.zero, new Vector3(0.85f, 0.12f, 0.06f), p.red, intact, false)
+                .transform.localPosition = new Vector3(0f, 1.62f, -0.53f);
+            // Камера смотрит сверху, поэтому красный акцент дублируется на сиденье:
+            // иначе противник не отличается от обычного кресла в кадре.
+            CreateCube("Seat Glow", Vector3.zero, new Vector3(0.9f, 0.05f, 0.2f), p.red, intact, false)
+                .transform.localPosition = new Vector3(0f, 0.74f, 0f);
+            CreateCylinder("Post", Vector3.zero, new Vector3(0.16f, 0.3f, 0.16f), p.metal, intact, false)
+                .transform.localPosition = new Vector3(0f, 0.3f, 0f);
+            CreateCylinder("Base", Vector3.zero, new Vector3(1.15f, 0.06f, 1.15f), p.metal, intact, false)
+                .transform.localPosition = new Vector3(0f, 0.08f, 0f);
+            foreach (var angle in new[] { 0f, 72f, 144f, 216f, 288f })
+            {
+                var wheel = CreateCylinder("Wheel", Vector3.zero, new Vector3(0.2f, 0.06f, 0.2f), p.player, intact, false).transform;
+                var radians = angle * Mathf.Deg2Rad;
+                wheel.localPosition = new Vector3(Mathf.Sin(radians) * 0.55f, 0.09f, Mathf.Cos(radians) * 0.55f);
+                wheel.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+
+            var wrecked = CreateGroup("Wrecked", t);
+            CreateCube("Collapsed Seat", Vector3.zero, new Vector3(1.05f, 0.2f, 1.05f), p.wall, wrecked, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(0.1f, 0.14f, 0f), Quaternion.Euler(0f, 18f, 24f));
+            CreateCube("Torn Back", Vector3.zero, new Vector3(1f, 0.16f, 1.1f), p.wall, wrecked, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(-0.55f, 0.1f, -0.55f), Quaternion.Euler(6f, -32f, 0f));
+            CreateCylinder("Bent Base", Vector3.zero, new Vector3(1.05f, 0.05f, 1.05f), p.metal, wrecked, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(0.35f, 0.05f, 0.3f), Quaternion.Euler(14f, 0f, 9f));
+            CreateCube("Dead Ember", Vector3.zero, new Vector3(0.4f, 0.05f, 0.35f), p.redDim, wrecked, false)
+                .transform.localPosition = new Vector3(0f, 0.26f, 0f);
+            wrecked.gameObject.SetActive(false);
+
+            // Телеграф — красная полоса на полу по будущей траектории рывка.
+            var telegraph = CreateCube("Telegraph", Vector3.zero, new Vector3(1.1f, 0.02f, 1f), p.red, t, false).transform;
+            telegraph.localPosition = new Vector3(0f, 0.03f, 1f);
+            telegraph.gameObject.SetActive(false);
+
+            var warningObject = new GameObject("Warning Light", typeof(Light));
+            warningObject.transform.SetParent(t, false);
+            warningObject.transform.localPosition = new Vector3(0f, 1.4f, 0f);
+            var warning = warningObject.GetComponent<Light>();
+            warning.type = LightType.Point;
+            warning.color = Hex("D8241D");
+            warning.range = 8f;
+            warning.intensity = 0f;
+            warning.shadows = LightShadows.None;
+
+            // Тело — триггер: таран не должен выталкивать героя наверх, а урон и
+            // попадание броском считаются собственной логикой среза.
+            var collider = root.GetComponent<BoxCollider>();
+            collider.isTrigger = true;
+            collider.size = new Vector3(1.2f, 1.7f, 1.2f);
+            collider.center = new Vector3(0f, 0.85f, 0f);
+
+            var body = root.GetComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+
+            root.GetComponent<OfficeChaser>().Configure(
+                null,
+                null,
+                null,
+                null,
+                intact.gameObject,
+                wrecked.gameObject,
+                telegraph,
+                warning);
+            return root;
         }
 
         private static GameObject BuildPrinterTemplate(Palette p)

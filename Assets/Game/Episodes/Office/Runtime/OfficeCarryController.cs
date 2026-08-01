@@ -18,6 +18,7 @@ namespace Jam.Episodes.Office
         [Header("Scene")]
         [SerializeField] private Transform handAnchor;
         [SerializeField] private OfficeEpisodeController episodeController;
+        [SerializeField] private OfficeMomentum momentum;
 
         [Header("Автоматический подбор")]
         [SerializeField, Min(0.1f)] private float scanForwardOffset = 0.9f;
@@ -51,6 +52,7 @@ namespace Jam.Episodes.Office
 
             _ownsPrimaryActionEnable = false;
             Highlight(null);
+            ReleaseHeldItem();
         }
 
         private void Update()
@@ -81,13 +83,31 @@ namespace Jam.Episodes.Office
             string mapName,
             string actionName,
             Transform hand,
-            OfficeEpisodeController controller)
+            OfficeEpisodeController controller,
+            OfficeMomentum momentumScale = null)
         {
             inputActions = actions;
             actionMapName = mapName;
             primaryActionName = actionName;
             handAnchor = hand;
             episodeController = controller;
+            momentum = momentumScale;
+        }
+
+        /// <summary>
+        /// Роняет предмет без броска. Быстрый restart использует это, чтобы предмет
+        /// вернулся на своё место вместе с остальным забегом.
+        /// </summary>
+        public void ReleaseHeldItem()
+        {
+            if (_heldItem == null)
+            {
+                return;
+            }
+
+            var item = _heldItem;
+            _heldItem = null;
+            item.Release();
         }
 
         private void PickUp(OfficeCarryable item)
@@ -109,7 +129,8 @@ namespace Jam.Episodes.Office
             _heldItem = null;
 
             var direction = (transform.forward + (Vector3.up * throwLift)).normalized;
-            item.Throw(direction, throwForce, pickupLockout);
+            var force = momentum != null ? throwForce * momentum.ThrowMultiplier : throwForce;
+            item.Throw(direction, force, pickupLockout);
             episodeController?.ReportCarryThrow(item.DisplayName);
         }
 

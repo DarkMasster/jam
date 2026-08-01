@@ -8,7 +8,7 @@ namespace Jam.Episodes.Office
     /// бросается по <c>Primary</c> и на лету разрушает подготовленные объекты.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
-    public sealed class OfficeCarryable : MonoBehaviour
+    public sealed class OfficeCarryable : MonoBehaviour, IOfficeRunResettable
     {
         private static readonly List<OfficeCarryable> ActiveItems = new();
 
@@ -60,12 +60,14 @@ namespace Jam.Episodes.Office
         private void OnEnable()
         {
             ActiveItems.Add(this);
+            OfficeRunReset.Register(this);
             SetHighlighted(false);
         }
 
         private void OnDisable()
         {
             ActiveItems.Remove(this);
+            OfficeRunReset.Unregister(this);
         }
 
         public void SetHighlighted(bool value)
@@ -113,13 +115,40 @@ namespace Jam.Episodes.Office
             _thrownUntil = Time.time + thrownDuration;
         }
 
+        /// <summary>Возвращает предмет в физический мир без броска.</summary>
+        public void Release()
+        {
+            IsHeld = false;
+            transform.SetParent(_releaseParent, true);
+
+            if (bodyCollider != null)
+            {
+                bodyCollider.enabled = true;
+            }
+
+            _rigidbody.isKinematic = false;
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+            _thrownUntil = 0f;
+        }
+
         public void ResetToSpawn()
         {
+            if (IsHeld)
+            {
+                Release();
+            }
+
             transform.SetPositionAndRotation(_spawnPosition, _spawnRotation);
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
             _pickupUnlockTime = 0f;
             _thrownUntil = 0f;
+        }
+
+        public void ResetForRun()
+        {
+            ResetToSpawn();
         }
 
         public void Configure(string itemName, Renderer highlight, Collider body)
@@ -136,13 +165,22 @@ namespace Jam.Episodes.Office
                 return;
             }
 
-            var breakable = collision.collider.GetComponentInParent<OfficeBreakable>();
-            if (breakable == null)
+            // Один и тот же бросок ломает и технику окружения, и ожившее кресло.
+            var target = collision.collider.GetComponentInParent<IOfficeImpactTarget>();
+            target?.TryTakeImpact(collision.relativeVelocity.magnitude);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            // Тело противника — триггер, чтобы он не выталкивал героя вверх при таране,
+            // поэтому попадание по нему засчитывается собственной скоростью предмета.
+            if (IsHeld || Time.time > _thrownUntil)
             {
                 return;
             }
 
-            breakable.TryBreak(collision.relativeVelocity.magnitude);
+            var target = other.GetComponentInParent<IOfficeImpactTarget>();
+            target?.TryTakeImpact(_rigidbody.linearVelocity.magnitude);
         }
     }
 }
