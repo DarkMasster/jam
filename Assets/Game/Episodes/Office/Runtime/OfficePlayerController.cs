@@ -23,6 +23,9 @@ namespace Jam.Episodes.Office
         private InputAction _moveAction;
         private Vector3 _planarVelocity;
         private bool _ownsMoveActionEnable;
+        private bool _controlLocked;
+
+        public bool IsControlLocked => _controlLocked;
 
         private void Awake()
         {
@@ -51,6 +54,12 @@ namespace Jam.Episodes.Office
             // героя; двигать его в этот момент нельзя.
             if (_moveAction == null || !_characterController.enabled)
             {
+                return;
+            }
+
+            if (_controlLocked)
+            {
+                ResetMotion();
                 return;
             }
 
@@ -100,6 +109,16 @@ namespace Jam.Episodes.Office
         {
             _planarVelocity = Vector3.zero;
             momentum?.ReportPlanarSpeed(0f);
+        }
+
+        /// <summary>Короткая постановка блокирует движение, не отключая input map.</summary>
+        public void SetControlLocked(bool value)
+        {
+            _controlLocked = value;
+            if (value)
+            {
+                ResetMotion();
+            }
         }
 
         private void ResolveMoveAction()

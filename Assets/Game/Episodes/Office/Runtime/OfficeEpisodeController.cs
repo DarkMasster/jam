@@ -21,6 +21,7 @@ namespace Jam.Episodes.Office
         [Header("Сцена")]
         [SerializeField] private OfficeExitGate exitGate;
         [SerializeField] private OfficeMomentum momentum;
+        [SerializeField] private OfficeBossEncounter bossEncounter;
 
         [Header("Подача Momentum")]
         [SerializeField] private Color momentumLowColor = new(0.43f, 0.08f, 0.07f, 1f);
@@ -33,6 +34,9 @@ namespace Jam.Episodes.Office
         private int _integrity = 3;
         private int _maxIntegrity = 3;
         private int _attempt = 1;
+        private OfficeBossPhase _bossPhase = OfficeBossPhase.Dormant;
+        private int _bossHits;
+        private int _bossRequiredHits;
 
         public bool HasLaptop { get; private set; }
         public bool HasMug { get; private set; }
@@ -86,7 +90,8 @@ namespace Jam.Episodes.Office
             GameObject downOverlay,
             TMP_Text downMessage,
             OfficeExitGate gate,
-            OfficeMomentum momentumScale)
+            OfficeMomentum momentumScale,
+            OfficeBossEncounter boss)
         {
             zoneText = zone;
             objectiveText = objective;
@@ -99,6 +104,7 @@ namespace Jam.Episodes.Office
             downText = downMessage;
             exitGate = gate;
             momentum = momentumScale;
+            bossEncounter = boss;
         }
 
         public void RegisterCollectible(OfficeCollectibleType collectibleType)
@@ -222,11 +228,67 @@ namespace Jam.Episodes.Office
             HasMug = false;
             _breakableDestroyed = 0;
             _chaserWrecked = 0;
+            _bossPhase = OfficeBossPhase.Dormant;
+            _bossHits = 0;
+            _bossRequiredHits = 0;
 
             RefreshHud();
             SetCarry(Loc.Get(LocalizationTables.Office, "hud.empty_hands", "РУКИ СВОБОДНЫ • ПОДОЙДИ К ПОДСВЕЧЕННОМУ ПРЕДМЕТУ"));
             EnterZone(Loc.Get(LocalizationTables.Office, "zone.start", "СТАРТОВЫЙ КАБИНЕТ"));
             exitGate?.SetReady(false);
+        }
+
+        public void ReportBossAssemblyStarted()
+        {
+            _bossPhase = OfficeBossPhase.Assembling;
+            RefreshHud();
+            SetStatus(Loc.Get(LocalizationTables.Office, "boss.status.assembly", "СТОЙКИ СХОДЯТСЯ • УПРАВЛЕНИЕ ЗАБЛОКИРОВАНО"));
+        }
+
+        public void ReportBossAssembled(int requiredHits)
+        {
+            _bossPhase = OfficeBossPhase.Assembled;
+            _bossHits = 0;
+            _bossRequiredHits = requiredHits;
+            RefreshHud();
+            SetStatus(Loc.Get(LocalizationTables.Office, "boss.status.assembled", "ЕДИНЫЙ КОРПУС СОБРАН • БРОСАЙ ПРЕДМЕТЫ"));
+        }
+
+        public void ReportBossHit(int hits, int requiredHits)
+        {
+            _bossHits = hits;
+            _bossRequiredHits = requiredHits;
+            RefreshHud();
+            SetStatus(Loc.Get(LocalizationTables.Office, "boss.status.hit", "СБОЙ КОРПУСА • {0}/{1}", hits, requiredHits));
+        }
+
+        public void ReportBossEncirclementStarted()
+        {
+            _bossPhase = OfficeBossPhase.Encircling;
+            RefreshHud();
+            SetStatus(Loc.Get(LocalizationTables.Office, "boss.status.encircling", "ЛОЖНАЯ ПОБЕДА • СТОЙКИ ПЕРЕСТРАИВАЮТСЯ"));
+        }
+
+        public void ReportBossRingClosed()
+        {
+            _bossPhase = OfficeBossPhase.RingFight;
+            RefreshHud();
+            SetStatus(Loc.Get(LocalizationTables.Office, "boss.status.ring", "КОЛЬЦО ЗАМКНУТО • ДВИГАЙСЯ, ПОКА ЕЩЁ МОЖЕШЬ"));
+        }
+
+        public void ReportBossFinalTelegraph()
+        {
+            _bossPhase = OfficeBossPhase.FinalTelegraph;
+            RefreshHud();
+            SetStatus(Loc.Get(LocalizationTables.Office, "boss.status.final", "СИНХРОНИЗАЦИЯ СТОЕК • БЕЗОПАСНОЙ ЗОНЫ НЕТ"));
+        }
+
+        public void ReportBossFinalStrike()
+        {
+            _bossPhase = OfficeBossPhase.Completed;
+            RefreshHud();
+            SetStatus(Loc.Get(LocalizationTables.Office, "boss.status.complete", "СЮЖЕТНОЕ ПОРАЖЕНИЕ • ЭПИЗОД ЗАВЕРШЁН"));
+            ShowDownPanel(true, Loc.Get(LocalizationTables.Office, "boss.overlay.complete", "OFFBOARDING ЗАВЕРШЁН\nСОН ОБРЫВАЕТСЯ"));
         }
 
         public void HandleExitAttempt()
@@ -246,13 +308,34 @@ namespace Jam.Episodes.Office
                 objectiveText.text = Loc.Get(LocalizationTables.Office, "objective.false_exit", "EXIT — ЛОЖНАЯ ЦЕЛЬ • ВПЕРЕДИ СЕРВЕРНЫЙ БОСС");
             }
 
-            SetStatus(Loc.Get(LocalizationTables.Office, "status.access_revoked", "ДОСТУП ОТОЗВАН • ЗОНА БОССА ГОТОВА ДЛЯ СЛЕДУЮЩЕГО СРЕЗА"));
+            if (bossEncounter == null)
+            {
+                SetStatus(Loc.Get(LocalizationTables.Office, "status.access_revoked", "ДОСТУП ОТОЗВАН • СЕРВЕРНЫЙ БОСС НЕ ПОДКЛЮЧЁН"));
+                return;
+            }
+
+            bossEncounter.TryStartEncounter();
         }
 
         private void RefreshHud()
         {
             if (objectiveText == null)
             {
+                return;
+            }
+
+            if (_bossPhase != OfficeBossPhase.Dormant)
+            {
+                objectiveText.text = _bossPhase switch
+                {
+                    OfficeBossPhase.Assembling => Loc.Get(LocalizationTables.Office, "boss.objective.assembly", "СБОРКА КОРПУСА • НЕ ДВИГАТЬСЯ"),
+                    OfficeBossPhase.Assembled => Loc.Get(LocalizationTables.Office, "boss.objective.assembled", "РАЗРУШЬ ЕДИНЫЙ КОРПУС   {0}/{1}", _bossHits, _bossRequiredHits),
+                    OfficeBossPhase.Encircling => Loc.Get(LocalizationTables.Office, "boss.objective.encircling", "ЛОЖНАЯ ПОБЕДА • СТОЙКИ ОКРУЖАЮТ ТЕБЯ"),
+                    OfficeBossPhase.RingFight => Loc.Get(LocalizationTables.Office, "boss.objective.ring", "СЕРВЕРНОЕ КОЛЬЦО • ВЫХОДА НЕТ"),
+                    OfficeBossPhase.FinalTelegraph => Loc.Get(LocalizationTables.Office, "boss.objective.final", "ФИНАЛЬНЫЙ УДАР • ОБЩИЙ ТЕЛЕГРАФ"),
+                    OfficeBossPhase.Completed => Loc.Get(LocalizationTables.Office, "boss.objective.complete", "OFFBOARDING ЗАВЕРШЁН • СОН ОБОРВАН"),
+                    _ => string.Empty
+                };
                 return;
             }
 
