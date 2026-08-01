@@ -1,3 +1,5 @@
+using Jam.Core.Localization;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,19 +7,16 @@ namespace Jam.Episodes.Office
 {
     public sealed class OfficeEpisodeController : MonoBehaviour
     {
-        private const string EmptyHandsMessage = "РУКИ СВОБОДНЫ • ПОДОЙДИ К ПОДСВЕЧЕННОМУ ПРЕДМЕТУ";
-        private const string StartZoneName = "СТАРТОВЫЙ КАБИНЕТ";
-
         [Header("HUD")]
-        [SerializeField] private Text zoneText;
-        [SerializeField] private Text objectiveText;
-        [SerializeField] private Text carryText;
-        [SerializeField] private Text statusText;
-        [SerializeField] private Text integrityText;
-        [SerializeField] private Text momentumText;
+        [SerializeField] private TMP_Text zoneText;
+        [SerializeField] private TMP_Text objectiveText;
+        [SerializeField] private TMP_Text carryText;
+        [SerializeField] private TMP_Text statusText;
+        [SerializeField] private TMP_Text integrityText;
+        [SerializeField] private TMP_Text momentumText;
         [SerializeField] private Image momentumFill;
         [SerializeField] private GameObject downPanel;
-        [SerializeField] private Text downText;
+        [SerializeField] private TMP_Text downText;
 
         [Header("Сцена")]
         [SerializeField] private OfficeExitGate exitGate;
@@ -31,6 +30,9 @@ namespace Jam.Episodes.Office
         private int _breakableDestroyed;
         private int _chaserTotal;
         private int _chaserWrecked;
+        private int _integrity = 3;
+        private int _maxIntegrity = 3;
+        private int _attempt = 1;
 
         public bool HasLaptop { get; private set; }
         public bool HasMug { get; private set; }
@@ -44,9 +46,28 @@ namespace Jam.Episodes.Office
             }
 
             RefreshHud();
-            SetCarry(EmptyHandsMessage);
-            EnterZone(StartZoneName);
-            ShowDownPanel(false, string.Empty);
+            SetCarry(Loc.Get(LocalizationTables.Office, "hud.empty_hands", "РУКИ СВОБОДНЫ • ПОДОЙДИ К ПОДСВЕЧЕННОМУ ПРЕДМЕТУ"));
+            EnterZone(Loc.Get(LocalizationTables.Office, "zone.start", "СТАРТОВЫЙ КАБИНЕТ"));
+            SetStatus(Loc.Get(LocalizationTables.Office, "hud.start_hint", "WASD / СТРЕЛКИ • ДВИГАЙСЯ К EXIT"));
+            ReportRunState(3, 3, 1);
+            ShowDownPanel(false, Loc.Get(LocalizationTables.Office, "hud.down", "ПРОИЗВОДИТЕЛЬНОСТЬ НЕУДОВЛЕТВОРИТЕЛЬНА\nПОПЫТКА {0} НАЧИНАЕТСЯ", 1));
+        }
+
+        private void OnEnable()
+        {
+            Loc.LocaleChanged += HandleLocaleChanged;
+        }
+
+        private void OnDisable()
+        {
+            Loc.LocaleChanged -= HandleLocaleChanged;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            RefreshHud();
+            RefreshMomentumHud();
+            ReportRunState(_integrity, _maxIntegrity, _attempt);
         }
 
         private void Update()
@@ -55,15 +76,15 @@ namespace Jam.Episodes.Office
         }
 
         public void Configure(
-            Text zone,
-            Text objective,
-            Text carry,
-            Text status,
-            Text integrity,
-            Text momentumLabel,
+            TMP_Text zone,
+            TMP_Text objective,
+            TMP_Text carry,
+            TMP_Text status,
+            TMP_Text integrity,
+            TMP_Text momentumLabel,
             Image momentumBar,
             GameObject downOverlay,
-            Text downMessage,
+            TMP_Text downMessage,
             OfficeExitGate gate,
             OfficeMomentum momentumScale)
         {
@@ -86,17 +107,17 @@ namespace Jam.Episodes.Office
             {
                 case OfficeCollectibleType.Laptop:
                     HasLaptop = true;
-                    SetStatus("НОУТБУК СОБРАН • ОСТАЛАСЬ КРУЖКА");
+                    SetStatus(Loc.Get(LocalizationTables.Office, "status.laptop_collected", "НОУТБУК СОБРАН • ОСТАЛАСЬ КРУЖКА"));
                     break;
                 case OfficeCollectibleType.Mug:
                     HasMug = true;
-                    SetStatus("КРУЖКА СОБРАНА • ОСТАЛСЯ НОУТБУК");
+                    SetStatus(Loc.Get(LocalizationTables.Office, "status.mug_collected", "КРУЖКА СОБРАНА • ОСТАЛСЯ НОУТБУК"));
                     break;
             }
 
             if (BossEncounterReady)
             {
-                SetStatus("ЛИЧНЫЕ ВЕЩИ СОБРАНЫ • ДОБЕРИСЬ ДО EXIT");
+                SetStatus(Loc.Get(LocalizationTables.Office, "status.items_collected", "ЛИЧНЫЕ ВЕЩИ СОБРАНЫ • ДОБЕРИСЬ ДО EXIT"));
             }
 
             RefreshHud();
@@ -119,7 +140,7 @@ namespace Jam.Episodes.Office
         public void RegisterBreakableDestroyed(string targetName)
         {
             _breakableDestroyed++;
-            SetStatus($"РАЗРУШЕНО: {targetName} • {_breakableDestroyed}/{_breakableTotal} • ТЕМП РАСТЁТ");
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.destroyed", "РАЗРУШЕНО: {0} • {1}/{2} • ТЕМП РАСТЁТ", LocalizeRuntimeName(targetName), _breakableDestroyed, _breakableTotal));
         }
 
         public void RegisterChaser()
@@ -130,28 +151,33 @@ namespace Jam.Episodes.Office
         public void RegisterChaserWrecked(string targetName)
         {
             _chaserWrecked++;
-            SetStatus($"СПИСАНО: {targetName} • {_chaserWrecked}/{_chaserTotal} • ТЕМП РАСТЁТ");
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.wrecked", "СПИСАНО: {0} • {1}/{2} • ТЕМП РАСТЁТ", LocalizeRuntimeName(targetName), _chaserWrecked, _chaserTotal));
         }
 
         public void ReportChaserCrash(string targetName)
         {
-            SetStatus($"{targetName} ПРОМАХНУЛОСЬ • ОКНО ДЛЯ БРОСКА");
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.chaser_missed", "{0} ПРОМАХНУЛОСЬ • ОКНО ДЛЯ БРОСКА", LocalizeRuntimeName(targetName)));
         }
 
         public void ReportCarryPickup(string itemName)
         {
-            SetCarry($"В РУКАХ: {itemName} • PRIMARY — БРОСОК");
-            SetStatus($"ПОДОБРАНО: {itemName} • РУКИ ЗАНЯТЫ");
+            var localizedName = LocalizeRuntimeName(itemName);
+            SetCarry(Loc.Get(LocalizationTables.Office, "hud.carrying", "В РУКАХ: {0} • PRIMARY — БРОСОК", localizedName));
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.picked_up", "ПОДОБРАНО: {0} • РУКИ ЗАНЯТЫ", localizedName));
         }
 
         public void ReportCarryThrow(string itemName)
         {
-            SetCarry(EmptyHandsMessage);
-            SetStatus($"БРОСОК: {itemName}");
+            SetCarry(Loc.Get(LocalizationTables.Office, "hud.empty_hands", "РУКИ СВОБОДНЫ • ПОДОЙДИ К ПОДСВЕЧЕННОМУ ПРЕДМЕТУ"));
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.thrown", "БРОСОК: {0}", LocalizeRuntimeName(itemName)));
         }
 
         public void ReportRunState(int integrity, int maxIntegrity, int attempt)
         {
+            _integrity = integrity;
+            _maxIntegrity = maxIntegrity;
+            _attempt = attempt;
+
             if (integrityText == null)
             {
                 return;
@@ -163,24 +189,24 @@ namespace Jam.Episodes.Office
                 pips += i < integrity ? "■" : "□";
             }
 
-            integrityText.text = $"РАБОТОСПОСОБНОСТЬ {pips}   ПОПЫТКА {attempt}";
+            integrityText.text = Loc.Get(LocalizationTables.Office, "hud.integrity", "РАБОТОСПОСОБНОСТЬ {0}   ПОПЫТКА {1}", pips, attempt);
         }
 
         public void ReportPlayerHit(string sourceName, int integrity, int maxIntegrity)
         {
-            SetStatus($"УДАР: {sourceName} • РАБОТОСПОСОБНОСТЬ {integrity}/{maxIntegrity}");
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.hit", "УДАР: {0} • РАБОТОСПОСОБНОСТЬ {1}/{2}", LocalizeRuntimeName(sourceName), integrity, maxIntegrity));
         }
 
         public void ReportRunFailed(string sourceName, int nextAttempt)
         {
-            SetStatus($"ВЫГОРАНИЕ • ПРИЧИНА: {sourceName}");
-            ShowDownPanel(true, $"ПРОИЗВОДИТЕЛЬНОСТЬ НЕУДОВЛЕТВОРИТЕЛЬНА\nПОПЫТКА {nextAttempt} НАЧИНАЕТСЯ");
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.failed", "ВЫГОРАНИЕ • ПРИЧИНА: {0}", LocalizeRuntimeName(sourceName)));
+            ShowDownPanel(true, Loc.Get(LocalizationTables.Office, "hud.down", "ПРОИЗВОДИТЕЛЬНОСТЬ НЕУДОВЛЕТВОРИТЕЛЬНА\nПОПЫТКА {0} НАЧИНАЕТСЯ", nextAttempt));
         }
 
         public void ReportRunRestarted(int attempt)
         {
             ShowDownPanel(false, string.Empty);
-            SetStatus($"РАБОЧИЙ ДЕНЬ ПЕРЕЗАПУЩЕН • ПОПЫТКА {attempt}");
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.restarted", "РАБОЧИЙ ДЕНЬ ПЕРЕЗАПУЩЕН • ПОПЫТКА {0}", attempt));
         }
 
         /// <summary>Возвращает цели и счётчики забега в стартовое состояние.</summary>
@@ -192,8 +218,8 @@ namespace Jam.Episodes.Office
             _chaserWrecked = 0;
 
             RefreshHud();
-            SetCarry(EmptyHandsMessage);
-            EnterZone(StartZoneName);
+            SetCarry(Loc.Get(LocalizationTables.Office, "hud.empty_hands", "РУКИ СВОБОДНЫ • ПОДОЙДИ К ПОДСВЕЧЕННОМУ ПРЕДМЕТУ"));
+            EnterZone(Loc.Get(LocalizationTables.Office, "zone.start", "СТАРТОВЫЙ КАБИНЕТ"));
             exitGate?.SetReady(false);
         }
 
@@ -201,22 +227,20 @@ namespace Jam.Episodes.Office
         {
             if (!BossEncounterReady)
             {
-                var missing = !HasLaptop && !HasMug
-                    ? "НУЖНЫ НОУТБУК И КРУЖКА"
-                    : !HasLaptop
-                        ? "НУЖЕН НОУТБУК"
-                        : "НУЖНА КРУЖКА";
-
-                SetStatus($"ДОСТУП ОТКЛОНЁН • {missing}");
+                var missingKey = !HasLaptop && !HasMug
+                    ? "status.missing_both"
+                    : !HasLaptop ? "status.missing_laptop" : "status.missing_mug";
+                var missing = Loc.Get(LocalizationTables.Office, missingKey, "НУЖНЫ ЛИЧНЫЕ ВЕЩИ");
+                SetStatus(Loc.Get(LocalizationTables.Office, "status.access_denied", "ДОСТУП ОТКЛОНЁН • {0}", missing));
                 return;
             }
 
             if (objectiveText != null)
             {
-                objectiveText.text = "EXIT — ЛОЖНАЯ ЦЕЛЬ • ВПЕРЕДИ СЕРВЕРНЫЙ БОСС";
+                objectiveText.text = Loc.Get(LocalizationTables.Office, "objective.false_exit", "EXIT — ЛОЖНАЯ ЦЕЛЬ • ВПЕРЕДИ СЕРВЕРНЫЙ БОСС");
             }
 
-            SetStatus("ДОСТУП ОТОЗВАН • ЗОНА БОССА ГОТОВА ДЛЯ СЛЕДУЮЩЕГО СРЕЗА");
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.access_revoked", "ДОСТУП ОТОЗВАН • ЗОНА БОССА ГОТОВА ДЛЯ СЛЕДУЮЩЕГО СРЕЗА"));
         }
 
         private void RefreshHud()
@@ -226,9 +250,18 @@ namespace Jam.Episodes.Office
                 return;
             }
 
-            var laptop = HasLaptop ? "[X] НОУТБУК" : "[ ] НОУТБУК";
-            var mug = HasMug ? "[X] КРУЖКА" : "[ ] КРУЖКА";
-            objectiveText.text = $"СОБЕРИ ЛИЧНЫЕ ВЕЩИ   {laptop}   {mug}";
+            var laptop = HasLaptop
+                ? Loc.Get(LocalizationTables.Office, "objective.laptop.done", "[X] НОУТБУК")
+                : Loc.Get(LocalizationTables.Office, "objective.laptop.empty", "[ ] НОУТБУК");
+            var mug = HasMug
+                ? Loc.Get(LocalizationTables.Office, "objective.mug.done", "[X] КРУЖКА")
+                : Loc.Get(LocalizationTables.Office, "objective.mug.empty", "[ ] КРУЖКА");
+            objectiveText.text = Loc.Get(
+                LocalizationTables.Office,
+                "objective.collect",
+                "СОБЕРИ ЛИЧНЫЕ ВЕЩИ   {0}   {1}",
+                laptop,
+                mug);
         }
 
         private void RefreshMomentumHud()
@@ -252,8 +285,15 @@ namespace Jam.Episodes.Office
 
             if (momentumText != null)
             {
-                var state = momentum.IsIdle ? "ПРОСТОЙ" : "В ДВИЖЕНИИ";
-                momentumText.text = $"ТЕМП {Mathf.RoundToInt(value * 100f)}%   {state}";
+                var state = momentum.IsIdle
+                    ? Loc.Get(LocalizationTables.Office, "momentum.idle", "ПРОСТОЙ")
+                    : Loc.Get(LocalizationTables.Office, "momentum.moving", "В ДВИЖЕНИИ");
+                momentumText.text = Loc.Get(
+                    LocalizationTables.Office,
+                    "momentum.label",
+                    "ТЕМП {0}%   {1}",
+                    Mathf.RoundToInt(value * 100f),
+                    state);
             }
         }
 
@@ -264,7 +304,7 @@ namespace Jam.Episodes.Office
                 downPanel.SetActive(visible);
             }
 
-            if (downText != null && visible)
+            if (downText != null && !string.IsNullOrEmpty(message))
             {
                 downText.text = message;
             }
@@ -284,6 +324,17 @@ namespace Jam.Episodes.Office
             {
                 statusText.text = message;
             }
+        }
+
+        private static string LocalizeRuntimeName(string value)
+        {
+            return value switch
+            {
+                "КЛАВИАТУРА" => Loc.Get(LocalizationTables.Office, "item.keyboard", value),
+                "ПРИНТЕР" => Loc.Get(LocalizationTables.Office, "item.printer", value),
+                "ОФИСНОЕ КРЕСЛО" => Loc.Get(LocalizationTables.Office, "enemy.chair", value),
+                _ => value
+            };
         }
     }
 }

@@ -11,6 +11,8 @@
 |---|---:|---|---|
 | NodeCanvas | 3.42 | `Assets/ParadoxNotion/NodeCanvas`, `Assets/ParadoxNotion/CanvasCore` | `NodeCanvas`, `ParadoxNotion` |
 | Damage Numbers Pro | 4.55 | `Assets/DamageNumbersPro` | `DamageNumbersPro` |
+| Unity Localization | 1.5.12 | `Packages/com.unity.localization` | `Unity.Localization` |
+| TextMeshPro | UGUI 2.5.0 | `Assets/TextMesh Pro`, package UGUI | `Unity.TextMeshPro` |
 
 Версии подтверждены по установленным исходникам, а перечисленные ниже типы и методы — через reflection загруженных Unity-сборок.
 
@@ -131,6 +133,10 @@ DamageNumber hudPopup = guiPrefab.SpawnGUI(parent, anchoredPosition, text);
 `NodeCanvas task -> project service/interface -> gameplay state change -> feedback event -> Damage Numbers Pro adapter`.
 
 Обратная зависимость запрещена: DNP не меняет state и не двигает NodeCanvas-граф. Сохранение вызывается отдельно на смысловом checkpoint после завершения операции.
+
+Локализация подключается к NodeCanvas только через проектные tasks
+`GetLocalizedStringTask` и `SetLocaleTask`. Graph хранит ключи, а не переводы.
+TMP и Unity Localization не меняют gameplay-state и не владеют сохранением.
 
 ## Checklist интеграции
 

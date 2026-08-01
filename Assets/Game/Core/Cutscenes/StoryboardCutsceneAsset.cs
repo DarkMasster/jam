@@ -18,6 +18,10 @@ namespace Jam.Core.Cutscenes
     {
         public Sprite background;
         public Sprite portrait;
+        [Tooltip("Unity Localization String Table used by speakerKey and textKey.")]
+        public string localizationTable = "Photo";
+        public string speakerKey;
+        public string textKey;
         public string speaker;
         [TextArea(3, 8)] public string text;
         public AudioClip voice;

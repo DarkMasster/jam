@@ -1,8 +1,10 @@
 using System;
 using Jam.Core.Cutscenes;
+using Jam.Core.Localization;
 using Jam.Core.Save;
 using NodeCanvas.Framework;
 using NodeCanvas.StateMachines;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -57,11 +59,10 @@ namespace Jam.Episodes.Photo
 
         private FSMOwner _fsmOwner;
         private Blackboard _blackboard;
-        private Font _font;
-        private Text _phaseText;
-        private Text _speakerText;
-        private Text _contentText;
-        private Text _statusText;
+        private TMP_Text _phaseText;
+        private TMP_Text _speakerText;
+        private TMP_Text _contentText;
+        private TMP_Text _statusText;
         private RectTransform _actionsRoot;
         private PhotoWhiteboxPhase _phase;
         private PhotoChoice _choice;
@@ -73,13 +74,12 @@ namespace Jam.Episodes.Photo
         private PhotoCharacterSaveData _saveData = PhotoCheckpointAdapter.CreateNew();
 
         public bool CanSave => isActiveAndEnabled;
-        public string ModeName => "История фотографки";
+        public string ModeName => Loc.Get(LocalizationTables.Photo, "mode.name", "История фотографки");
 
         private void Awake()
         {
             _fsmOwner = GetComponent<FSMOwner>();
             _blackboard = GetComponent<Blackboard>();
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             EnsureEventSystem();
             BuildInterface();
         }
@@ -89,10 +89,34 @@ namespace Jam.Episodes.Photo
             RestoreOrBegin();
         }
 
+        private void OnEnable()
+        {
+            Loc.LocaleChanged += HandleLocaleChanged;
+        }
+
         private void OnDisable()
         {
+            Loc.LocaleChanged -= HandleLocaleChanged;
             UnsubscribeFromCutsceneDirector();
             _introCutsceneRunning = false;
+        }
+
+        private void HandleLocaleChanged()
+        {
+            if (_introCutsceneRunning)
+            {
+                return;
+            }
+
+            switch (_phase)
+            {
+                case PhotoWhiteboxPhase.IntroDialogue: RenderIntro(); break;
+                case PhotoWhiteboxPhase.Explore: RenderExplore(); break;
+                case PhotoWhiteboxPhase.Camera: RenderCamera(); break;
+                case PhotoWhiteboxPhase.Publish: RenderPublish(); break;
+                case PhotoWhiteboxPhase.ReflectionDialogue: RenderReflection(); break;
+                case PhotoWhiteboxPhase.Arrival: RenderArrival(); break;
+            }
         }
 
         private void RestoreOrBegin()
@@ -112,7 +136,7 @@ namespace Jam.Episodes.Photo
                         _truth = restored.prologue.truth;
                         _reach = restored.prologue.reach;
                         EnterPhase(PhotoCheckpointAdapter.ResolveResumePhase(restored, checkpoint.checkpointId), false);
-                        SetStatus($"Продолжение: {checkpoint.checkpointId}");
+                        SetStatus(Loc.Get(LocalizationTables.Photo, "status.continue", "Продолжение: {0}", checkpoint.checkpointId));
                         return;
                     }
                 }
@@ -247,12 +271,15 @@ namespace Jam.Episodes.Photo
 
         private void RenderIntro()
         {
-            SetPhase("ПРОЛОГ • САНКТ-ПЕТЕРБУРГ");
-            SetSpeaker(_introIndex == 1 ? "РЕДАКТОР" : _introIndex == 2 ? "ТЕЛЕФОН" : "ОНА");
-            SetContent(_introLines[_introIndex]);
-            SetStatus($"Экспозиция {_introIndex + 1} / {_introLines.Length}");
+            SetPhase(Loc.Get(LocalizationTables.Photo, "phase.intro", "ПРОЛОГ • САНКТ-ПЕТЕРБУРГ"));
+            var entry = $"prologue.intro.{_introIndex + 1:000}";
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, entry + ".speaker", _introIndex == 1 ? "РЕДАКТОР" : _introIndex == 2 ? "ТЕЛЕФОН" : "ОНА"));
+            SetContent(Loc.Get(LocalizationTables.Photo, entry + ".text", _introLines[_introIndex]));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "status.exposition", "Экспозиция {0} / {1}", _introIndex + 1, _introLines.Length));
             ClearActions();
-            CreateActionButton(_introIndex + 1 < _introLines.Length ? "ДАЛЕЕ" : "ВЫЙТИ К ПОДЪЕЗДУ", AdvanceIntro);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo,
+                _introIndex + 1 < _introLines.Length ? "action.next" : "action.enter_courtyard",
+                _introIndex + 1 < _introLines.Length ? "ДАЛЕЕ" : "ВЫЙТИ К ПОДЪЕЗДУ"), AdvanceIntro);
         }
 
         private void AdvanceIntro()
@@ -269,20 +296,18 @@ namespace Jam.Episodes.Photo
 
         private void RenderExplore()
         {
-            SetPhase("ИССЛЕДОВАНИЕ • ДВОР И ПОЧТОВЫЕ ЯЩИКИ");
-            SetSpeaker("WHITE-BOX СЦЕНА");
-            SetContent(
-                "Серый подъезд. У стены — почтовые ящики. Рядом лежит собранный чемодан. " +
-                "Телефон продолжает вибрировать. Осмотрите три детали, чтобы разблокировать камеру.");
-            SetStatus($"Осмотрено: {CountInspected()} / 3");
+            SetPhase(Loc.Get(LocalizationTables.Photo, "phase.explore", "ИССЛЕДОВАНИЕ • ДВОР И ПОЧТОВЫЕ ЯЩИКИ"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "speaker.whitebox", "WHITE-BOX СЦЕНА"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "explore.description", "Серый подъезд. У стены — почтовые ящики. Рядом лежит собранный чемодан. Телефон продолжает вибрировать. Осмотрите три детали, чтобы разблокировать камеру."));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "status.inspected", "Осмотрено: {0} / 3", CountInspected()));
             ClearActions();
-            CreateInspectionButton(0b001, "ТЕЛЕФОН • сообщение редактора", "Агентство уезжает. Зарплаты за последний месяц может не быть.");
-            CreateInspectionButton(0b010, "ЧЕМОДАН • билет через Дубай", "Маршрут заканчивается словом «Бали». Дальше — пустое место.");
-            CreateInspectionButton(0b100, "ПОЧТОВЫЙ ЯЩИК • движение внутри", "Из щели торчит военная повестка. На холодном металле садится бабочка.");
+            CreateInspectionButton(0b001, Loc.Get(LocalizationTables.Photo, "inspect.phone.label", "ТЕЛЕФОН • сообщение редактора"), Loc.Get(LocalizationTables.Photo, "inspect.phone.text", "Агентство уезжает. Зарплаты за последний месяц может не быть."));
+            CreateInspectionButton(0b010, Loc.Get(LocalizationTables.Photo, "inspect.suitcase.label", "ЧЕМОДАН • билет через Дубай"), Loc.Get(LocalizationTables.Photo, "inspect.suitcase.text", "Маршрут заканчивается словом «Бали». Дальше — пустое место."));
+            CreateInspectionButton(0b100, Loc.Get(LocalizationTables.Photo, "inspect.mailbox.label", "ПОЧТОВЫЙ ЯЩИК • движение внутри"), Loc.Get(LocalizationTables.Photo, "inspect.mailbox.text", "Из щели торчит военная повестка. На холодном металле садится бабочка."));
 
             if (_inspectedMask == RequiredInspectionMask)
             {
-                CreateActionButton("ДОСТАТЬ КАМЕРУ", () => EnterPhase(PhotoWhiteboxPhase.Camera, true), true, AccentColor);
+                CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.take_camera", "ДОСТАТЬ КАМЕРУ"), () => EnterPhase(PhotoWhiteboxPhase.Camera, true), true, AccentColor);
             }
         }
 
@@ -307,21 +332,23 @@ namespace Jam.Episodes.Photo
 
         private void RenderCamera()
         {
-            SetPhase("КАМЕРА • ВЫБОР КАДРА");
-            SetSpeaker("ВИДОИСКАТЕЛЬ");
+            SetPhase(Loc.Get(LocalizationTables.Photo, "phase.camera", "КАМЕРА • ВЫБОР КАДРА"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "speaker.viewfinder", "ВИДОИСКАТЕЛЬ"));
             SetContent(_choice switch
             {
-                PhotoChoice.Summons => "В рамке — край почтового ящика и торчащая повестка. Это честно, но небезопасно.",
-                PhotoChoice.Butterfly => "В рамке — бабочка на металле. Красиво, безопасно и почти ничего не говорит о происходящем.",
-                _ => "Обе цели находятся в одной композиции. Выберите, на чём сфокусировать кадр."
+                PhotoChoice.Summons => Loc.Get(LocalizationTables.Photo, "camera.summons", "В рамке — край почтового ящика и торчащая повестка. Это честно, но небезопасно."),
+                PhotoChoice.Butterfly => Loc.Get(LocalizationTables.Photo, "camera.butterfly", "В рамке — бабочка на металле. Красиво, безопасно и почти ничего не говорит о происходящем."),
+                _ => Loc.Get(LocalizationTables.Photo, "camera.none", "Обе цели находятся в одной композиции. Выберите, на чём сфокусировать кадр.")
             });
-            SetStatus(_choice == PhotoChoice.None ? "Цель не выбрана" : $"Фокус: {_choice}");
+            SetStatus(_choice == PhotoChoice.None
+                ? Loc.Get(LocalizationTables.Photo, "status.no_target", "Цель не выбрана")
+                : Loc.Get(LocalizationTables.Photo, "status.focus", "Фокус: {0}", LocalizeChoice(_choice)));
             ClearActions();
-            CreateActionButton("[ ПОВЕСТКА ] • Truth", () => SelectTarget(PhotoChoice.Summons), true,
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.summons", "[ ПОВЕСТКА ] • Truth"), () => SelectTarget(PhotoChoice.Summons), true,
                 _choice == PhotoChoice.Summons ? SelectedColor : ButtonColor);
-            CreateActionButton("[ БАБОЧКА ] • Reach", () => SelectTarget(PhotoChoice.Butterfly), true,
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.butterfly", "[ БАБОЧКА ] • Reach"), () => SelectTarget(PhotoChoice.Butterfly), true,
                 _choice == PhotoChoice.Butterfly ? SelectedColor : ButtonColor);
-            CreateActionButton("СПУСК ЗАТВОРА", CapturePhoto, _choice != PhotoChoice.None, AccentColor);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.shutter", "СПУСК ЗАТВОРА"), CapturePhoto, _choice != PhotoChoice.None, AccentColor);
         }
 
         private void SelectTarget(PhotoChoice choice)
@@ -345,39 +372,37 @@ namespace Jam.Episodes.Photo
 
         private void RenderPublish()
         {
-            SetPhase("FORBIDGRAM • ПУБЛИКАЦИЯ");
-            SetSpeaker(_choice == PhotoChoice.Summons ? "ЧЕСТНЫЙ КАДР" : "БЕЗОПАСНЫЙ КАДР");
+            SetPhase(Loc.Get(LocalizationTables.Photo, "phase.publish", "FORBIDGRAM • ПУБЛИКАЦИЯ"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, _choice == PhotoChoice.Summons ? "speaker.honest_shot" : "speaker.safe_shot", _choice == PhotoChoice.Summons ? "ЧЕСТНЫЙ КАДР" : "БЕЗОПАСНЫЙ КАДР"));
             SetContent(_choice == PhotoChoice.Summons
-                ? "Публикацию замечают быстро. Вместе с поддержкой приходят вопросы и страх удалить снимок."
-                : "Лайки растут быстрее обычного. Никто не спрашивает, что находилось в нескольких сантиметрах от бабочки.");
-            SetStatus($"Truth +{_truth}   •   Reach +{_reach}   •   Платёж получен");
+                ? Loc.Get(LocalizationTables.Photo, "publish.summons", "Публикацию замечают быстро. Вместе с поддержкой приходят вопросы и страх удалить снимок.")
+                : Loc.Get(LocalizationTables.Photo, "publish.butterfly", "Лайки растут быстрее обычного. Никто не спрашивает, что находилось в нескольких сантиметрах от бабочки."));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "status.published", "Truth +{0}   •   Reach +{1}   •   Платёж получен", _truth, _reach));
             ClearActions();
-            CreateActionButton("ПОСМОТРЕТЬ НА СВОЙ ВЫБОР", () => EnterPhase(PhotoWhiteboxPhase.ReflectionDialogue, false));
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.reflect", "ПОСМОТРЕТЬ НА СВОЙ ВЫБОР"), () => EnterPhase(PhotoWhiteboxPhase.ReflectionDialogue, false));
         }
 
         private void RenderReflection()
         {
-            SetPhase("ОТРАЖЕНИЕ");
-            SetSpeaker("ОНА");
+            SetPhase(Loc.Get(LocalizationTables.Photo, "phase.reflection", "ОТРАЖЕНИЕ"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "prologue.intro.001.speaker", "ОНА"));
             SetContent(_choice == PhotoChoice.Summons
-                ? "Я хотя бы не сделала вид, что ничего не происходит. Теперь надо решить, сколько правды я смогу увезти с собой."
-                : "Красивый кадр снова сработал. Только почему он ощущается ещё одной вещью, которую я оставляю здесь?"
+                ? Loc.Get(LocalizationTables.Photo, "reflection.summons", "Я хотя бы не сделала вид, что ничего не происходит. Теперь надо решить, сколько правды я смогу увезти с собой.")
+                : Loc.Get(LocalizationTables.Photo, "reflection.butterfly", "Красивый кадр снова сработал. Только почему он ощущается ещё одной вещью, которую я оставляю здесь?")
             );
-            SetStatus($"Сохранённый выбор: {_choice} • Truth {_truth} • Reach {_reach}");
+            SetStatus(Loc.Get(LocalizationTables.Photo, "status.saved_choice", "Сохранённый выбор: {0} • Truth {1} • Reach {2}", LocalizeChoice(_choice), _truth, _reach));
             ClearActions();
-            CreateActionButton("ЕХАТЬ В АЭРОПОРТ", () => EnterPhase(PhotoWhiteboxPhase.Arrival, true), true, AccentColor);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.airport", "ЕХАТЬ В АЭРОПОРТ"), () => EnterPhase(PhotoWhiteboxPhase.Arrival, true), true, AccentColor);
         }
 
         private void RenderArrival()
         {
-            SetPhase("ДУБАЙ • ТРАНЗИТНАЯ ГОСТИНИЦА");
-            SetSpeaker("WHITE-BOX ФИНАЛ ПРОЛОГА");
-            SetContent(
-                "Дверь гостиничного номера закрывается. На экране телефона остаётся опубликованный кадр. " +
-                "Маршрут продолжается на Бали — уже в следующем акте.");
-            SetStatus("Checkpoint photo.arrival сохранён");
+            SetPhase(Loc.Get(LocalizationTables.Photo, "phase.arrival", "ДУБАЙ • ТРАНЗИТНАЯ ГОСТИНИЦА"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "speaker.prologue_finale", "WHITE-BOX ФИНАЛ ПРОЛОГА"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "arrival.description", "Дверь гостиничного номера закрывается. На экране телефона остаётся опубликованный кадр. Маршрут продолжается на Бали — уже в следующем акте."));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "status.arrival_saved", "Checkpoint photo.arrival сохранён"));
             ClearActions();
-            CreateActionButton("ЗАВЕРШИТЬ ПРОЛОГ", CompletePrologue, true, AccentColor);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.complete", "ЗАВЕРШИТЬ ПРОЛОГ"), CompletePrologue, true, AccentColor);
         }
 
         private void CompletePrologue()
@@ -419,7 +444,7 @@ namespace Jam.Episodes.Photo
             };
 
             SaveCheckpoint(checkpointId);
-            message = $"Сохранено: {checkpointId}";
+            message = Loc.Get(LocalizationTables.Photo, "status.saved", "Сохранено: {0}", checkpointId);
             return true;
         }
 
@@ -469,15 +494,15 @@ namespace Jam.Episodes.Photo
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            _phaseText = CreateLabel("Phase", panel.rectTransform, string.Empty, 22, FontStyle.Bold, AccentColor, 38f);
-            _speakerText = CreateLabel("Speaker", panel.rectTransform, string.Empty, 18, FontStyle.Bold, MutedTextColor, 30f);
+            _phaseText = CreateLabel("Phase", panel.rectTransform, string.Empty, 22, FontStyles.Bold, AccentColor, 38f);
+            _speakerText = CreateLabel("Speaker", panel.rectTransform, string.Empty, 18, FontStyles.Bold, MutedTextColor, 30f);
 
             var stage = CreateImage("Stage", panel.rectTransform, StageColor);
             stage.gameObject.AddComponent<LayoutElement>().preferredHeight = 300f;
-            _contentText = CreateText("Content", stage.rectTransform, string.Empty, 28, FontStyle.Normal, TextColor);
+            _contentText = CreateText("Content", stage.rectTransform, string.Empty, 28, FontStyles.Normal, TextColor);
             Stretch(_contentText.rectTransform, new Vector2(42f, 30f), new Vector2(-42f, -30f));
 
-            _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 17, FontStyle.Normal, MutedTextColor, 34f);
+            _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 17, FontStyles.Normal, MutedTextColor, 34f);
 
             var actions = new GameObject("Actions", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
             actions.transform.SetParent(panel.rectTransform, false);
@@ -490,12 +515,12 @@ namespace Jam.Episodes.Photo
             actionsLayout.childForceExpandHeight = false;
             _actionsRoot = actions.GetComponent<RectTransform>();
 
-            CreateLabel("Footer", panel.rectTransform, "WHITE-BOX • PHOTO / CHARACTER 3", 14, FontStyle.Normal, MutedTextColor, 24f);
+            CreateLabel("Footer", panel.rectTransform, "WHITE-BOX • PHOTO / CHARACTER 3", 14, FontStyles.Normal, MutedTextColor, 24f);
         }
 
         private void EnsureEventSystem()
         {
-            if (FindFirstObjectByType<EventSystem>() != null)
+            if (FindAnyObjectByType<EventSystem>() != null)
             {
                 return;
             }
@@ -539,31 +564,30 @@ namespace Jam.Episodes.Photo
             colors.disabledColor = new Color(ButtonColor.r, ButtonColor.g, ButtonColor.b, 0.35f);
             button.colors = colors;
 
-            var labelText = CreateText("Label", buttonObject.GetComponent<RectTransform>(), label, 18, FontStyle.Bold, TextColor);
+            var labelText = CreateText("Label", buttonObject.GetComponent<RectTransform>(), label, 18, FontStyles.Bold, TextColor);
             Stretch(labelText.rectTransform, new Vector2(20f, 0f), new Vector2(-20f, 0f));
             return button;
         }
 
-        private Text CreateLabel(string name, RectTransform parent, string value, int size, FontStyle style, Color color, float height)
+        private TMP_Text CreateLabel(string name, RectTransform parent, string value, int size, FontStyles style, Color color, float height)
         {
             var text = CreateText(name, parent, value, size, style, color);
             text.gameObject.AddComponent<LayoutElement>().preferredHeight = height;
             return text;
         }
 
-        private Text CreateText(string name, RectTransform parent, string value, int size, FontStyle style, Color color)
+        private TMP_Text CreateText(string name, RectTransform parent, string value, int size, FontStyles style, Color color)
         {
-            var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
+            var textObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
             textObject.transform.SetParent(parent, false);
-            var text = textObject.GetComponent<Text>();
-            text.font = _font;
+            var text = textObject.GetComponent<TextMeshProUGUI>();
             text.text = value;
             text.fontSize = size;
             text.fontStyle = style;
             text.color = color;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.alignment = TextAlignmentOptions.Center;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Ellipsis;
             text.raycastTarget = false;
             return text;
         }
@@ -598,5 +622,10 @@ namespace Jam.Episodes.Photo
         private void SetSpeaker(string value) => _speakerText.text = value;
         private void SetContent(string value) => _contentText.text = value;
         private void SetStatus(string value) => _statusText.text = value;
+
+        private static string LocalizeChoice(PhotoChoice choice)
+        {
+            return Loc.Get(LocalizationTables.Photo, "choice." + choice.ToString().ToLowerInvariant(), choice.ToString());
+        }
     }
 }

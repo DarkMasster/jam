@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,36 +6,36 @@ namespace Jam.Episodes.Office
 {
     public sealed class OfficeHudBinding : MonoBehaviour
     {
-        [SerializeField] private Text zone;
-        [SerializeField] private Text objective;
-        [SerializeField] private Text carry;
-        [SerializeField] private Text status;
-        [SerializeField] private Text integrity;
-        [SerializeField] private Text momentum;
+        [SerializeField] private TMP_Text zone;
+        [SerializeField] private TMP_Text objective;
+        [SerializeField] private TMP_Text carry;
+        [SerializeField] private TMP_Text status;
+        [SerializeField] private TMP_Text integrity;
+        [SerializeField] private TMP_Text momentum;
         [SerializeField] private Image momentumFill;
         [SerializeField] private GameObject downPanel;
-        [SerializeField] private Text downText;
+        [SerializeField] private TMP_Text downText;
 
-        public Text Zone => zone;
-        public Text Objective => objective;
-        public Text Carry => carry;
-        public Text Status => status;
-        public Text Integrity => integrity;
-        public Text Momentum => momentum;
+        public TMP_Text Zone => zone;
+        public TMP_Text Objective => objective;
+        public TMP_Text Carry => carry;
+        public TMP_Text Status => status;
+        public TMP_Text Integrity => integrity;
+        public TMP_Text Momentum => momentum;
         public Image MomentumFill => momentumFill;
         public GameObject DownPanel => downPanel;
-        public Text DownText => downText;
+        public TMP_Text DownText => downText;
 
         public void Configure(
-            Text zoneText,
-            Text objectiveText,
-            Text carryText,
-            Text statusText,
-            Text integrityText,
-            Text momentumText,
+            TMP_Text zoneText,
+            TMP_Text objectiveText,
+            TMP_Text carryText,
+            TMP_Text statusText,
+            TMP_Text integrityText,
+            TMP_Text momentumText,
             Image momentumBar,
             GameObject downOverlay,
-            Text downMessage)
+            TMP_Text downMessage)
         {
             zone = zoneText;
             objective = objectiveText;

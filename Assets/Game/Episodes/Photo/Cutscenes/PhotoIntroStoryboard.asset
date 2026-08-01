@@ -16,6 +16,9 @@ MonoBehaviour:
   frames:
   - background: {fileID: 0}
     portrait: {fileID: 0}
+    localizationTable: Photo
+    speakerKey: prologue.intro.001.speaker
+    textKey: prologue.intro.001.text
     speaker: "\u041E\u041D\u0410"
     text: "24 \u0444\u0435\u0432\u0440\u0430\u043B\u044F 2022 \u0433\u043E\u0434\u0430.
       \u0423\u0442\u0440\u043E \u043D\u0430\u0447\u0438\u043D\u0430\u0435\u0442\u0441\u044F
@@ -26,6 +29,9 @@ MonoBehaviour:
     autoAdvanceSeconds: 0
   - background: {fileID: 0}
     portrait: {fileID: 0}
+    localizationTable: Photo
+    speakerKey: prologue.intro.002.speaker
+    textKey: prologue.intro.002.text
     speaker: "\u0420\u0415\u0414\u0410\u041A\u0422\u041E\u0420"
     text: "\u0410\u0433\u0435\u043D\u0442\u0441\u0442\u0432\u043E \u0437\u0430\u043A\u0440\u044B\u0432\u0430\u0435\u0442
       \u0440\u043E\u0441\u0441\u0438\u0439\u0441\u043A\u0438\u0439 \u043E\u0444\u0438\u0441.
@@ -35,6 +41,9 @@ MonoBehaviour:
     autoAdvanceSeconds: 0
   - background: {fileID: 0}
     portrait: {fileID: 0}
+    localizationTable: Photo
+    speakerKey: prologue.intro.003.speaker
+    textKey: prologue.intro.003.text
     speaker: "\u0422\u0415\u041B\u0415\u0424\u041E\u041D"
     text: "Forbidgram \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D.
       \u041A\u043B\u0438\u0435\u043D\u0442\u044B \u043C\u043E\u043B\u0447\u0430\u0442.
@@ -46,6 +55,9 @@ MonoBehaviour:
     autoAdvanceSeconds: 0
   - background: {fileID: 0}
     portrait: {fileID: 0}
+    localizationTable: Photo
+    speakerKey: prologue.intro.004.speaker
+    textKey: prologue.intro.004.text
     speaker: "\u041E\u041D\u0410"
     text: "\u041F\u0435\u0440\u0435\u0434 \u043E\u0442\u044A\u0435\u0437\u0434\u043E\u043C
       \u043D\u0443\u0436\u0435\u043D \u0435\u0449\u0451 \u043E\u0434\u0438\u043D

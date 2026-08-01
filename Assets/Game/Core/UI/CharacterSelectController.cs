@@ -1,5 +1,7 @@
 using System.IO;
+using Jam.Core.Localization;
 using Jam.Core.Save;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem.UI;
@@ -27,13 +29,12 @@ namespace Jam.Core.UI
         private static readonly Color CompletedColor = new(0.25f, 0.48f, 0.34f, 1f);
 
         private readonly Button[] _characterButtons = new Button[3];
-        private readonly Text[] _characterLabels = new Text[3];
+        private readonly TMP_Text[] _characterLabels = new TMP_Text[3];
 
         private Button _finaleButton;
         private Button _backButton;
-        private Text _progressText;
-        private Text _statusText;
-        private Font _font;
+        private TMP_Text _progressText;
+        private TMP_Text _statusText;
         private bool _isLoading;
 
         private void Awake()
@@ -43,7 +44,6 @@ namespace Jam.Core.UI
                 GameSaveService.StartNewGame(gameObject.scene.name);
             }
 
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             EnsureEventSystem();
             BuildInterface();
             RefreshProgress();
@@ -51,10 +51,16 @@ namespace Jam.Core.UI
 
         private void OnEnable()
         {
+            Loc.LocaleChanged += RefreshProgress;
             if (_progressText != null)
             {
                 RefreshProgress();
             }
+        }
+
+        private void OnDisable()
+        {
+            Loc.LocaleChanged -= RefreshProgress;
         }
 
         public void SelectDrive()
@@ -81,7 +87,7 @@ namespace Jam.Core.UI
 
             if (!IsSceneInBuild(finaleScene))
             {
-                SetStatus("Финал разблокирован, но сцена Finale ещё не добавлена в Build Settings.");
+                SetStatus(Loc.Get(LocalizationTables.Common, "ui.character.error.no_finale", "Финал разблокирован, но сцена Finale ещё не добавлена в Build Settings."));
                 return;
             }
 
@@ -110,7 +116,7 @@ namespace Jam.Core.UI
             var targetScene = ResolveGameplayScene(characterId, preferredScene);
             if (string.IsNullOrEmpty(targetScene))
             {
-                SetStatus($"Для линии {characterId} не найдена игровая сцена.");
+                SetStatus(Loc.Get(LocalizationTables.Common, "ui.character.error.no_scene", "Для линии {0} не найдена игровая сцена.", characterId));
                 Debug.LogError($"No gameplay scene found for character '{characterId}'.");
                 return;
             }
@@ -140,7 +146,7 @@ namespace Jam.Core.UI
         {
             _isLoading = true;
             SetButtonsInteractable(false);
-            SetStatus("Сохранение… Загрузка…");
+            SetStatus(Loc.Get(LocalizationTables.Common, "ui.character.status.loading", "Сохранение… Загрузка…"));
             SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
         }
 
@@ -149,18 +155,33 @@ namespace Jam.Core.UI
             var completed = GameSaveService.CompletedCount;
             var activeCharacter = GameSaveService.ActiveCharacter;
 
-            _progressText.text = $"ПРОЙДЕНО ИСТОРИЙ: {completed} / 3";
-            UpdateCharacterButton(0, CharacterId.Drive, "МОСКВА → ТБИЛИСИ", "РУКОВОДИТЕЛЬ • ДОРОГА", activeCharacter);
-            UpdateCharacterButton(1, CharacterId.Office, "ЕКАТЕРИНБУРГ → АЛМАТЫ", "РАЗРАБОТЧИК • ОФИСНЫЙ КОШМАР", activeCharacter);
-            UpdateCharacterButton(2, CharacterId.Photo, "САНКТ-ПЕТЕРБУРГ → БАЛИ", "ФОТОГРАФКА • ЧЕСТНЫЙ КАДР", activeCharacter);
+            _progressText.text = Loc.Get(LocalizationTables.Common, "ui.character.progress", "ПРОЙДЕНО ИСТОРИЙ: {0} / 3", completed);
+            UpdateCharacterButton(
+                0,
+                CharacterId.Drive,
+                Loc.Get(LocalizationTables.Common, "ui.character.drive.route", "МОСКВА → ТБИЛИСИ"),
+                Loc.Get(LocalizationTables.Common, "ui.character.drive.description", "РУКОВОДИТЕЛЬ • ДОРОГА"),
+                activeCharacter);
+            UpdateCharacterButton(
+                1,
+                CharacterId.Office,
+                Loc.Get(LocalizationTables.Common, "ui.character.office.route", "ЕКАТЕРИНБУРГ → АЛМАТЫ"),
+                Loc.Get(LocalizationTables.Common, "ui.character.office.description", "РАЗРАБОТЧИК • ОФИСНЫЙ КОШМАР"),
+                activeCharacter);
+            UpdateCharacterButton(
+                2,
+                CharacterId.Photo,
+                Loc.Get(LocalizationTables.Common, "ui.character.photo.route", "САНКТ-ПЕТЕРБУРГ → БАЛИ"),
+                Loc.Get(LocalizationTables.Common, "ui.character.photo.description", "ФОТОГРАФКА • ЧЕСТНЫЙ КАДР"),
+                activeCharacter);
 
             _finaleButton.interactable = GameSaveService.FinaleUnlocked;
-            _finaleButton.transform.Find("Label").GetComponent<Text>().text = GameSaveService.FinaleUnlocked
-                ? "ФИНАЛ • РАЗБЛОКИРОВАН"
-                : "ФИНАЛ • ЗАБЛОКИРОВАН";
+            _finaleButton.transform.Find("Label").GetComponent<TMP_Text>().text = GameSaveService.FinaleUnlocked
+                ? Loc.Get(LocalizationTables.Common, "ui.character.finale.unlocked", "ФИНАЛ • РАЗБЛОКИРОВАН")
+                : Loc.Get(LocalizationTables.Common, "ui.character.finale.locked", "ФИНАЛ • ЗАБЛОКИРОВАН");
             SetStatus(GameSaveService.FinaleUnlocked
-                ? "Все три линии завершены. Финал разблокирован."
-                : "Истории можно проходить в любом порядке. Прогресс сохраняется автоматически.");
+                ? Loc.Get(LocalizationTables.Common, "ui.character.status.unlocked", "Все три линии завершены. Финал разблокирован.")
+                : Loc.Get(LocalizationTables.Common, "ui.character.status.default", "Истории можно проходить в любом порядке. Прогресс сохраняется автоматически."));
         }
 
         private void UpdateCharacterButton(
@@ -172,9 +193,9 @@ namespace Jam.Core.UI
         {
             var completed = GameSaveService.IsCharacterCompleted(characterId);
             var marker = completed
-                ? "  ✓ ПРОЙДЕНО"
+                ? "  " + Loc.Get(LocalizationTables.Common, "ui.character.completed", "✓ ПРОЙДЕНО")
                 : activeCharacter == characterId
-                    ? "  • ТЕКУЩАЯ"
+                    ? "  " + Loc.Get(LocalizationTables.Common, "ui.character.current", "• ТЕКУЩАЯ")
                     : string.Empty;
 
             _characterLabels[index].text = $"{route}{marker}\n{description}";
@@ -206,7 +227,7 @@ namespace Jam.Core.UI
 
         private void EnsureEventSystem()
         {
-            if (FindFirstObjectByType<EventSystem>() != null)
+            if (FindAnyObjectByType<EventSystem>() != null)
             {
                 return;
             }
@@ -267,10 +288,10 @@ namespace Jam.Core.UI
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            CreateLabel("Title", panel.rectTransform, "ВЫБЕРИТЕ ИСТОРИЮ", 42, FontStyle.Bold, TextColor, 64f);
-            CreateLabel("Subtitle", panel.rectTransform, "ТРИ МАРШРУТА • ОДИН ДЕНЬ", 18, FontStyle.Normal, AccentColor, 30f);
+            CreateLabel("Title", panel.rectTransform, "ВЫБЕРИТЕ ИСТОРИЮ", 42, FontStyles.Bold, TextColor, 64f, "ui.character.title");
+            CreateLabel("Subtitle", panel.rectTransform, "ТРИ МАРШРУТА • ОДИН ДЕНЬ", 18, FontStyles.Normal, AccentColor, 30f, "ui.character.subtitle");
             CreateSpacer(panel.rectTransform, 8f);
-            _progressText = CreateLabel("Progress", panel.rectTransform, string.Empty, 20, FontStyle.Bold, TextColor, 30f);
+            _progressText = CreateLabel("Progress", panel.rectTransform, string.Empty, 20, FontStyles.Bold, TextColor, 30f);
             CreateSpacer(panel.rectTransform, 8f);
 
             CreateCharacterButton(
@@ -294,8 +315,8 @@ namespace Jam.Core.UI
 
             CreateSpacer(panel.rectTransform, 10f);
             _finaleButton = CreateButton("FinaleButton", panel.rectTransform, "ФИНАЛ • ЗАБЛОКИРОВАН", StartFinale, 64f);
-            _backButton = CreateButton("BackButton", panel.rectTransform, "НАЗАД В ГЛАВНОЕ МЕНЮ", ReturnToMainMenu, 50f);
-            _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 16, FontStyle.Normal, MutedTextColor, 38f);
+            _backButton = CreateButton("BackButton", panel.rectTransform, "НАЗАД В ГЛАВНОЕ МЕНЮ", ReturnToMainMenu, 50f, "ui.character.back");
+            _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 16, FontStyles.Normal, MutedTextColor, 38f);
 
             _characterButtons[0].Select();
         }
@@ -313,7 +334,7 @@ namespace Jam.Core.UI
             button.colors = colors;
             button.GetComponent<Image>().color = baseColor;
             _characterButtons[index] = button;
-            _characterLabels[index] = button.transform.Find("Label").GetComponent<Text>();
+            _characterLabels[index] = button.transform.Find("Label").GetComponent<TMP_Text>();
         }
 
         private Button CreateButton(
@@ -321,7 +342,8 @@ namespace Jam.Core.UI
             RectTransform parent,
             string label,
             UnityEngine.Events.UnityAction action,
-            float height)
+            float height,
+            string localizationKey = null)
         {
             var buttonObject = new GameObject(
                 name,
@@ -350,45 +372,53 @@ namespace Jam.Core.UI
             button.colors = colors;
             button.onClick.AddListener(action);
 
-            var text = CreateTextObject("Label", buttonObject.GetComponent<RectTransform>(), label, 19, FontStyle.Bold, TextColor);
+            var text = CreateTextObject("Label", buttonObject.GetComponent<RectTransform>(), label, 19, FontStyles.Bold, TextColor);
+            if (!string.IsNullOrWhiteSpace(localizationKey))
+            {
+                LocalizedTextBinding.Attach(text, LocalizationTables.Common, localizationKey, label);
+            }
             Stretch(text.rectTransform, new Vector2(24f, 0f), new Vector2(-24f, 0f));
             return button;
         }
 
-        private Text CreateLabel(
+        private TMP_Text CreateLabel(
             string name,
             RectTransform parent,
             string value,
             int fontSize,
-            FontStyle fontStyle,
+            FontStyles fontStyle,
             Color color,
-            float preferredHeight)
+            float preferredHeight,
+            string localizationKey = null)
         {
             var text = CreateTextObject(name, parent, value, fontSize, fontStyle, color);
+            if (!string.IsNullOrWhiteSpace(localizationKey))
+            {
+                LocalizedTextBinding.Attach(text, LocalizationTables.Common, localizationKey, value);
+            }
             text.gameObject.AddComponent<LayoutElement>().preferredHeight = preferredHeight;
             return text;
         }
 
-        private Text CreateTextObject(
+        private TMP_Text CreateTextObject(
             string name,
             RectTransform parent,
             string value,
             int fontSize,
-            FontStyle fontStyle,
+            FontStyles fontStyle,
             Color color)
         {
-            var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
+            var textObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
             textObject.transform.SetParent(parent, false);
 
-            var text = textObject.GetComponent<Text>();
-            text.font = _font;
+            var text = textObject.GetComponent<TextMeshProUGUI>();
             text.text = value;
             text.fontSize = fontSize;
             text.fontStyle = fontStyle;
             text.color = color;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.alignment = TextAlignmentOptions.Center;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Ellipsis;
             text.raycastTarget = false;
             return text;
         }

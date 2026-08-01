@@ -1,5 +1,6 @@
 #if UNITY_EDITOR
 using Jam.Episodes.Office;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -387,25 +388,25 @@ namespace Jam.Episodes.Office.Editor
             var accent = CreateUiPanel("Accent", topPanel.transform, Hex("D8241D"));
             SetRect(accent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(6f, 0f), new Vector2(0f, 0.5f));
 
-            var zone = CreateUiText("Zone", topPanel.transform, 22, FontStyle.Bold, Hex("D8241D"), TextAnchor.MiddleLeft);
+            var zone = CreateUiText("Zone", topPanel.transform, 22, FontStyles.Bold, Hex("D8241D"), TextAlignmentOptions.MidlineLeft);
             SetRect(zone.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -18f), new Vector2(-50f, 34f), new Vector2(0f, 1f));
-            var objective = CreateUiText("Objective", topPanel.transform, 20, FontStyle.Bold, Hex("EDE9DF"), TextAnchor.MiddleLeft);
+            var objective = CreateUiText("Objective", topPanel.transform, 20, FontStyles.Bold, Hex("EDE9DF"), TextAlignmentOptions.MidlineLeft);
             SetRect(objective.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -64f), new Vector2(-50f, 48f), new Vector2(0f, 1f));
-            var carry = CreateUiText("Carry", topPanel.transform, 18, FontStyle.Normal, Hex("9FB0C8"), TextAnchor.MiddleLeft);
+            var carry = CreateUiText("Carry", topPanel.transform, 18, FontStyles.Normal, Hex("9FB0C8"), TextAlignmentOptions.MidlineLeft);
             SetRect(carry.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -118f), new Vector2(-50f, 44f), new Vector2(0f, 1f));
-            var integrity = CreateUiText("Integrity", topPanel.transform, 19, FontStyle.Bold, Hex("CFCABC"), TextAnchor.MiddleLeft);
+            var integrity = CreateUiText("Integrity", topPanel.transform, 19, FontStyles.Bold, Hex("CFCABC"), TextAlignmentOptions.MidlineLeft);
             SetRect(integrity.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -168f), new Vector2(-50f, 44f), new Vector2(0f, 1f));
             integrity.text = "РАБОТОСПОСОБНОСТЬ ■■■   ПОПЫТКА 1";
 
             var statusPanel = CreateUiPanel("Status Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
             SetRect(statusPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 34f), new Vector2(1180f, 58f), new Vector2(0.5f, 0f));
-            var status = CreateUiText("Status", statusPanel.transform, 18, FontStyle.Bold, Hex("CFCABC"), TextAnchor.MiddleCenter);
+            var status = CreateUiText("Status", statusPanel.transform, 18, FontStyles.Bold, Hex("CFCABC"), TextAlignmentOptions.Center);
             SetRect(status.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-24f, -10f), new Vector2(0.5f, 0.5f));
             status.text = "WASD / СТРЕЛКИ • ДВИГАЙСЯ К EXIT";
 
             var momentumPanel = CreateUiPanel("Momentum Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
             SetRect(momentumPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 102f), new Vector2(1180f, 56f), new Vector2(0.5f, 0f));
-            var momentumLabel = CreateUiText("Momentum", momentumPanel.transform, 18, FontStyle.Bold, Hex("FF5A3C"), TextAnchor.MiddleLeft);
+            var momentumLabel = CreateUiText("Momentum", momentumPanel.transform, 18, FontStyles.Bold, Hex("FF5A3C"), TextAlignmentOptions.MidlineLeft);
             SetRect(momentumLabel.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(20f, 0f), new Vector2(320f, -14f), new Vector2(0f, 0.5f));
             momentumLabel.text = "ТЕМП 0%   ПРОСТОЙ";
 
@@ -417,7 +418,7 @@ namespace Jam.Episodes.Office.Editor
 
             var downPanel = CreateUiPanel("Down Panel", canvasObject.transform, new Color(0.02f, 0.02f, 0.03f, 0.86f));
             SetRect(downPanel.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f));
-            var downText = CreateUiText("Down Text", downPanel.transform, 34, FontStyle.Bold, Hex("D8241D"), TextAnchor.MiddleCenter);
+            var downText = CreateUiText("Down Text", downPanel.transform, 34, FontStyles.Bold, Hex("D8241D"), TextAlignmentOptions.Center);
             SetRect(downText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100f, 220f), new Vector2(0.5f, 0.5f));
             downText.text = "ПРОИЗВОДИТЕЛЬНОСТЬ НЕУДОВЛЕТВОРИТЕЛЬНА";
             downPanel.gameObject.SetActive(false);
@@ -835,16 +836,14 @@ namespace Jam.Episodes.Office.Editor
 
         private static void CreateWorldLabel(string name, string text, Vector3 position, float size, Color color, Transform parent)
         {
-            var label = new GameObject(name, typeof(TextMesh));
+            var label = new GameObject(name, typeof(TextMeshPro));
             label.transform.SetParent(parent, false);
             label.transform.position = position;
-            var mesh = label.GetComponent<TextMesh>();
+            label.transform.localScale = Vector3.one * size;
+            var mesh = label.GetComponent<TextMeshPro>();
             mesh.text = text;
-            mesh.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             mesh.fontSize = 64;
-            mesh.characterSize = size;
-            mesh.anchor = TextAnchor.MiddleCenter;
-            mesh.alignment = TextAlignment.Center;
+            mesh.alignment = TextAlignmentOptions.Center;
             mesh.color = color;
         }
 
@@ -857,18 +856,23 @@ namespace Jam.Episodes.Office.Editor
             return image;
         }
 
-        private static Text CreateUiText(string name, Transform parent, int fontSize, FontStyle style, Color color, TextAnchor alignment)
+        private static TMP_Text CreateUiText(
+            string name,
+            Transform parent,
+            int fontSize,
+            FontStyles style,
+            Color color,
+            TextAlignmentOptions alignment)
         {
-            var gameObject = new GameObject(name, typeof(RectTransform), typeof(Text), typeof(Shadow));
+            var gameObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI), typeof(Shadow));
             gameObject.transform.SetParent(parent, false);
-            var text = gameObject.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var text = gameObject.GetComponent<TextMeshProUGUI>();
             text.fontSize = fontSize;
             text.fontStyle = style;
             text.color = color;
             text.alignment = alignment;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Overflow;
             text.raycastTarget = false;
             var shadow = gameObject.GetComponent<Shadow>();
             shadow.effectColor = new Color(0f, 0f, 0f, 0.8f);

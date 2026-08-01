@@ -1,4 +1,6 @@
+using Jam.Core.Localization;
 using Jam.Core.Save;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -25,8 +27,7 @@ namespace Jam.Core.UI
         private GameObject _overlay;
         private Button _menuButton;
         private Button _saveButton;
-        private Text _statusText;
-        private Font _font;
+        private TMP_Text _statusText;
         private bool _isGameplayScene;
         private bool _menuOpen;
         private bool _cutsceneActive;
@@ -36,7 +37,6 @@ namespace Jam.Core.UI
 
         private void Awake()
         {
-            _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             EnsureEventSystem();
             BuildInterface();
             RefreshForScene(SceneManager.GetActiveScene());
@@ -45,11 +45,13 @@ namespace Jam.Core.UI
         private void OnEnable()
         {
             SceneManager.sceneLoaded += HandleSceneLoaded;
+            Loc.LocaleChanged += HandleLocaleChanged;
         }
 
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= HandleSceneLoaded;
+            Loc.LocaleChanged -= HandleLocaleChanged;
             if (_menuOpen)
             {
                 _menuOpen = false;
@@ -141,6 +143,14 @@ namespace Jam.Core.UI
             RefreshForScene(scene);
         }
 
+        private void HandleLocaleChanged()
+        {
+            if (_menuOpen)
+            {
+                RefreshSaveState();
+            }
+        }
+
         private void RefreshForScene(Scene scene)
         {
             _isGameplayScene = scene.IsValid()
@@ -160,8 +170,8 @@ namespace Jam.Core.UI
             {
                 _statusText.color = MutedTextColor;
                 _statusText.text = canSave
-                    ? "Сохранение запишет состояние текущего режима."
-                    : "Этот режим пока не поддерживает ручное сохранение.";
+                    ? Loc.Get(LocalizationTables.Common, "ui.hud.save.available", "Сохранение запишет состояние текущего режима.")
+                    : Loc.Get(LocalizationTables.Common, "ui.hud.save.unavailable", "Этот режим пока не поддерживает ручное сохранение.");
             }
         }
 
@@ -208,7 +218,7 @@ namespace Jam.Core.UI
             scaler.matchWidthOrHeight = 0.5f;
 
             var canvasRect = canvasObject.GetComponent<RectTransform>();
-            _menuButton = CreateButton("GlobalMenuButton", canvasRect, "МЕНЮ  [ESC]", OpenMenu, 18);
+            _menuButton = CreateButton("GlobalMenuButton", canvasRect, "МЕНЮ  [ESC]", OpenMenu, 18, "ui.hud.menu");
             SetAnchoredRect(
                 _menuButton.GetComponent<RectTransform>(),
                 new Vector2(1f, 1f),
@@ -237,14 +247,14 @@ namespace Jam.Core.UI
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            CreateLabel("PauseTitle", panel.rectTransform, "МЕНЮ", 40, FontStyle.Bold, TextColor, 64f);
-            CreateLabel("PauseSubtitle", panel.rectTransform, "ИГРА ПРИОСТАНОВЛЕНА", 17, FontStyle.Normal, AccentColor, 30f);
+            CreateLabel("PauseTitle", panel.rectTransform, "МЕНЮ", 40, FontStyles.Bold, TextColor, 64f, "ui.hud.pause.title");
+            CreateLabel("PauseSubtitle", panel.rectTransform, "ИГРА ПРИОСТАНОВЛЕНА", 17, FontStyles.Normal, AccentColor, 30f, "ui.hud.pause.subtitle");
             CreateSpacer(panel.rectTransform, 18f);
-            CreateButton("ResumeButton", panel.rectTransform, "ПРОДОЛЖИТЬ", CloseMenu, 21);
-            _saveButton = CreateButton("SaveGameButton", panel.rectTransform, "СОХРАНИТЬ", SaveGame, 21);
-            CreateButton("ExitToMainButton", panel.rectTransform, "ВЫЙТИ В ГЛАВНОЕ МЕНЮ", ExitToMainMenu, 19);
+            CreateButton("ResumeButton", panel.rectTransform, "ПРОДОЛЖИТЬ", CloseMenu, 21, "ui.hud.resume");
+            _saveButton = CreateButton("SaveGameButton", panel.rectTransform, "СОХРАНИТЬ", SaveGame, 21, "ui.hud.save");
+            CreateButton("ExitToMainButton", panel.rectTransform, "ВЫЙТИ В ГЛАВНОЕ МЕНЮ", ExitToMainMenu, 19, "ui.hud.exit");
             CreateSpacer(panel.rectTransform, 12f);
-            _statusText = CreateLabel("GlobalSaveStatus", panel.rectTransform, string.Empty, 16, FontStyle.Normal, MutedTextColor, 46f);
+            _statusText = CreateLabel("GlobalSaveStatus", panel.rectTransform, string.Empty, 16, FontStyles.Normal, MutedTextColor, 46f);
             _overlay.SetActive(false);
         }
 
@@ -253,7 +263,8 @@ namespace Jam.Core.UI
             RectTransform parent,
             string label,
             UnityEngine.Events.UnityAction action,
-            int fontSize)
+            int fontSize,
+            string localizationKey = null)
         {
             var buttonObject = new GameObject(
                 name,
@@ -278,44 +289,52 @@ namespace Jam.Core.UI
             button.colors = colors;
             button.onClick.AddListener(action);
 
-            var text = CreateTextObject("Label", buttonObject.GetComponent<RectTransform>(), label, fontSize, FontStyle.Bold, TextColor);
+            var text = CreateTextObject("Label", buttonObject.GetComponent<RectTransform>(), label, fontSize, FontStyles.Bold, TextColor);
+            if (!string.IsNullOrWhiteSpace(localizationKey))
+            {
+                LocalizedTextBinding.Attach(text, LocalizationTables.Common, localizationKey, label);
+            }
             Stretch(text.rectTransform, new Vector2(18f, 0f), new Vector2(-18f, 0f));
             return button;
         }
 
-        private Text CreateLabel(
+        private TMP_Text CreateLabel(
             string name,
             RectTransform parent,
             string value,
             int fontSize,
-            FontStyle style,
+            FontStyles style,
             Color color,
-            float preferredHeight)
+            float preferredHeight,
+            string localizationKey = null)
         {
             var text = CreateTextObject(name, parent, value, fontSize, style, color);
+            if (!string.IsNullOrWhiteSpace(localizationKey))
+            {
+                LocalizedTextBinding.Attach(text, LocalizationTables.Common, localizationKey, value);
+            }
             text.gameObject.AddComponent<LayoutElement>().preferredHeight = preferredHeight;
             return text;
         }
 
-        private Text CreateTextObject(
+        private TMP_Text CreateTextObject(
             string name,
             RectTransform parent,
             string value,
             int fontSize,
-            FontStyle style,
+            FontStyles style,
             Color color)
         {
-            var textObject = new GameObject(name, typeof(RectTransform), typeof(Text));
+            var textObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
             textObject.transform.SetParent(parent, false);
-            var text = textObject.GetComponent<Text>();
-            text.font = _font;
+            var text = textObject.GetComponent<TextMeshProUGUI>();
             text.text = value;
             text.fontSize = fontSize;
             text.fontStyle = style;
             text.color = color;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.horizontalOverflow = HorizontalWrapMode.Wrap;
-            text.verticalOverflow = VerticalWrapMode.Truncate;
+            text.alignment = TextAlignmentOptions.Center;
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Ellipsis;
             text.raycastTarget = false;
             return text;
         }

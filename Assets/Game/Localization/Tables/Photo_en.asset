@@ -1,0 +1,262 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Photo_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: a58f5a9cf36e42a4d9d792f24037f8cb, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 728752128
+    m_Localized: HER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083776
+    m_Localized: February 24, 2022. The morning begins with news that no longer fits
+      into ordinary life.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083777
+    m_Localized: EDITOR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083778
+    m_Localized: The agency is closing its Russian office. Projects are frozen. The
+      team is dismissed.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083779
+    m_Localized: PHONE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083780
+    m_Localized: Forbidgram is unavailable. Clients are silent. Her phone holds an
+      archive, unpaid invoices, and a one-way ticket.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083781
+    m_Localized: HER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 779083782
+    m_Localized: "Before leaving, she needs one last photograph\u2014honest enough
+      not to betray herself, visible enough to pay for the journey."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108535824384
+    m_Localized: Photographer's story
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738944
+    m_Localized: "PROLOGUE \u2022 SAINT PETERSBURG"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738945
+    m_Localized: "EXPLORE \u2022 COURTYARD AND MAILBOXES"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738946
+    m_Localized: "CAMERA \u2022 CHOOSE THE SHOT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738947
+    m_Localized: "FORBIDGRAM \u2022 PUBLISH"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738948
+    m_Localized: REFLECTION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738949
+    m_Localized: "DUBAI \u2022 TRANSIT HOTEL"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738950
+    m_Localized: WHITE-BOX SCENE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738951
+    m_Localized: VIEWFINDER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738952
+    m_Localized: HONEST SHOT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738953
+    m_Localized: SAFE SHOT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738954
+    m_Localized: WHITE-BOX PROLOGUE FINALE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738955
+    m_Localized: 'Continue: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738956
+    m_Localized: Exposition {0} / {1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738957
+    m_Localized: 'Inspected: {0} / 3'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738958
+    m_Localized: No target selected
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738959
+    m_Localized: 'Focus: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738960
+    m_Localized: "Truth +{0}   \u2022   Reach +{1}   \u2022   Payment received"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738961
+    m_Localized: "Saved choice: {0} \u2022 Truth {1} \u2022 Reach {2}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738962
+    m_Localized: Checkpoint photo.arrival saved
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738963
+    m_Localized: 'Saved: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738964
+    m_Localized: NEXT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738965
+    m_Localized: ENTER THE COURTYARD
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738966
+    m_Localized: TAKE OUT CAMERA
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738967
+    m_Localized: "[ DRAFT NOTICE ] \u2022 Truth"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738968
+    m_Localized: "[ BUTTERFLY ] \u2022 Reach"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738969
+    m_Localized: RELEASE SHUTTER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738970
+    m_Localized: FACE YOUR CHOICE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738971
+    m_Localized: GO TO THE AIRPORT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738972
+    m_Localized: COMPLETE PROLOGUE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738973
+    m_Localized: A grey entrance hall. Mailboxes line the wall; a packed suitcase
+      waits nearby. The phone keeps vibrating. Inspect three details to unlock the
+      camera.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738974
+    m_Localized: "PHONE \u2022 editor's message"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738975
+    m_Localized: The agency is leaving. Last month's salary may never arrive.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738976
+    m_Localized: "SUITCASE \u2022 ticket via Dubai"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738977
+    m_Localized: "The route ends with the word \u2018Bali\u2019. Beyond it is blank
+      space."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738978
+    m_Localized: "MAILBOX \u2022 movement inside"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738979
+    m_Localized: A military draft notice protrudes from the slot. A butterfly lands
+      on the cold metal.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738980
+    m_Localized: The frame catches the mailbox edge and the protruding draft notice.
+      Honest, but unsafe.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738981
+    m_Localized: The frame holds a butterfly on metal. Beautiful, safe, and almost
+      silent about what is happening.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738982
+    m_Localized: Both subjects share one composition. Choose where to place the focus.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738983
+    m_Localized: "The post gets noticed quickly. Support arrives with questions\u2014and
+      the fear of deleting the photograph."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738984
+    m_Localized: Likes climb faster than usual. Nobody asks what lay only centimetres
+      from the butterfly.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738985
+    m_Localized: At least I did not pretend nothing was happening. Now I must decide
+      how much truth I can carry with me.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738986
+    m_Localized: The beautiful shot worked again. Why does it feel like one more
+      thing I am leaving behind?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738987
+    m_Localized: The hotel-room door closes. The published photograph remains on
+      the phone screen. The route continues to Bali in the next act.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738988
+    m_Localized: None
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738989
+    m_Localized: Draft notice
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108598738990
+    m_Localized: Butterfly
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

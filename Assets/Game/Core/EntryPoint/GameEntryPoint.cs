@@ -1,4 +1,5 @@
 using Jam.Core.Cutscenes;
+using Jam.Core.Localization;
 using Jam.Core.Save;
 using Jam.Core.UI;
 using UnityEngine;
@@ -36,6 +37,11 @@ namespace Jam.Core.EntryPoint
 
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            Loc.InitializeFromPreferences();
+            if (GetComponent<LocalizationBootstrap>() == null)
+            {
+                gameObject.AddComponent<LocalizationBootstrap>();
+            }
             if (GetComponent<GlobalHudController>() == null)
             {
                 gameObject.AddComponent<GlobalHudController>();
