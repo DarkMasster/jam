@@ -195,6 +195,106 @@ MonoBehaviour:
     m_Key: item.list_pair
     m_Metadata:
       m_Items: []
+  - m_Id: 19775198584832
+    m_Key: boss.source
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775282470912
+    m_Key: boss.final_source
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775282470913
+    m_Key: boss.hologram.assembled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665216
+    m_Key: boss.hologram.battle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665217
+    m_Key: boss.hologram.mid.one
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665218
+    m_Key: boss.hologram.mid.two
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665219
+    m_Key: boss.hologram.encirclement
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665220
+    m_Key: boss.hologram.ring
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665221
+    m_Key: boss.hologram.ring.beat
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665222
+    m_Key: boss.hologram.final
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665223
+    m_Key: boss.hologram.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665224
+    m_Key: boss.status.assembly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665225
+    m_Key: boss.status.assembled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665226
+    m_Key: boss.status.hit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665227
+    m_Key: boss.status.encircling
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665228
+    m_Key: boss.status.ring
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665229
+    m_Key: boss.status.final
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665230
+    m_Key: boss.status.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665231
+    m_Key: boss.overlay.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665232
+    m_Key: boss.objective.assembly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665233
+    m_Key: boss.objective.assembled
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665234
+    m_Key: boss.objective.encircling
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665235
+    m_Key: boss.objective.ring
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665236
+    m_Key: boss.objective.final
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665237
+    m_Key: boss.objective.complete
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

@@ -200,6 +200,108 @@ MonoBehaviour:
     m_Localized: '{0} AND {1}'
     m_Metadata:
       m_Items: []
+  - m_Id: 19775198584832
+    m_Localized: SERVER BOSS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775282470912
+    m_Localized: SERVER RING
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775282470913
+    m_Localized: EMPLOYEE NO LONGER REQUIRED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665216
+    m_Localized: AI DOES THIS FASTER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665217
+    m_Localized: YOU TRAINED YOUR REPLACEMENT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665218
+    m_Localized: YOUR ROLE HAS BEEN OPTIMIZED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665219
+    m_Localized: SCALING COMPLETE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665220
+    m_Localized: HUMAN ERROR DETECTED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665221
+    m_Localized: YOU WERE THE BOTTLENECK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665222
+    m_Localized: ACCESS REVOKED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665223
+    m_Localized: OFFBOARDING COMPLETE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665224
+    m_Localized: "RACKS CONVERGING \u2022 CONTROL LOCKED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665225
+    m_Localized: "ASSEMBLED BODY ONLINE \u2022 THROW OBJECTS"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665226
+    m_Localized: "CHASSIS FAILURE \u2022 {0}/{1}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665227
+    m_Localized: "FALSE VICTORY \u2022 RACKS RECONFIGURING"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665228
+    m_Localized: "RING CLOSED \u2022 MOVE WHILE YOU STILL CAN"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665229
+    m_Localized: "RACKS SYNCHRONIZING \u2022 NO SAFE ZONE"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665230
+    m_Localized: "SCRIPTED DEFEAT \u2022 EPISODE COMPLETE"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665231
+    m_Localized: 'OFFBOARDING COMPLETE
+
+      THE DREAM CUTS OUT'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665232
+    m_Localized: "ASSEMBLING CHASSIS \u2022 HOLD POSITION"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665233
+    m_Localized: BREAK THE ASSEMBLED BODY   {0}/{1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665234
+    m_Localized: "FALSE VICTORY \u2022 RACKS ARE SURROUNDING YOU"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665235
+    m_Localized: "SERVER RING \u2022 NO EXIT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665236
+    m_Localized: "FINAL STRIKE \u2022 SHARED TELEGRAPH"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 19775286665237
+    m_Localized: "OFFBOARDING COMPLETE \u2022 DREAM ENDED"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

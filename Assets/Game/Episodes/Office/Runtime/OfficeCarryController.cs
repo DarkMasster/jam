@@ -35,8 +35,11 @@ namespace Jam.Episodes.Office
         private bool _ownsPrimaryActionEnable;
         private OfficeCarryable _heldItem;
         private OfficeCarryable _highlightedItem;
+        private bool _controlLocked;
 
         public OfficeCarryable HeldItem => _heldItem;
+
+        public bool IsControlLocked => _controlLocked;
 
         private void OnEnable()
         {
@@ -57,6 +60,12 @@ namespace Jam.Episodes.Office
 
         private void Update()
         {
+            if (_controlLocked)
+            {
+                Highlight(null);
+                return;
+            }
+
             if (_heldItem != null)
             {
                 Highlight(null);
@@ -108,6 +117,16 @@ namespace Jam.Episodes.Office
             var item = _heldItem;
             _heldItem = null;
             item.Release();
+        }
+
+        /// <summary>Постановка блокирует подбор и бросок, не роняя предмет из рук.</summary>
+        public void SetControlLocked(bool value)
+        {
+            _controlLocked = value;
+            if (value)
+            {
+                Highlight(null);
+            }
         }
 
         private void PickUp(OfficeCarryable item)

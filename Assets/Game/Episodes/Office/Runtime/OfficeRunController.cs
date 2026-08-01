@@ -5,7 +5,7 @@ namespace Jam.Episodes.Office
     /// <summary>
     /// Целостность героя и быстрый перезапуск забега. Ранняя смерть — это fail-state:
     /// эпизод не завершается, а забег сразу начинается заново с той же стартовой точки.
-    /// Финальный сюжетный удар босса появится отдельным срезом и сюда не входит.
+    /// Финальный сюжетный удар помечает забег завершённым и никогда не запускает restart.
     /// </summary>
     public sealed class OfficeRunController : MonoBehaviour
     {
@@ -26,6 +26,7 @@ namespace Jam.Episodes.Office
         private float _invulnerableUntil;
         private float _restartAtTime;
         private bool _isDown;
+        private bool _storyCompleted;
 
         public int MaxIntegrity => maxIntegrity;
 
@@ -34,7 +35,9 @@ namespace Jam.Episodes.Office
         /// <summary>Номер текущей попытки; первая попытка — 1.</summary>
         public int Attempt { get; private set; } = 1;
 
-        public bool IsRunActive => !_isDown && Integrity > 0;
+        public bool IsRunActive => !_isDown && !_storyCompleted && Integrity > 0;
+
+        public bool IsStoryCompleted => _storyCompleted;
 
         public bool IsInvulnerable => Time.time < _invulnerableUntil;
 
@@ -122,11 +125,43 @@ namespace Jam.Episodes.Office
         }
 
         /// <summary>
+        /// Неизбежный удар кольца — успешный сюжетный финал, а не обычная смерть.
+        /// Управление блокируется, но таймер restart не запускается.
+        /// </summary>
+        public void CompleteFromFinalStrike(string sourceName)
+        {
+            if (_storyCompleted)
+            {
+                return;
+            }
+
+            _storyCompleted = true;
+            _isDown = false;
+            Integrity = 0;
+
+            playerController?.SetControlLocked(true);
+            if (carryController != null)
+            {
+                carryController.ReleaseHeldItem();
+                carryController.SetControlLocked(true);
+            }
+
+            episodeController?.ReportRunState(Integrity, maxIntegrity, Attempt);
+            episodeController?.ReportStoryBeat(sourceName);
+            episodeController?.ReportBossFinalStrike();
+        }
+
+        /// <summary>
         /// Возвращает забег в устойчивое начало без перезагрузки сцены: сцена ещё не
         /// добавлена в Build Settings, а мягкий restart укладывается в целевые 5 секунд.
         /// </summary>
         public void RestartRun()
         {
+            if (_storyCompleted)
+            {
+                return;
+            }
+
             _isDown = false;
             Integrity = maxIntegrity;
             _invulnerableUntil = 0f;
@@ -136,6 +171,7 @@ namespace Jam.Episodes.Office
             {
                 carryController.ReleaseHeldItem();
                 carryController.enabled = true;
+                carryController.SetControlLocked(false);
             }
 
             MovePlayerToSpawn();
@@ -143,6 +179,7 @@ namespace Jam.Episodes.Office
             if (playerController != null)
             {
                 playerController.enabled = true;
+                playerController.SetControlLocked(false);
                 playerController.ResetMotion();
             }
 

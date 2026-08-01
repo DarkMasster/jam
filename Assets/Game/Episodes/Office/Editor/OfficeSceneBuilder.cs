@@ -1,10 +1,14 @@
 #if UNITY_EDITOR
+using Jam.Core.Localization;
 using Jam.Episodes.Office;
 using TMPro;
 using UnityEditor;
+using UnityEditor.Localization;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Tables;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -24,6 +28,7 @@ namespace Jam.Episodes.Office.Editor
             EnsureFolder(ArtPath);
             EnsureFolder(MaterialPath);
             EnsureFolder(PrefabPath);
+            EnsureBossLocalization();
 
             var palette = CreatePalette();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -80,6 +85,16 @@ namespace Jam.Episodes.Office.Editor
             BuildChasers(palette, enemyRoot, player.transform, runController, momentum, episodeController);
             var chasers = enemyRoot.GetComponentsInChildren<OfficeChaser>(true);
 
+            var bossEncounter = CreateBossEncounter(
+                palette,
+                gameplayRoot,
+                player.transform,
+                playerController,
+                carryController,
+                runController,
+                episodeController,
+                momentum);
+
             var hudPrefab = CreateOrUpdatePrefab("OfficeHud", BuildHudTemplate);
             var hudInstance = (GameObject)PrefabUtility.InstantiatePrefab(hudPrefab, sceneRoot);
             var hudBinding = hudInstance.GetComponent<OfficeHudBinding>();
@@ -94,7 +109,8 @@ namespace Jam.Episodes.Office.Editor
                 hudBinding.DownPanel,
                 hudBinding.DownText,
                 exitGate,
-                momentum);
+                momentum,
+                bossEncounter);
 
             var coach = episodeObject.AddComponent<OfficeCoach>();
             coach.Configure(
@@ -361,7 +377,9 @@ namespace Jam.Episodes.Office.Editor
         {
             var triggerObject = new GameObject("Exit Interaction Zone", typeof(BoxCollider), typeof(OfficeExitGate));
             triggerObject.transform.SetParent(parent, false);
-            triggerObject.transform.position = new Vector3(0f, 1f, 39.8f);
+            // Порог расположен перед ареной: стойки должны собраться впереди игрока,
+            // а не за его спиной у самой двери.
+            triggerObject.transform.position = new Vector3(0f, 1f, 35.9f);
             var trigger = triggerObject.GetComponent<BoxCollider>();
             trigger.isTrigger = true;
             trigger.size = new Vector3(5.5f, 2f, 2.5f);
@@ -464,6 +482,150 @@ namespace Jam.Episodes.Office.Editor
                 coach);
         }
 
+        private static OfficeBossEncounter CreateBossEncounter(
+            Palette p,
+            Transform parent,
+            Transform player,
+            OfficePlayerController movement,
+            OfficeCarryController carry,
+            OfficeRunController runController,
+            OfficeEpisodeController episodeController,
+            OfficeMomentum momentum)
+        {
+            const int rackCount = 12;
+            var bossObject = new GameObject("Server Boss Encounter", typeof(AudioSource), typeof(OfficeBossEncounter));
+            bossObject.transform.SetParent(parent, false);
+            var bossRoot = bossObject.transform;
+
+            var rackPrefab = GetOrCreatePrefab("ServerRack", () => BuildServerRackTemplate(p));
+            var rackRoot = CreateGroup("Boss Racks", bossRoot);
+            var assemblyRoot = CreateGroup("Assembly Anchors", bossRoot);
+            var ringRoot = CreateGroup("Ring Anchors", bossRoot);
+            var racks = new Transform[rackCount];
+            var assemblyAnchors = new Transform[rackCount];
+            var ringAnchors = new Transform[rackCount];
+            var warningLights = new Light[rackCount];
+            var ringCenter = new Vector3(0f, 0f, 37f);
+
+            for (var i = 0; i < rackCount; i++)
+            {
+                var side = i < rackCount / 2 ? -1f : 1f;
+                var row = i % (rackCount / 2);
+                var source = new Vector3(side * 10.25f, 0f, 28.6f + (row * 2.25f));
+                var rack = InstantiatePrefab(rackPrefab, $"Boss Rack {i + 1:00}", source, rackRoot);
+                racks[i] = rack.transform;
+
+                var warningObject = new GameObject($"Rack Warning {i + 1:00}", typeof(Light));
+                warningObject.transform.SetParent(rack.transform, false);
+                warningObject.transform.localPosition = new Vector3(0f, 2.35f, -0.9f);
+                var warning = warningObject.GetComponent<Light>();
+                warning.type = LightType.Point;
+                warning.color = Hex("D8241D");
+                warning.range = 5.5f;
+                warning.intensity = 0f;
+                warning.shadows = LightShadows.None;
+                warningLights[i] = warning;
+
+                var assemblyAnchor = new GameObject($"Assembly {i + 1:00}").transform;
+                assemblyAnchor.SetParent(assemblyRoot, false);
+                assemblyAnchor.position = new Vector3(
+                    ((i % 4) - 1.5f) * 1.48f,
+                    0f,
+                    37.1f + ((i / 4) * 1.42f));
+                assemblyAnchor.rotation = Quaternion.identity;
+                assemblyAnchors[i] = assemblyAnchor;
+
+                var angle = (Mathf.PI * 2f * i) / rackCount;
+                var offset = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * 3.65f;
+                var ringAnchor = new GameObject($"Ring {i + 1:00}").transform;
+                ringAnchor.SetParent(ringRoot, false);
+                ringAnchor.position = ringCenter + offset;
+                // Передняя панель prefab смотрит по -Z, поэтому forward направлен наружу.
+                ringAnchor.rotation = Quaternion.LookRotation(offset.normalized, Vector3.up);
+                ringAnchors[i] = ringAnchor;
+            }
+
+            var linkRoot = CreateGroup("Closed Ring Links", bossRoot).gameObject;
+            for (var i = 0; i < rackCount; i++)
+            {
+                var next = (i + 1) % rackCount;
+                var from = ringAnchors[i].position;
+                var to = ringAnchors[next].position;
+                var delta = to - from;
+                var link = CreateCube(
+                    $"Ring Link {i + 1:00}",
+                    (from + to) * 0.5f + (Vector3.up * 0.72f),
+                    new Vector3(0.18f, 1.44f, delta.magnitude),
+                    p.redDim,
+                    linkRoot.transform);
+                link.transform.rotation = Quaternion.LookRotation(delta.normalized, Vector3.up);
+            }
+            linkRoot.SetActive(false);
+
+            var seal = CreateGroup("Boss Arena Seal", bossRoot).gameObject;
+            CreateCube(
+                "Arena Seal Barrier",
+                new Vector3(0f, 0.82f, 34.55f),
+                new Vector3(23.5f, 1.64f, 0.2f),
+                p.redDim,
+                seal.transform);
+            CreateWorldLabel(
+                "Arena Seal Label",
+                "ДОСТУП ОТОЗВАН",
+                new Vector3(0f, 2.05f, 34.4f),
+                0.062f,
+                Hex("EDE9DF"),
+                seal.transform);
+            seal.SetActive(false);
+
+            var lineTelegraph = CreateCube(
+                "Boss Line Telegraph",
+                Vector3.zero,
+                new Vector3(1f, 0.025f, 1f),
+                p.red,
+                bossRoot,
+                false).transform;
+            lineTelegraph.gameObject.SetActive(false);
+
+            var finalTelegraph = CreateCylinder(
+                "Synchronized Strike Telegraph",
+                ringCenter + (Vector3.up * 0.05f),
+                new Vector3(0.2f, 0.025f, 0.2f),
+                p.red,
+                bossRoot,
+                false).transform;
+            finalTelegraph.gameObject.SetActive(false);
+
+            var hologram = CreateWorldLabel(
+                "Boss Hologram",
+                "СОТРУДНИК БОЛЬШЕ НЕ ТРЕБУЕТСЯ",
+                new Vector3(0f, 4.25f, 38.4f),
+                0.052f,
+                Hex("EDE9DF"),
+                bossRoot);
+            hologram.fontStyle = FontStyles.Bold;
+            hologram.gameObject.SetActive(false);
+
+            var boss = bossObject.GetComponent<OfficeBossEncounter>();
+            boss.Configure(
+                player,
+                movement,
+                carry,
+                runController,
+                episodeController,
+                momentum,
+                racks,
+                assemblyAnchors,
+                ringAnchors,
+                warningLights,
+                linkRoot,
+                seal,
+                lineTelegraph,
+                finalTelegraph,
+                hologram);
+            return boss;
+        }
+
         private static GameObject BuildHudTemplate()
         {
             var canvasObject = new GameObject("Office HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(OfficeHudBinding));
@@ -541,13 +703,16 @@ namespace Jam.Episodes.Office.Editor
         {
             var prefab = CreateOrUpdatePrefab("Keyboard", () => BuildKeyboardTemplate(p));
 
-            // Клавиатуры лежат на столах маршрута и один раз на полу серверной,
-            // чтобы петля «подбор → бросок» проверялась в каждой зоне.
+            // Клавиатуры лежат на столах маршрута и на полу боевых зон,
+            // чтобы петля «подбор → бросок» не запиралась после закрытия арены.
             InstantiatePrefab(prefab, "Keyboard Start", new Vector3(1.6f, 1.08f, -29.2f), root);
             InstantiatePrefab(prefab, "Keyboard Open L", new Vector3(-7.4f, 1.08f, -15f), root);
             InstantiatePrefab(prefab, "Keyboard Open R", new Vector3(7.4f, 1.08f, -9.7f), root);
             InstantiatePrefab(prefab, "Keyboard Meeting", new Vector3(1.4f, 0.9f, 0.5f), root);
             InstantiatePrefab(prefab, "Keyboard Server", new Vector3(-2.6f, 0.14f, 11.5f), root);
+            InstantiatePrefab(prefab, "Keyboard Boss L", new Vector3(-4.4f, 0.14f, 35.2f), root);
+            InstantiatePrefab(prefab, "Keyboard Boss C", new Vector3(0f, 0.14f, 34.8f), root);
+            InstantiatePrefab(prefab, "Keyboard Boss R", new Vector3(4.4f, 0.14f, 35.2f), root);
         }
 
         private static GameObject BuildKeyboardTemplate(Palette p)
@@ -935,7 +1100,7 @@ namespace Jam.Episodes.Office.Editor
             return gameObject;
         }
 
-        private static void CreateWorldLabel(string name, string text, Vector3 position, float size, Color color, Transform parent)
+        private static TextMeshPro CreateWorldLabel(string name, string text, Vector3 position, float size, Color color, Transform parent)
         {
             var label = new GameObject(name, typeof(TextMeshPro));
             label.transform.SetParent(parent, false);
@@ -946,6 +1111,7 @@ namespace Jam.Episodes.Office.Editor
             mesh.fontSize = 64;
             mesh.alignment = TextAlignmentOptions.Center;
             mesh.color = color;
+            return mesh;
         }
 
         private static Image CreateUiPanel(string name, Transform parent, Color color)
@@ -1087,6 +1253,45 @@ namespace Jam.Episodes.Office.Editor
             AssetDatabase.CreateFolder(parent, folder);
         }
 
+        private static void EnsureBossLocalization()
+        {
+            var collection = LocalizationEditorSettings.GetStringTableCollection(LocalizationTables.Office);
+            if (collection == null)
+            {
+                Debug.LogWarning("Office localization collection is missing; boss strings keep runtime fallbacks.");
+                return;
+            }
+
+            var russian = LocalizationEditorSettings.GetLocale(new LocaleIdentifier("ru"));
+            var english = LocalizationEditorSettings.GetLocale(new LocaleIdentifier("en"));
+            var pseudo = LocalizationEditorSettings.GetLocale(new LocaleIdentifier("qps-ploc"));
+            UpdateOfficeTable(russian != null ? collection.GetTable(russian.Identifier) as StringTable : null, BossLocalization, true);
+            UpdateOfficeTable(english != null ? collection.GetTable(english.Identifier) as StringTable : null, BossLocalization, false);
+            UpdateOfficeTable(pseudo != null ? collection.GetTable(pseudo.Identifier) as StringTable : null, BossLocalization, true);
+            EditorUtility.SetDirty(collection.SharedData);
+        }
+
+        private static void UpdateOfficeTable(
+            StringTable table,
+            OfficeLocalizationEntry[] entries,
+            bool russian)
+        {
+            if (table == null)
+            {
+                return;
+            }
+
+            for (var i = 0; i < entries.Length; i++)
+            {
+                var source = entries[i];
+                var value = russian ? source.Russian : source.English;
+                var entry = table.GetEntry(source.Key) ?? table.AddEntry(source.Key, value);
+                entry.Value = value;
+            }
+
+            EditorUtility.SetDirty(table);
+        }
+
         private static Color Hex(string value)
         {
             ColorUtility.TryParseHtmlString("#" + value, out var color);
@@ -1116,6 +1321,49 @@ namespace Jam.Episodes.Office.Editor
             public Material player;
             public Material playerRim;
         }
+
+        private readonly struct OfficeLocalizationEntry
+        {
+            public OfficeLocalizationEntry(string key, string russian, string english)
+            {
+                Key = key;
+                Russian = russian;
+                English = english;
+            }
+
+            public string Key { get; }
+            public string Russian { get; }
+            public string English { get; }
+        }
+
+        private static readonly OfficeLocalizationEntry[] BossLocalization =
+        {
+            new("boss.source", "СЕРВЕРНЫЙ БОСС", "SERVER BOSS"),
+            new("boss.final_source", "СЕРВЕРНОЕ КОЛЬЦО", "SERVER RING"),
+            new("boss.hologram.assembled", "СОТРУДНИК БОЛЬШЕ НЕ ТРЕБУЕТСЯ", "EMPLOYEE NO LONGER REQUIRED"),
+            new("boss.hologram.battle", "ИИ ДЕЛАЕТ ЭТО БЫСТРЕЕ", "AI DOES THIS FASTER"),
+            new("boss.hologram.mid.one", "ТЫ ОБУЧИЛ СВОЮ ЗАМЕНУ", "YOU TRAINED YOUR REPLACEMENT"),
+            new("boss.hologram.mid.two", "ТВОЯ РОЛЬ ОПТИМИЗИРОВАНА", "YOUR ROLE HAS BEEN OPTIMIZED"),
+            new("boss.hologram.encirclement", "МАСШТАБИРОВАНИЕ ЗАВЕРШЕНО", "SCALING COMPLETE"),
+            new("boss.hologram.ring", "ЧЕЛОВЕЧЕСКАЯ ОШИБКА ОБНАРУЖЕНА", "HUMAN ERROR DETECTED"),
+            new("boss.hologram.ring.beat", "ТЫ БЫЛ УЗКИМ МЕСТОМ", "YOU WERE THE BOTTLENECK"),
+            new("boss.hologram.final", "ДОСТУП ОТОЗВАН", "ACCESS REVOKED"),
+            new("boss.hologram.complete", "OFFBOARDING ЗАВЕРШЁН", "OFFBOARDING COMPLETE"),
+            new("boss.status.assembly", "СТОЙКИ СХОДЯТСЯ • УПРАВЛЕНИЕ ЗАБЛОКИРОВАНО", "RACKS CONVERGING • CONTROL LOCKED"),
+            new("boss.status.assembled", "ЕДИНЫЙ КОРПУС СОБРАН • БРОСАЙ ПРЕДМЕТЫ", "ASSEMBLED BODY ONLINE • THROW OBJECTS"),
+            new("boss.status.hit", "СБОЙ КОРПУСА • {0}/{1}", "CHASSIS FAILURE • {0}/{1}"),
+            new("boss.status.encircling", "ЛОЖНАЯ ПОБЕДА • СТОЙКИ ПЕРЕСТРАИВАЮТСЯ", "FALSE VICTORY • RACKS RECONFIGURING"),
+            new("boss.status.ring", "КОЛЬЦО ЗАМКНУТО • ДВИГАЙСЯ, ПОКА ЕЩЁ МОЖЕШЬ", "RING CLOSED • MOVE WHILE YOU STILL CAN"),
+            new("boss.status.final", "СИНХРОНИЗАЦИЯ СТОЕК • БЕЗОПАСНОЙ ЗОНЫ НЕТ", "RACKS SYNCHRONIZING • NO SAFE ZONE"),
+            new("boss.status.complete", "СЮЖЕТНОЕ ПОРАЖЕНИЕ • ЭПИЗОД ЗАВЕРШЁН", "SCRIPTED DEFEAT • EPISODE COMPLETE"),
+            new("boss.overlay.complete", "OFFBOARDING ЗАВЕРШЁН\nСОН ОБРЫВАЕТСЯ", "OFFBOARDING COMPLETE\nTHE DREAM CUTS OUT"),
+            new("boss.objective.assembly", "СБОРКА КОРПУСА • НЕ ДВИГАТЬСЯ", "ASSEMBLING CHASSIS • HOLD POSITION"),
+            new("boss.objective.assembled", "РАЗРУШЬ ЕДИНЫЙ КОРПУС   {0}/{1}", "BREAK THE ASSEMBLED BODY   {0}/{1}"),
+            new("boss.objective.encircling", "ЛОЖНАЯ ПОБЕДА • СТОЙКИ ОКРУЖАЮТ ТЕБЯ", "FALSE VICTORY • RACKS ARE SURROUNDING YOU"),
+            new("boss.objective.ring", "СЕРВЕРНОЕ КОЛЬЦО • ВЫХОДА НЕТ", "SERVER RING • NO EXIT"),
+            new("boss.objective.final", "ФИНАЛЬНЫЙ УДАР • ОБЩИЙ ТЕЛЕГРАФ", "FINAL STRIKE • SHARED TELEGRAPH"),
+            new("boss.objective.complete", "OFFBOARDING ЗАВЕРШЁН • СОН ОБОРВАН", "OFFBOARDING COMPLETE • DREAM ENDED")
+        };
     }
 }
 #endif
