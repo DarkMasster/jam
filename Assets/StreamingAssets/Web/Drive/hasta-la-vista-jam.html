@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -252,12 +252,12 @@
   <div class="layer">
     <div id="hud">
       <div class="hrow">
-        <span class="km" id="km">12.0 КМ</span>
-        <span class="clock" id="clock">ДЕНЬ 1 · 16:00</span>
+        <span class="km" id="km">12.0</span>
+        <span class="clock" id="clock">—</span>
         <span class="left" id="left">6:00</span>
       </div>
       <div class="gauges" id="gauges"></div>
-      <div id="stuff">СИГАРЕТ 14 · 40 000 ₽</div>
+      <div id="stuff"></div>
     </div>
   </div>
 
@@ -276,9 +276,9 @@
       <h1>Hasta<br>la vista</h1>
       <div class="rule"></div>
       <div class="mitems">
-        <button class="mi" id="start"><b>›</b>Новая игра</button>
-        <button class="mi" id="m-ctrl"><b>›</b>Управление</button>
-        <button class="mi" id="m-about"><b>›</b>О чём это</button>
+        <button class="mi" id="start"><b>›</b>New game</button>
+        <button class="mi" id="m-ctrl"><b>›</b>Controls</button>
+        <button class="mi" id="m-about"><b>›</b>About</button>
       </div>
       <div class="mtext" id="mtext"></div>
       <div class="langs" id="langs">
@@ -293,7 +293,7 @@
 
   <div class="screen" id="end" style="display:none">
     <div class="crate">
-      <div class="stamp" id="end-stamp" style="display:none">НЕ ДОЕХАЛИ</div>
+      <div class="stamp" id="end-stamp" style="display:none"></div>
       <h1 id="end-h">…</h1>
       <div class="rule"></div>
       <div class="endtext">
@@ -301,7 +301,7 @@
         <div id="end-s" class="et-stat"></div>
         <div id="end-v" class="et-verdict"></div>
       </div>
-      <div class="mitems" style="margin-top:.9em"><button class="mi" id="again"><b>›</b>Ещё раз</button></div>
+      <div class="mitems" style="margin-top:.9em"><button class="mi" id="again"><b>›</b>Play again</button></div>
     </div>
   </div>
 
@@ -342,7 +342,7 @@ function resize(){
 addEventListener('resize',resize);resize();
 if('ontouchstart' in window)document.getElementById('touch').style.display='flex';
 
-let LANG='ru';
+let LANG='en';
 const TR={};
 /* ============ словари ============ */
 TR.en={
@@ -1817,7 +1817,7 @@ function diceStep(dt){
         tr(D.reason).toUpperCase()+'<br>'+D.d1+' + '+D.d2+(D.mod?(D.mod>0?' +':' ')+D.mod:'')+
         ' = <b>'+D.sum+'</b> · '+tr('нужно 8')+'<br>'+(D.mods.length?D.mods.map(tr).join(' · '):tr('без модификаторов'));
       const r=document.getElementById('dice-r');
-      r.textContent=D.tier==='win'?'ПОЛУЧИЛОСЬ':D.tier==='mix'?'НАПОЛОВИНУ':'НЕ ПОЛУЧИЛОСЬ';
+      r.textContent=tr(D.tier==='win'?'ПОЛУЧИЛОСЬ':D.tier==='mix'?'НАПОЛОВИНУ':'НЕ ПОЛУЧИЛОСЬ');
       r.className='res '+(D.tier==='win'?'win':D.tier==='mix'?'mix':'lose');
       applyFight(D);
     }
@@ -2225,7 +2225,7 @@ function showEnd(k){
   const e=ARRIVALS[k]||ARRIVALS.open;
   document.getElementById('end-h').textContent=tr(e.h);
   document.getElementById('end-t').textContent=
-    (S.alone?'Ты открываешь дверь один: Марья и Тео ждали за постом и уже спят. Трамп сразу лезет под кровать. ':'')+e.t;
+    (S.alone?tr('Ты открываешь дверь один: Марья и Тео ждали за постом и уже спят. Трамп сразу лезет под кровать. '):'')+tr(e.t);
   document.getElementById('end-s').textContent=statLine();
   const f=S.fam;let v;
   if(S.alone)v='Марья и Тео прошли границу пешком раньше тебя и дождались за постом. Вы доехали порознь, но доехали.';
@@ -2587,8 +2587,8 @@ function hud(){
   const kk=document.getElementById('keys'),kw=busy?'none':'flex';
   if(kk.style.display!==kw)kk.style.display=kw;
   const tp=document.getElementById('tip');let tt=busy?'':currentTip();
+  if(!busy&&S.ff)tt='ПЕРЕМОТКА ВРЕМЕНИ · ПРОБЕЛ — остановить';
   tt=tr(tt);if(tp.textContent!==tt)tp.textContent=tt;
-  if(!busy&&S.ff)tp.textContent='ПЕРЕМОТКА ВРЕМЕНИ · ПРОБЕЛ — остановить';
   const urg=!busy&&S.honk&&S.mode==='foot';
   if(tp.classList.contains('urgent')!==urg)tp.classList.toggle('urgent',urg);
   const tk=document.getElementById('ticker'),want=S.radio?'block':'none';
@@ -2734,7 +2734,53 @@ function applyLang(){
   if(S.dialog)drawDlg();
 }
 document.querySelectorAll('#langs button').forEach(b=>b.onclick=()=>{LANG=b.dataset.l;applyLang();});
-document.getElementById('m-ctrl').onclick=()=>{mtext.style.display='block';mtext.innerHTML=
+const MENU_CTRL_EN=
+  '<div class="head">KEYS</div>'+
+  '<div class="keys">'+
+   '<span><kbd>←</kbd> <kbd>→</kbd> walk along the line</span>'+
+   '<span><kbd>E</kbd> act or talk</span>'+
+   '<span><kbd>F</kbd> get out of the car</span>'+
+   '<span><kbd>C</kbd> smoke</span>'+
+   '<span><kbd>SPACE</kbd> fast-forward and next line</span>'+
+   '<span><kbd>1</kbd>…<kbd>9</kbd> pick an answer</span>'+
+   '<span><kbd>ESC</kbd> close</span>'+
+  '</div>'+
+  '<p>The line moves in sudden jerks. Everything worth doing is outside the car: people, the '+
+  'campfire, water, fuel, rumours. Wander too far and it will move without you. Walk up to someone '+
+  'and their name and key appear above them.</p>'+
+  '<div class="head">WHAT THE GAUGES MEAN</div>'+
+  '<div class="leg"><u>FUEL</u>Thirty litres. At night the heater burns twice as much as driving. '+
+  'At zero you are forced to stop: a neighbour will siphon you eight litres, and the price goes up '+
+  'every time.</div>'+
+  '<div class="leg"><u>WATER</u>Six litres for four, counting Tramp. It brings a fever down and it '+
+  'buys other people’s help.</div>'+
+  '<div class="leg"><u>PHONE</u>Your only line home and your only source of rumours. The radio, the '+
+  'chat and cartoons for Teo drain it equally fast.</div>'+
+  '<div class="leg"><u>STRESS</u>The single state counter. It rises from waiting, from the night, '+
+  'from withdrawal, thirst, arguments and from how hard it is for your family. The higher it goes, '+
+  'the fewer calm answers you have and the faster the family wears down. At a hundred you turn '+
+  'back — that is a loss.</div>'+
+  '<div class="leg"><u>CRAVING</u>Nicotine. While you hold out the picture drains of colour and '+
+  'yellows, and you take a penalty in a confrontation. A cigarette is also currency: someone you '+
+  'shared with will help you later. Pressing C always asks where you want to smoke — outside costs '+
+  'nothing, inside Marya is counting, and the third in a row means a row.</div>'+
+  '<div class="leg"><u>FAMILY</u>How Marya and Teo are holding up. It falls on its own from the '+
+  'standing alone — and twice as fast when you are on edge. Below thirty Marya warns you. At zero '+
+  'she turns back home, and the episode is lost.</div>'+
+  '<div class="head">HOW THE DICE WORK</div>'+
+  '<p>Confrontations are settled by rolling two dice plus modifiers. <b>8 or more is a success</b>, '+
+  'exactly <b>7 is a draw</b> (you get half of it and the full set of stares), <b>6 or less is a '+
+  'failure</b>.</p>'+
+  '<div class="leg"><u>+2</u>Artyom at your back — if you shared a cigarette with him.</div>'+
+  '<div class="leg"><u>+1</u>The line remembers your water — if you gave the woman a litre and a half.</div>'+
+  '<div class="leg"><u>+1</u>Anger that is focused, not blind — stress between 45 and 72.</div>'+
+  '<div class="leg"><u>+1</u>A smoke before it starts — costs a cigarette, offered right before the roll.</div>'+
+  '<div class="leg"><u>−1</u>Withdrawal · you can barely hear yourself (stress above 72).</div>'+
+  '<div class="leg"><u>−2</u>Your hands are shaking (above 85) · you are the known troublemaker (third clash).</div>'+
+  '<p>The odds are printed on the button <b>before</b> you roll, and you can always back out.</p>';
+document.getElementById('m-ctrl').onclick=()=>{mtext.style.display='block';
+  if(LANG==='en'){mtext.innerHTML=MENU_CTRL_EN;return;}
+  mtext.innerHTML=
   '<div class="head">КЛАВИШИ</div>'+
   '<div class="keys">'+
    '<span><kbd>←</kbd> <kbd>→</kbd> идти вдоль ряда</span>'+

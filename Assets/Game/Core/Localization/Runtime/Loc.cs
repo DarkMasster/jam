@@ -18,7 +18,7 @@ namespace Jam.Core.Localization
         public static void InitializeFromPreferences()
         {
             _ = _service.CurrentLocaleCode;
-            _service.SetLocale(PlayerPrefs.GetString("jam.settings.locale", "ru"));
+            _service.SetLocale(PlayerPrefs.GetString("jam.settings.locale", "en"));
         }
 
         public static string Get(string table, string key, string fallback = null, params object[] arguments)

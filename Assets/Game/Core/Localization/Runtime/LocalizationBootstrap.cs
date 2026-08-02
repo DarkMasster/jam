@@ -13,7 +13,7 @@ namespace Jam.Core.Localization
         {
             yield return LocalizationSettings.InitializationOperation;
             yield return null;
-            Loc.SetLocale(PlayerPrefs.GetString(LocalePreferenceKey, "ru"));
+            Loc.SetLocale(PlayerPrefs.GetString(LocalePreferenceKey, "en"));
         }
     }
 }

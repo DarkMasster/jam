@@ -240,7 +240,7 @@ namespace Jam.Core.Cutscenes
             _speaker = CreateText("Speaker", panel.rectTransform, string.Empty, 24, FontStyles.Bold, Accent, TextAlignmentOptions.TopLeft);
             SetAnchoredRect(_speaker.rectTransform, new Vector2(0.04f, 0.70f), new Vector2(0.96f, 0.94f), Vector2.zero, Vector2.zero);
             _body = CreateText("Body", panel.rectTransform, string.Empty, 25, FontStyles.Normal, TextColor, TextAlignmentOptions.TopLeft);
-            SetAnchoredRect(_body.rectTransform, new Vector2(0.04f, 0.20f), new Vector2(0.96f, 0.72f), Vector2.zero, Vector2.zero);
+            SetAnchoredRect(_body.rectTransform, new Vector2(0.25f, 0.20f), new Vector2(0.96f, 0.72f), Vector2.zero, Vector2.zero);
             _progress = CreateText("Progress", panel.rectTransform, string.Empty, 14, FontStyles.Normal, MutedText, TextAlignmentOptions.MidlineRight);
             SetAnchoredRect(_progress.rectTransform, new Vector2(0.50f, 0.02f), new Vector2(0.96f, 0.18f), Vector2.zero, Vector2.zero);
 

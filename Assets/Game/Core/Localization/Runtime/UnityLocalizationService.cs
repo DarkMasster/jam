@@ -8,7 +8,7 @@ namespace Jam.Core.Localization
     public sealed class UnityLocalizationService : ILocalizationService
     {
         private const string LocalePreferenceKey = "jam.settings.locale";
-        private const string DefaultLocale = "ru";
+        private const string DefaultLocale = "en";
 
         private bool _initialized;
         private bool _subscribed;

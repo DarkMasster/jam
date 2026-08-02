@@ -35,6 +35,8 @@
 - Установлены и загружаются без ошибок NodeCanvas 3.42 и Damage Numbers Pro 4.55; паттерны использования зафиксированы в `INTEGRATIONS.md`.
 - Подключены Unity Localization 1.5.12, Addressables и TextMeshPro; `ru`, `en` и
   `qps-ploc` используют таблицы `Common`, `Photo`, `Office`.
+- Для нового пользователя стартовым locale является `en`; ранее сохранённый выбор
+  языка продолжает восстанавливаться из `jam.settings.locale`.
 - Реализован общий persistent-аудиофундамент: шесть логических шин, cue-ассеты,
   pool SFX, crossfade музыки, voice-канал, пользовательские громкости и контексты
   `Paused > Cutscene > Default`.
@@ -94,6 +96,8 @@
   нижняя диалоговая панель, кнопки и карточки получили DarkUI-спрайты. Мятный и
   розовый сохранены как семантика Честности/Признания; portrait RenderTexture
   остаётся слева и принудительно выводится последним sibling поверх панели.
+- В общем storyboard UI левая граница `DialoguePanel/Body` сдвинута вправо за
+  область 3D-портрета; текст больше не уходит под `RenderedPortrait`.
 - В `web-demos/office/` существует независимый Three.js-прототип `Offboarding`,
   проверяющий core loop офисного эпизода до переноса выбранных механик в Unity.
 - В `DEVELOPMENT_SPEC.md` зафиксирована рабочая палитра офисного эпизода с HEX/RGB,
