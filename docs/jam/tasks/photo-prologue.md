@@ -60,3 +60,7 @@
   после теста восстановлен. Presentation проверен Game View-снимками на диалоге,
   видоискателе и трёхкарточной матрице при 1920×1080. Console чиста.
 - Реализационный commit: `0f25faf`
+- UI mockup alignment commit: `f8a6eb4`.
+- Подготовка к merge: `origin/main@97df930` влит в `feature/photo-prologue` commit-ом `df34133` без конфликтов.
+- Проверка после синхронизации: полный Unity refresh завершён; Console — 0 ошибок/предупреждений;
+  `PhotoWhiteboxController.cs` — 0 ошибок/предупреждений; `origin/main` является предком `HEAD`.
