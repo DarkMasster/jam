@@ -82,6 +82,13 @@
   presentation: Office Setup/Awakening получили отдельные диорамы и портрет
   разработчика, Photo Intro/Outro переиспользуют комнату, аэропорт и портретный
   риг героини. Стабильные cutscene ID и save-flow не изменены.
+- Office gameplay HUD приведён к стилю DarkUI главного меню: objective, coach,
+  Momentum, status и failure overlay используют общие тёмные округлые панели.
+  Красный сохранён как семантика угрозы; bindings и gameplay-state не менялись.
+- Runtime-интерфейс Photo использует общий `DarkUiTheme`: рамки story/stage,
+  нижняя диалоговая панель, кнопки и карточки получили DarkUI-спрайты. Мятный и
+  розовый сохранены как семантика Честности/Признания; portrait RenderTexture
+  остаётся слева и принудительно выводится последним sibling поверх панели.
 - В `web-demos/office/` существует независимый Three.js-прототип `Offboarding`,
   проверяющий core loop офисного эпизода до переноса выбранных механик в Unity.
 - В `DEVELOPMENT_SPEC.md` зафиксирована рабочая палитра офисного эпизода с HEX/RGB,

@@ -258,6 +258,7 @@ namespace Jam.Core.Cutscenes
                 new Vector2(1f, 1f),
                 new Vector2(-118f, -42f),
                 new Vector2(210f, 54f));
+            _renderedPortrait.transform.SetAsLastSibling();
             _root.SetActive(false);
         }
 
