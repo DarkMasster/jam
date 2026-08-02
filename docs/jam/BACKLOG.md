@@ -20,6 +20,8 @@
 | P0 | Выбрать движок, платформу и способ сборки | TBD | `feature/project-bootstrap` | Todo | Час 2 |
 | P0 | Создать вертикальный прототип core loop | TBD | `feature/core-loop` | Todo | Час 12 |
 | P0 | Главное меню, выбор героя и сохранение прогресса | Интегратор | `feature/main-menu` | Done | Готово |
+| P1 | DarkUI art-pass главного меню без изменения навигационных контрактов | ИИ/интегратор | `feature/darkui-main-menu` | Done | Готово |
+| P1 | DarkUI art-pass выбора героев и общего pause-menu; 3D-портреты выбора | ИИ/интегратор | `feature/darkui-main-menu` | Done | Готово |
 | P0 | Актуализировать архитектуру визуальной новеллы с NodeCanvas и DNP | ИИ/интегратор | `feature/photo-novel-architecture` | Done | Готово |
 | P0 | White-box запуск истории персонажа 3 из главного меню | ИИ/интегратор | `feature/photo-prologue-whitebox` | Done | Готово |
 | P0 | Сохранение всей Photo-линии по актам, миграция v1 → v2 | ИИ/интегратор | `feature/photo-save-v2` | Done | Готово |

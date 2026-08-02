@@ -16,6 +16,14 @@ namespace Jam.Core.UI
     {
         [SerializeField] private string newGameScene = "CharacterSelect";
 
+        [Header("DarkUI vendor styling")]
+        [SerializeField] private Sprite darkButtonSprite;
+        [SerializeField] private Sprite darkDividerSprite;
+        [SerializeField] private Sprite playIcon;
+        [SerializeField] private Sprite continueIcon;
+        [SerializeField] private Sprite languageIcon;
+        [SerializeField] private Sprite quitIcon;
+
         private static readonly Color BackgroundColor = new(0.035f, 0.045f, 0.065f, 1f);
         private static readonly Color PanelColor = new(0.075f, 0.09f, 0.12f, 0.97f);
         private static readonly Color AccentColor = new(0.91f, 0.55f, 0.24f, 1f);
@@ -34,7 +42,7 @@ namespace Jam.Core.UI
         private void Awake()
         {
             EnsureEventSystem();
-            BuildInterface();
+            BuildDarkInterface();
             RefreshState();
         }
 
@@ -187,6 +195,94 @@ namespace Jam.Core.UI
             inputModule.AssignDefaultActions();
         }
 
+        private void BuildDarkInterface()
+        {
+            var canvasObject = new GameObject(
+                "MainMenuCanvas",
+                typeof(RectTransform),
+                typeof(Canvas),
+                typeof(CanvasScaler),
+                typeof(GraphicRaycaster));
+
+            var canvas = canvasObject.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100;
+
+            var scaler = canvasObject.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            var background = CreateImage("Background", canvasObject.GetComponent<RectTransform>(), BackgroundColor);
+            Stretch(background.rectTransform);
+
+            var topAccent = CreateImage("TopAccent", background.rectTransform, AccentColor);
+            SetAnchoredRect(topAccent.rectTransform, new Vector2(0f, 1f), Vector2.one, Vector2.zero, new Vector2(0f, 8f));
+
+            var panel = CreateImage("MenuPanel", background.rectTransform, PanelColor);
+            SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1520f, 760f));
+
+            var brandPanel = CreateImage("BrandPanel", panel.rectTransform, new Color(0.045f, 0.055f, 0.075f, 1f));
+            Stretch(brandPanel.rectTransform, Vector2.zero, new Vector2(-684f, 0f));
+
+            var brandAccent = CreateImage("BrandAccent", brandPanel.rectTransform, new Color(AccentColor.r, AccentColor.g, AccentColor.b, 0.12f));
+            SetAnchoredRect(brandAccent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(10f, 0f));
+
+            var title = CreateTextObject("Title", brandPanel.rectTransform, "REFLECTION / MOMENTUM", 48, FontStyles.Bold, TextColor);
+            LocalizedTextBinding.Attach(title, LocalizationTables.Common, "ui.main.title", "REFLECTION / MOMENTUM");
+            title.alignment = TextAlignmentOptions.BottomLeft;
+            SetAnchoredRect(title.rectTransform, new Vector2(0f, 0.56f), new Vector2(1f, 0.84f), Vector2.zero, Vector2.zero);
+            title.rectTransform.offsetMin = new Vector2(82f, 0f);
+            title.rectTransform.offsetMax = new Vector2(-72f, 0f);
+
+            var subtitle = CreateTextObject("Subtitle", brandPanel.rectTransform, "REFLECTION + MOMENTUM", 20, FontStyles.Bold, AccentColor);
+            LocalizedTextBinding.Attach(subtitle, LocalizationTables.Common, "ui.main.subtitle", "REFLECTION + MOMENTUM");
+            subtitle.alignment = TextAlignmentOptions.TopLeft;
+            SetAnchoredRect(subtitle.rectTransform, new Vector2(0f, 0.43f), new Vector2(1f, 0.51f), Vector2.zero, Vector2.zero);
+            subtitle.rectTransform.offsetMin = new Vector2(84f, 0f);
+            subtitle.rectTransform.offsetMax = new Vector2(-72f, 0f);
+
+            var divider = CreateImage("Divider", brandPanel.rectTransform, new Color(1f, 1f, 1f, 0.22f), darkDividerSprite);
+            SetAnchoredRect(divider.rectTransform, new Vector2(0f, 0.39f), new Vector2(1f, 0.39f), Vector2.zero, new Vector2(0f, 2f));
+            divider.rectTransform.offsetMin = new Vector2(82f, 0f);
+            divider.rectTransform.offsetMax = new Vector2(-82f, 2f);
+
+            var footer = CreateTextObject("Footer", brandPanel.rectTransform, "THREE STORIES / ONE MOMENT", 16, FontStyles.Normal, MutedTextColor);
+            LocalizedTextBinding.Attach(footer, LocalizationTables.Common, "ui.main.footer", "THREE STORIES / ONE MOMENT");
+            footer.alignment = TextAlignmentOptions.TopLeft;
+            SetAnchoredRect(footer.rectTransform, new Vector2(0f, 0.19f), new Vector2(1f, 0.39f), Vector2.zero, Vector2.zero);
+            footer.rectTransform.offsetMin = new Vector2(84f, 0f);
+            footer.rectTransform.offsetMax = new Vector2(-72f, 0f);
+
+            var menuPanel = CreateImage("ActionsPanel", panel.rectTransform, new Color(0.09f, 0.105f, 0.135f, 1f));
+            Stretch(menuPanel.rectTransform, new Vector2(836f, 0f), Vector2.zero);
+
+            var actionsObject = new GameObject("Actions", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            actionsObject.transform.SetParent(menuPanel.rectTransform, false);
+            var actionsRect = actionsObject.GetComponent<RectTransform>();
+            SetAnchoredRect(actionsRect, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(0f, 470f));
+            actionsRect.offsetMin = new Vector2(66f, -235f);
+            actionsRect.offsetMax = new Vector2(-66f, 235f);
+
+            var actionsLayout = actionsObject.GetComponent<VerticalLayoutGroup>();
+            actionsLayout.spacing = 16f;
+            actionsLayout.childAlignment = TextAnchor.MiddleCenter;
+            actionsLayout.childControlWidth = true;
+            actionsLayout.childControlHeight = false;
+            actionsLayout.childForceExpandWidth = true;
+            actionsLayout.childForceExpandHeight = false;
+
+            _newGameButton = CreateButton("NewGameButton", actionsRect, "NEW GAME", StartNewGame, "ui.main.new_game", playIcon);
+            _continueButton = CreateButton("ContinueButton", actionsRect, "CONTINUE", ContinueGame, "ui.main.continue", continueIcon);
+            _languageButton = CreateButton("LanguageButton", actionsRect, "LANGUAGE", ToggleLanguage, "ui.main.language", languageIcon);
+            _quitButton = CreateButton("QuitButton", actionsRect, "QUIT", QuitGame, "ui.main.quit", quitIcon);
+
+            CreateSpacer(actionsRect, 14f);
+            _statusText = CreateLabel("SaveStatus", actionsRect, string.Empty, 17, FontStyles.Normal, MutedTextColor, 30f);
+            _newGameButton.Select();
+        }
+
         private void BuildInterface()
         {
             var canvasObject = new GameObject(
@@ -215,30 +311,69 @@ namespace Jam.Core.UI
             SetAnchoredRect(accent.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(0f, 8f));
 
             var panel = CreateImage("MenuPanel", background.rectTransform, PanelColor);
-            SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(560f, 690f));
+            SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1520f, 760f));
 
-            var panelLayout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            panelLayout.padding = new RectOffset(54, 54, 48, 42);
-            panelLayout.spacing = 18f;
-            panelLayout.childAlignment = TextAnchor.UpperCenter;
-            panelLayout.childControlWidth = true;
-            panelLayout.childControlHeight = false;
-            panelLayout.childForceExpandWidth = true;
-            panelLayout.childForceExpandHeight = false;
+            var brandPanel = CreateImage("BrandPanel", panel.rectTransform, new Color(0.045f, 0.055f, 0.075f, 1f));
+            SetAnchoredRect(brandPanel.rectTransform, new Vector2(0f, 0f), new Vector2(0.55f, 1f), Vector2.zero, Vector2.zero);
+            brandPanel.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            brandPanel.rectTransform.offsetMin = Vector2.zero;
+            brandPanel.rectTransform.offsetMax = Vector2.zero;
 
-            CreateLabel("Title", panel.rectTransform, "ОТРАЖЕНИЕ / ИМПУЛЬС", 42, FontStyles.Bold, TextColor, 72f, "ui.main.title");
-            CreateLabel("Subtitle", panel.rectTransform, "REFLECTION + MOMENTUM", 19, FontStyles.Normal, AccentColor, 34f, "ui.main.subtitle");
-            CreateSpacer(panel.rectTransform, 30f);
+            var brandAccent = CreateImage("BrandAccent", brandPanel.rectTransform, new Color(AccentColor.r, AccentColor.g, AccentColor.b, 0.10f));
+            SetAnchoredRect(brandAccent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(10f, 0f));
 
-            _newGameButton = CreateButton("NewGameButton", panel.rectTransform, "НАЧАТЬ НОВУЮ ИГРУ", StartNewGame, "ui.main.new_game");
-            _continueButton = CreateButton("ContinueButton", panel.rectTransform, "ПРОДОЛЖИТЬ", ContinueGame, "ui.main.continue");
-            _languageButton = CreateButton("LanguageButton", panel.rectTransform, "ЯЗЫК: РУССКИЙ", ToggleLanguage, "ui.main.language");
-            _quitButton = CreateButton("QuitButton", panel.rectTransform, "ВЫХОД", QuitGame, "ui.main.quit");
+            var title = CreateTextObject("Title", brandPanel.rectTransform, "ОТРАЖЕНИЕ / ИМПУЛЬС", 54, FontStyles.Bold, TextColor);
+            LocalizedTextBinding.Attach(title, LocalizationTables.Common, "ui.main.title", "ОТРАЖЕНИЕ / ИМПУЛЬС");
+            title.alignment = TextAlignmentOptions.BottomLeft;
+            SetAnchoredRect(title.rectTransform, new Vector2(0f, 0.54f), new Vector2(1f, 0.82f), Vector2.zero, Vector2.zero);
+            title.rectTransform.offsetMin = new Vector2(82f, 0f);
+            title.rectTransform.offsetMax = new Vector2(-72f, 0f);
 
-            CreateSpacer(panel.rectTransform, 22f);
-            _statusText = CreateLabel("SaveStatus", panel.rectTransform, string.Empty, 18, FontStyles.Normal, MutedTextColor, 30f);
-            CreateSpacer(panel.rectTransform, 12f);
-            CreateLabel("Footer", panel.rectTransform, "ТРИ ИСТОРИИ • ОДИН МОМЕНТ", 15, FontStyles.Normal, MutedTextColor, 24f, "ui.main.footer");
+            var subtitle = CreateTextObject("Subtitle", brandPanel.rectTransform, "REFLECTION + MOMENTUM", 20, FontStyles.Bold, AccentColor);
+            LocalizedTextBinding.Attach(subtitle, LocalizationTables.Common, "ui.main.subtitle", "REFLECTION + MOMENTUM");
+            subtitle.alignment = TextAlignmentOptions.TopLeft;
+            SetAnchoredRect(subtitle.rectTransform, new Vector2(0f, 0.46f), new Vector2(1f, 0.56f), Vector2.zero, Vector2.zero);
+            subtitle.rectTransform.offsetMin = new Vector2(84f, 0f);
+            subtitle.rectTransform.offsetMax = new Vector2(-72f, 0f);
+
+            var divider = CreateImage("Divider", brandPanel.rectTransform, new Color(1f, 1f, 1f, 0.22f), darkDividerSprite);
+            SetAnchoredRect(divider.rectTransform, new Vector2(0f, 0.43f), new Vector2(1f, 0.43f), Vector2.zero, new Vector2(0f, 2f));
+            divider.rectTransform.offsetMin = new Vector2(82f, 0f);
+            divider.rectTransform.offsetMax = new Vector2(-82f, 2f);
+
+            var footer = CreateTextObject("Footer", brandPanel.rectTransform, "ТРИ ИСТОРИИ • ОДИН МОМЕНТ", 16, FontStyles.Normal, MutedTextColor);
+            LocalizedTextBinding.Attach(footer, LocalizationTables.Common, "ui.main.footer", "ТРИ ИСТОРИИ • ОДИН МОМЕНТ");
+            footer.alignment = TextAlignmentOptions.TopLeft;
+            SetAnchoredRect(footer.rectTransform, new Vector2(0f, 0.19f), new Vector2(1f, 0.39f), Vector2.zero, Vector2.zero);
+            footer.rectTransform.offsetMin = new Vector2(84f, 0f);
+            footer.rectTransform.offsetMax = new Vector2(-72f, 0f);
+
+            var menuPanel = CreateImage("ActionsPanel", panel.rectTransform, new Color(0.09f, 0.105f, 0.135f, 1f));
+            SetAnchoredRect(menuPanel.rectTransform, new Vector2(0.55f, 0f), Vector2.one, Vector2.zero, Vector2.zero);
+            menuPanel.rectTransform.offsetMin = Vector2.zero;
+            menuPanel.rectTransform.offsetMax = Vector2.zero;
+
+            var actions = new GameObject("Actions", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            actions.transform.SetParent(menuPanel.rectTransform, false);
+            SetAnchoredRect(actions.GetComponent<RectTransform>(), new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(0f, 470f));
+            actions.GetComponent<RectTransform>().offsetMin = new Vector2(66f, -235f);
+            actions.GetComponent<RectTransform>().offsetMax = new Vector2(-66f, 235f);
+
+            var actionsLayout = actions.GetComponent<VerticalLayoutGroup>();
+            actionsLayout.spacing = 16f;
+            actionsLayout.childAlignment = TextAnchor.MiddleCenter;
+            actionsLayout.childControlWidth = true;
+            actionsLayout.childControlHeight = false;
+            actionsLayout.childForceExpandWidth = true;
+            actionsLayout.childForceExpandHeight = false;
+
+            _newGameButton = CreateButton("NewGameButton", actions.GetComponent<RectTransform>(), "НАЧАТЬ НОВУЮ ИГРУ", StartNewGame, "ui.main.new_game", playIcon);
+            _continueButton = CreateButton("ContinueButton", actions.GetComponent<RectTransform>(), "ПРОДОЛЖИТЬ", ContinueGame, "ui.main.continue", continueIcon);
+            _languageButton = CreateButton("LanguageButton", actions.GetComponent<RectTransform>(), "ЯЗЫК: РУССКИЙ", ToggleLanguage, "ui.main.language", languageIcon);
+            _quitButton = CreateButton("QuitButton", actions.GetComponent<RectTransform>(), "ВЫХОД", QuitGame, "ui.main.quit", quitIcon);
+
+            CreateSpacer(actions.GetComponent<RectTransform>(), 14f);
+            _statusText = CreateLabel("SaveStatus", actions.GetComponent<RectTransform>(), string.Empty, 17, FontStyles.Normal, MutedTextColor, 30f);
 
             _newGameButton.Select();
         }
@@ -248,7 +383,8 @@ namespace Jam.Core.UI
             RectTransform parent,
             string label,
             UnityEngine.Events.UnityAction action,
-            string localizationKey = null)
+            string localizationKey = null,
+            Sprite iconSprite = null)
         {
             var buttonObject = new GameObject(
                 name,
@@ -264,6 +400,7 @@ namespace Jam.Core.UI
 
             var image = buttonObject.GetComponent<Image>();
             image.color = ButtonColor;
+            image.sprite = darkButtonSprite;
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
@@ -279,12 +416,23 @@ namespace Jam.Core.UI
             button.colors = colors;
             button.onClick.AddListener(action);
 
+            var accentStrip = CreateImage("Accent", buttonObject.GetComponent<RectTransform>(), AccentColor);
+            SetAnchoredRect(accentStrip.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(5f, 0f));
+
+            if (iconSprite != null)
+            {
+                var icon = CreateImage("Icon", buttonObject.GetComponent<RectTransform>(), TextColor, iconSprite);
+                icon.preserveAspect = true;
+                SetAnchoredRect(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(42f, 0f), new Vector2(28f, 28f));
+            }
+
             var text = CreateTextObject("Label", buttonObject.GetComponent<RectTransform>(), label, 21, FontStyles.Bold, TextColor);
+            text.alignment = TextAlignmentOptions.MidlineLeft;
             if (!string.IsNullOrWhiteSpace(localizationKey))
             {
                 LocalizedTextBinding.Attach(text, LocalizationTables.Common, localizationKey, label);
             }
-            Stretch(text.rectTransform, new Vector2(20f, 0f), new Vector2(-20f, 0f));
+            Stretch(text.rectTransform, new Vector2(76f, 0f), new Vector2(-20f, 0f));
 
             return button;
         }
@@ -333,13 +481,14 @@ namespace Jam.Core.UI
             return text;
         }
 
-        private static Image CreateImage(string name, RectTransform parent, Color color)
+        private static Image CreateImage(string name, RectTransform parent, Color color, Sprite sprite = null)
         {
             var imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
             imageObject.transform.SetParent(parent, false);
 
             var image = imageObject.GetComponent<Image>();
             image.color = color;
+            image.sprite = sprite;
             return image;
         }
 
