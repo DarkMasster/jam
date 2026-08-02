@@ -1,7 +1,9 @@
 #if UNITY_EDITOR
+using DamageNumbersPro;
 using Jam.Core.Cutscenes;
 using Jam.Core.Localization;
 using Jam.Episodes.Office;
+using Jam.Integrations.DamageNumbersPro;
 using TMPro;
 using UnityEditor;
 using UnityEditor.Localization;
@@ -25,6 +27,12 @@ namespace Jam.Episodes.Office.Editor
         private const string CutscenePath = "Assets/Game/Episodes/Office/Cutscenes";
         private const string SetupCutscenePath = CutscenePath + "/OfficeSetupStoryboard.asset";
         private const string AwakeningCutscenePath = CutscenePath + "/OfficeAwakeningStoryboard.asset";
+        private const string FeedbackPath = "Assets/Game/Integrations/DamageNumbersPro/Presets";
+        private const string FeedbackSourcePath = "Assets/DamageNumbersPro/Demo/Prefabs/3D/Clear.prefab";
+        private const string FeedbackFontPath = "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
+        private const string DamagePresetPath = FeedbackPath + "/OfficeDamage.prefab";
+        private const string InteractionPresetPath = FeedbackPath + "/OfficeInteraction.prefab";
+        private const string MilestonePresetPath = FeedbackPath + "/OfficeMilestone.prefab";
         private const string SetupCutsceneId = "office.prologue.setup";
         private const string AwakeningCutsceneId = "office.prologue.awakening";
 
@@ -35,6 +43,7 @@ namespace Jam.Episodes.Office.Editor
             EnsureFolder(MaterialPath);
             EnsureFolder(PrefabPath);
             EnsureFolder(CutscenePath);
+            EnsureDamageNumberPresets();
             EnsureBossLocalization();
 
             var palette = CreatePalette();
@@ -186,6 +195,10 @@ namespace Jam.Episodes.Office.Editor
             var feedbackObject = new GameObject("Office Feedback", typeof(AudioSource), typeof(OfficeFeedback));
             feedbackObject.transform.SetParent(gameplayRoot, false);
             feedbackObject.GetComponent<OfficeFeedback>().Configure(shake, momentum);
+            feedbackObject.AddComponent<DamageNumbersFeedbackAdapter>().Configure(
+                LoadDamageNumberPreset(DamagePresetPath),
+                LoadDamageNumberPreset(InteractionPresetPath),
+                LoadDamageNumberPreset(MilestonePresetPath));
 
             // Красные акценты маршрута: только они реагируют на Momentum.
             var accentLights = new System.Collections.Generic.List<Light>();
@@ -235,6 +248,116 @@ namespace Jam.Episodes.Office.Editor
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(asset);
             return asset;
+        }
+
+        private static void EnsureDamageNumberPresets()
+        {
+            EnsureFolder(FeedbackPath);
+            EnsureDamageNumberPreset(
+                DamagePresetPath,
+                "OfficeDamage",
+                Hex("FF5A3C"),
+                false,
+                1.1f,
+                12,
+                "OfficeDamage");
+            EnsureDamageNumberPreset(
+                InteractionPresetPath,
+                "OfficeInteraction",
+                Hex("EDE9DF"),
+                true,
+                1.35f,
+                8,
+                "OfficeInteraction");
+            EnsureDamageNumberPreset(
+                MilestonePresetPath,
+                "OfficeMilestone",
+                Hex("FFF2D8"),
+                true,
+                1.7f,
+                4,
+                "OfficeMilestone");
+        }
+
+        private static void EnsureDamageNumberPreset(
+            string assetPath,
+            string assetName,
+            Color color,
+            bool textOnly,
+            float lifetime,
+            int maxActiveInstances,
+            string spamGroup)
+        {
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(assetPath) == null
+                && !AssetDatabase.CopyAsset(FeedbackSourcePath, assetPath))
+            {
+                Debug.LogError($"Could not create office DNP preset at {assetPath}.");
+                return;
+            }
+
+            var root = PrefabUtility.LoadPrefabContents(assetPath);
+            try
+            {
+                root.name = assetName;
+                root.transform.localPosition = Vector3.zero;
+                var preset = root.GetComponent<DamageNumberMesh>();
+                if (preset == null)
+                {
+                    Debug.LogError($"Office DNP preset has no {nameof(DamageNumberMesh)}: {assetPath}");
+                    return;
+                }
+
+                preset.lifetime = lifetime;
+                preset.enable3DGame = true;
+                preset.faceCameraView = true;
+                preset.lookAtCamera = true;
+                preset.renderThroughWalls = false;
+                preset.consistentScreenSize = true;
+                preset.enableOrthographicScaling = true;
+                preset.defaultOrthographicSize = 10.5f;
+                preset.enableNumber = !textOnly;
+                preset.enableLeftText = textOnly;
+                preset.numberSettings.customColor = true;
+                preset.numberSettings.color = color;
+                preset.numberSettings.size = -1.2f;
+                preset.leftTextSettings.customColor = true;
+                preset.leftTextSettings.color = color;
+                preset.leftTextSettings.size = textOnly ? -2.1f : 0f;
+                preset.enableFollowing = false;
+                preset.enableCombination = !textOnly;
+                preset.enableDestruction = false;
+                preset.enableCollision = false;
+                preset.enablePush = false;
+                preset.spamGroup = spamGroup;
+                preset.enablePooling = true;
+                preset.poolSize = Mathf.Max(8, maxActiveInstances);
+                preset.disableOnSceneLoad = true;
+                preset.limitActiveInstances = true;
+                preset.maxActiveInstances = maxActiveInstances;
+
+                var feedbackFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FeedbackFontPath);
+                foreach (var label in root.GetComponentsInChildren<TMP_Text>(true))
+                {
+                    if (feedbackFont != null)
+                    {
+                        label.font = feedbackFont;
+                    }
+
+                    label.textWrappingMode = TextWrappingModes.NoWrap;
+                }
+
+                PrefabUtility.SaveAsPrefabAsset(root, assetPath);
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static DamageNumberMesh LoadDamageNumberPreset(string assetPath)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(assetPath);
+            return prefab != null ? prefab.GetComponent<DamageNumberMesh>() : null;
         }
 
         private static void ConfigurePresentation(
@@ -1506,7 +1629,11 @@ namespace Jam.Episodes.Office.Editor
             new("boss.objective.encircling", "ЛОЖНАЯ ПОБЕДА • СТОЙКИ ОКРУЖАЮТ ТЕБЯ", "FALSE VICTORY • RACKS ARE SURROUNDING YOU"),
             new("boss.objective.ring", "СЕРВЕРНОЕ КОЛЬЦО • ВЫХОДА НЕТ", "SERVER RING • NO EXIT"),
             new("boss.objective.final", "ФИНАЛЬНЫЙ УДАР • ОБЩИЙ ТЕЛЕГРАФ", "FINAL STRIKE • SHARED TELEGRAPH"),
-            new("boss.objective.complete", "OFFBOARDING ЗАВЕРШЁН • СОН ОБОРВАН", "OFFBOARDING COMPLETE • DREAM ENDED")
+            new("boss.objective.complete", "OFFBOARDING ЗАВЕРШЁН • СОН ОБОРВАН", "OFFBOARDING COMPLETE • DREAM ENDED"),
+            new("feedback.broken", "СЛОМАНО", "BROKEN"),
+            new("feedback.laptop", "НОУТБУК", "LAPTOP"),
+            new("feedback.mug", "КРУЖКА", "MUG"),
+            new("feedback.personal_items", "ЛИЧНЫЕ ВЕЩИ СОБРАНЫ", "PERSONAL ITEMS COLLECTED")
         };
     }
 }

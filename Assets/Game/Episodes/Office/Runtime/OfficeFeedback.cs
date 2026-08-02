@@ -1,3 +1,5 @@
+using Jam.Core.Localization;
+using Jam.Integrations.DamageNumbersPro;
 using UnityEngine;
 
 namespace Jam.Episodes.Office
@@ -157,6 +159,14 @@ namespace Jam.Episodes.Office
             RequestShake(breakShake, 0.28f);
         }
 
+        public void ReportDestroyed(Vector3 position)
+        {
+            ReportBreak(position);
+            GameFeedbackService.ShowInteraction(
+                position,
+                Loc.Get(LocalizationTables.Office, "feedback.broken", "СЛОМАНО"));
+        }
+
         /// <summary>Бросок из рук: подача короткая, чтобы не перебивать попадание.</summary>
         public void ReportThrow(Vector3 position)
         {
@@ -166,11 +176,60 @@ namespace Jam.Episodes.Office
         }
 
         /// <summary>Попадание по герою: критический оттенок и самая сильная тряска.</summary>
-        public void ReportPlayerHit(Vector3 position)
+        public void ReportPlayerHit(Transform player)
         {
+            if (player == null)
+            {
+                return;
+            }
+
+            var position = player.position;
             PlayClip(_playerHitClip, 0.86f, 0.8f);
             Burst(position, criticalColor, playerHitParticles);
             RequestShake(playerHitShake, 0.4f);
+            GameFeedbackService.ShowDamage(position, player);
+        }
+
+        public void ReportDamage(Vector3 position, Transform target)
+        {
+            GameFeedbackService.ShowDamage(position, target);
+        }
+
+        public void ReportPickup(Transform player, string itemName)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            GameFeedbackService.ShowInteraction(
+                player.position,
+                OfficeEpisodeController.LocalizeRuntimeName(itemName),
+                player);
+        }
+
+        public void ReportCollectiblePickup(
+            Transform player,
+            OfficeCollectibleType collectibleType,
+            bool allPersonalItemsCollected)
+        {
+            if (player == null)
+            {
+                return;
+            }
+
+            var item = collectibleType == OfficeCollectibleType.Laptop
+                ? Loc.Get(LocalizationTables.Office, "feedback.laptop", "НОУТБУК")
+                : Loc.Get(LocalizationTables.Office, "feedback.mug", "КРУЖКА");
+            GameFeedbackService.ShowInteraction(player.position, item, player);
+
+            if (allPersonalItemsCollected)
+            {
+                GameFeedbackService.ShowMilestone(
+                    player.position,
+                    Loc.Get(LocalizationTables.Office, "feedback.personal_items", "ЛИЧНЫЕ ВЕЩИ СОБРАНЫ"),
+                    player);
+            }
         }
 
         private float MomentumValue => momentum != null ? momentum.Value : 0f;

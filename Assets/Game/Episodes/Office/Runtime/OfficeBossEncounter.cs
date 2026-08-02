@@ -216,7 +216,9 @@ namespace Jam.Episodes.Office
             SetRackLightIntensity(4.8f);
             PlayMechanicalClick(1.25f + (RegisteredHits * 0.08f));
             episodeController?.ReportBossHit(RegisteredHits, requiredHits);
-            OfficeFeedback.Instance?.ReportImpact(transform.position, 1f);
+            var feedbackPosition = GetRackCenter();
+            OfficeFeedback.Instance?.ReportImpact(feedbackPosition, 1f);
+            OfficeFeedback.Instance?.ReportDamage(feedbackPosition, null);
 
             if (RegisteredHits >= requiredHits)
             {

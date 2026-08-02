@@ -68,7 +68,8 @@ namespace Jam.Episodes.Office
 
         private void OnTriggerEnter(Collider other)
         {
-            if (_collected || other.GetComponentInParent<OfficePlayerController>() == null)
+            var player = other.GetComponentInParent<OfficePlayerController>();
+            if (_collected || player == null)
             {
                 return;
             }
@@ -86,6 +87,10 @@ namespace Jam.Episodes.Office
 
             _collected = true;
             episodeController.RegisterCollectible(collectibleType);
+            OfficeFeedback.Instance?.ReportCollectiblePickup(
+                player.transform,
+                collectibleType,
+                episodeController.BossEncounterReady);
             // Объект остаётся включённым, иначе быстрый restart не сможет его вернуть.
             SetPresent(false);
         }
