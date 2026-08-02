@@ -70,4 +70,4 @@ Prologue_Office` и общий HUD в игровом эпизоде. `HotelArriv
   Prologue_Office`), оба выхода HotelArrival и повторный Continue (`CharacterSelect`);
   Console 0 errors/warnings, EditMode tests `1/1`. Исходный пользовательский save
   восстановлен после теста.
-- Последний commit: `не выполнялся`
+- Последний commit реализации: `2536da7`
