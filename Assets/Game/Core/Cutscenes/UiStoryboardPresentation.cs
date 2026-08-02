@@ -1,4 +1,5 @@
 using System;
+using Jam.Core.Audio;
 using Jam.Core.Localization;
 using TMPro;
 using UnityEngine;
@@ -30,14 +31,11 @@ namespace Jam.Core.Cutscenes
         private TMP_Text _body;
         private TMP_Text _progress;
         private Button _skipButton;
-        private AudioSource _audioSource;
         private int _frameIndex;
         private float _frameElapsed;
 
         private void Awake()
         {
-            _audioSource = gameObject.AddComponent<AudioSource>();
-            _audioSource.playOnAwake = false;
             BuildInterface();
         }
 
@@ -140,12 +138,7 @@ namespace Jam.Core.Cutscenes
             _portrait.gameObject.SetActive(frame.portrait != null);
             RefreshLocalizedFrame();
 
-            _audioSource.Stop();
-            _audioSource.clip = frame.voice;
-            if (frame.voice != null)
-            {
-                _audioSource.Play();
-            }
+            AudioService.Instance?.PlayVoice(frame.voice);
         }
 
         private void RefreshLocalizedFrame()
@@ -177,7 +170,7 @@ namespace Jam.Core.Cutscenes
         {
             var callback = _onFinished;
             _onFinished = null;
-            _audioSource.Stop();
+            AudioService.Instance?.StopVoice();
             _root.SetActive(false);
             callback?.Invoke(reason);
         }

@@ -261,3 +261,14 @@ Trees содержат реплики и выборы, а `PhotoEpisodeControlle
 baseline, после чего domain reload и сохранение Project Settings не создают новый
 diff. Изменения значений в `ProjectSettings/**` по-прежнему требуют отдельной
 проверки и не скрываются через `assume-unchanged` или `skip-worktree`.
+
+## 2026-08-02 — Общий звук является persistent Core-сервисом
+
+Решение: вся игра использует один `AudioService`, созданный `GameEntryPoint`, и
+project-owned `AudioCue`. Шины, музыка, SFX, UI, ambience и voice имеют общий API;
+pause и cutscene задают приоритетные mix-context вместо прямого выключения звука.
+
+Следствие: эпизоды могут добавлять контент параллельно, не владея глобальным
+AudioMixer. Пользовательские громкости живут отдельно от игрового save. Реальный
+`AudioMixer` и snapshots подключаются через опциональный `AudioConfiguration`, а
+до появления production-аудио действует функциональный runtime fallback.
