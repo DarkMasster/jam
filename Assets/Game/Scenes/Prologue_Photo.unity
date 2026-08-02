@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 903484229}
   - component: {fileID: 903484228}
   - component: {fileID: 903484232}
+  - component: {fileID: 903484233}
   m_Layer: 0
   m_Name: PhotoWhiteboxRoot
   m_TagString: Untagged
@@ -257,6 +258,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Jam.Core.Cutscenes.UiStoryboardPresentation
   cutsceneId: photo.prologue.intro
   sequence: {fileID: 11400000, guid: 6e818a0fed87db14c959154cb0b1eccc, type: 2}
+--- !u!114 &903484233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 903484227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c03e0c4319921f48b0962920b1d547c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Jam.Core.Cutscenes.UiStoryboardPresentation
+  cutsceneId: photo.prologue.to_be_continued
+  sequence: {fileID: 11400000, guid: eb685344941bd724c909250be3ac3af1, type: 2}
 --- !u!1 &1078604462
 GameObject:
   m_ObjectHideFlags: 0

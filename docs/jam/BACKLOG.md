@@ -26,7 +26,7 @@
 | P0 | Общий HUD, pause-меню и контракт сохранения игровых режимов | ИИ/интегратор | `feature/global-game-hud` | Done | Готово |
 | P0 | Запуск Office из Main и безопасный возврат | ИИ/интегратор | `feature/office-main-menu-flow` | Done | Готово |
 | P0 | Базовая гибридная система катсцен: NodeCanvas + Storyboard + Timeline | ИИ/интегратор | `feature/cutscene-foundation` | Done | Готово |
-| P0 | Реализовать вертикальный срез фотопролога | TBD | `feature/photo-prologue` | Todo | Час 12 |
+| P0 | Реализовать вертикальный срез фотопролога | ИИ-агент / команда Photo | `feature/photo-prologue` | Doing | Час 12 |
 | P0 | Первый Unity-срез офисного кошмара | ИИ-агент | `feature/office-unity-scene` | Done | Час 12 |
 | P0 | Создать и закрепить живой roadmap офисного эпизода | ИИ-агент | `feature/office-unity-scene` | Done | Готово |
 | P0 | Офис `M1A`: предмет, бросок и простое разрушение | ИИ-агент | `feature/office-unity-scene` | Done | Готово |

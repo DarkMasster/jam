@@ -56,6 +56,36 @@ namespace Jam.Core.Flow
         }
 
         /// <summary>
+        /// Сохраняет завершённый эпизод и сразу возвращает к выбору историй, когда
+        /// сам эпизод уже показал собственную arrival/outro-катсцену.
+        /// </summary>
+        public static void CompleteEpisodeAndReturnToCharacterSelect(EpisodeResult result)
+        {
+            if (result == null || !result.IsValid)
+            {
+                Debug.LogError("GameFlowService received an invalid episode result.");
+                return;
+            }
+
+            PendingResult = null;
+            GameSaveService.SaveCharacterCheckpoint(
+                result.characterId,
+                result.sceneName,
+                result.checkpointId,
+                result.payloadJson);
+            GameSaveService.LeaveCharacterLine(result.characterId, CharacterSelectScene);
+            GameSaveService.Flush();
+
+            if (!IsSceneInBuild(CharacterSelectScene))
+            {
+                Debug.LogError($"Scene '{CharacterSelectScene}' is not in Build Settings.");
+                return;
+            }
+
+            SceneManager.LoadSceneAsync(CharacterSelectScene, LoadSceneMode.Single);
+        }
+
+        /// <summary>
         /// Завершает линию эпизода после сцены прибытия и возвращает игрока в выбор
         /// героя. Финал всей игры остаётся отдельным решением и здесь не выдаётся.
         /// </summary>

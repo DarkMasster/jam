@@ -1,5 +1,6 @@
 using System;
 using Jam.Core.Cutscenes;
+using Jam.Core.Flow;
 using Jam.Core.Localization;
 using Jam.Core.Save;
 using NodeCanvas.Framework;
@@ -34,6 +35,7 @@ namespace Jam.Episodes.Photo
     public sealed class PhotoWhiteboxController : MonoBehaviour, IGameModeSaveProvider
     {
         private const string IntroCutsceneId = "photo.prologue.intro";
+        private const string OutroCutsceneId = "photo.prologue.to_be_continued";
         private const string ExploreCheckpoint = "photo.explore";
         private const string CameraCheckpoint = "photo.camera";
         private const string PublishedCheckpoint = "photo.published";
@@ -71,6 +73,8 @@ namespace Jam.Episodes.Photo
         private int _truth;
         private int _reach;
         private bool _introCutsceneRunning;
+        private bool _outroCutsceneRunning;
+        private bool _episodeHandedOff;
         private PhotoCharacterSaveData _saveData = PhotoCheckpointAdapter.CreateNew();
 
         public bool CanSave => isActiveAndEnabled;
@@ -98,13 +102,21 @@ namespace Jam.Episodes.Photo
         {
             Loc.LocaleChanged -= HandleLocaleChanged;
             UnsubscribeFromCutsceneDirector();
+            UnsubscribeFromOutroCutscene();
             _introCutsceneRunning = false;
+            _outroCutsceneRunning = false;
         }
 
         private void HandleLocaleChanged()
         {
             if (_introCutsceneRunning)
             {
+                return;
+            }
+
+            if (_phase != PhotoWhiteboxPhase.IntroDialogue && _saveData?.schemaVersion >= 3)
+            {
+                RenderProductionStep();
                 return;
             }
 
@@ -135,6 +147,14 @@ namespace Jam.Episodes.Photo
                         _choice = restored.prologue.photoChoice;
                         _truth = restored.prologue.truth;
                         _reach = restored.prologue.reach;
+                        if (restored.schemaVersion >= 3
+                            && checkpoint.checkpointId != "photo.intro")
+                        {
+                            EnterProductionStep(restored.prologue.step, false);
+                            SetStatus(Loc.Get(LocalizationTables.Photo, "status.continue", "Продолжение: {0}", checkpoint.checkpointId));
+                            return;
+                        }
+
                         EnterPhase(PhotoCheckpointAdapter.ResolveResumePhase(restored, checkpoint.checkpointId), false);
                         SetStatus(Loc.Get(LocalizationTables.Photo, "status.continue", "Продолжение: {0}", checkpoint.checkpointId));
                         return;
@@ -250,7 +270,7 @@ namespace Jam.Episodes.Photo
             if (result.Succeeded)
             {
                 _introIndex = _introLines.Length - 1;
-                EnterPhase(PhotoWhiteboxPhase.Explore, true);
+                EnterProductionStep(PhotoPrologueStep.RoomSecret, true);
                 return;
             }
 
@@ -291,7 +311,372 @@ namespace Jam.Episodes.Photo
                 return;
             }
 
-            EnterPhase(PhotoWhiteboxPhase.Explore, true);
+            EnterProductionStep(PhotoPrologueStep.RoomSecret, true);
+        }
+
+        private void EnterProductionStep(PhotoPrologueStep step, bool save)
+        {
+            _saveData.prologue.step = step;
+            _phase = PhaseForProductionStep(step);
+            SyncNodeCanvas();
+
+            if (save)
+            {
+                SaveCheckpoint(CheckpointForProductionStep(step));
+            }
+
+            RenderProductionStep();
+        }
+
+        private void RenderProductionStep()
+        {
+            switch (_saveData.prologue.step)
+            {
+                case PhotoPrologueStep.RoomSecret: RenderRoomSecret(); break;
+                case PhotoPrologueStep.RoomPhoto: RenderRoomPhoto(); break;
+                case PhotoPrologueStep.MotherDialogue: RenderMotherDialogue(); break;
+                case PhotoPrologueStep.MailboxHunt: RenderMailboxHunt(); break;
+                case PhotoPrologueStep.MailboxPublication: RenderMailboxPublication(); break;
+                case PhotoPrologueStep.MailboxReaction: RenderMailboxReaction(); break;
+                case PhotoPrologueStep.AirportPhoto: RenderAirportPhoto(); break;
+                case PhotoPrologueStep.BorderControl: RenderBorderControl(); break;
+                case PhotoPrologueStep.Summary: RenderProductionSummary(); break;
+                case PhotoPrologueStep.Complete: RenderProductionSummary(); break;
+                default:
+                    _saveData.prologue.step = PhotoPrologueStep.RoomSecret;
+                    RenderRoomSecret();
+                    break;
+            }
+        }
+
+        private void RenderRoomSecret()
+        {
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.room.phase", "СЦЕНА 1 • НЕОНОВАЯ КОМНАТА"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "production.heroine", "ОНА"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.room.secret.prompt", "Они же не узнают…"));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.scales.hidden", "Выбор изменит внутренний вектор героини."));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.room.secret.deny", "Они не узнают."), () => ChooseSecret(PhotoSecretChoice.TheyWillNotKnow));
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.room.secret.know", "Они уже знают.  •  +20 Признание"), () => ChooseSecret(PhotoSecretChoice.TheyAlreadyKnow), true, AccentColor);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.room.secret.tell", "Пусть узнают.  •  +20 Честность"), () => ChooseSecret(PhotoSecretChoice.LetThemKnow), true, new Color(0.32f, 0.82f, 0.68f, 1f));
+        }
+
+        private void ChooseSecret(PhotoSecretChoice choice)
+        {
+            if (PhotoPrologueRules.ApplySecretChoice(_saveData.prologue, choice))
+            {
+                EnterProductionStep(PhotoPrologueStep.RoomPhoto, true);
+            }
+        }
+
+        private void RenderRoomPhoto()
+        {
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.room.camera.phase", "КОМНАТА • ПЕРВЫЙ СНИМОК"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "speaker.viewfinder", "ВИДОИСКАТЕЛЬ"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.room.camera.prompt", "В центре кадра — винтажная лампа. Бардак и пыль можно оставить или спрятать за красивым фильтром."));
+            SetScaleStatus();
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.room.camera.honest", "Честный кадр: бардак и пыль  •  +20 Честность"), () => ChooseRoomShot(PhotoRoomShotChoice.Honest), true, new Color(0.32f, 0.82f, 0.68f, 1f));
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.room.camera.wings", "Глитч-фильтр с крыльями  •  +20 Признание"), () => ChooseRoomShot(PhotoRoomShotChoice.Wings), true, AccentColor);
+        }
+
+        private void ChooseRoomShot(PhotoRoomShotChoice choice)
+        {
+            if (PhotoPrologueRules.ApplyRoomShot(_saveData.prologue, choice))
+            {
+                EnterProductionStep(PhotoPrologueStep.MotherDialogue, true);
+            }
+        }
+
+        private void RenderMotherDialogue()
+        {
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.mother.phase", "КОМНАТА • МАТЬ В ДВЕРНОМ ПРОЁМЕ"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "production.mother.speaker", "МАТЬ"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.mother.prompt", "Ты всё ещё возишься с этой ерундой? Почему ты не на работе?!"));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.mother.status", "Честный разговор требует накопленной внутренней готовности."));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.mother.honest", "Я увольняюсь и уезжаю. Мама… я устала.  •  −20 Честность"), () => ChooseMotherReply(PhotoMotherReply.Honest), _saveData.prologue.honesty >= 20, new Color(0.32f, 0.82f, 0.68f, 1f));
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.mother.lie", "Я работаю над крупным международным проектом.  •  +20 Признание"), () => ChooseMotherReply(PhotoMotherReply.ProtectiveLie), true, AccentColor);
+        }
+
+        private void ChooseMotherReply(PhotoMotherReply choice)
+        {
+            if (PhotoPrologueRules.ApplyMotherReply(_saveData.prologue, choice))
+            {
+                EnterProductionStep(PhotoPrologueStep.MailboxHunt, true);
+            }
+        }
+
+        private void RenderMailboxHunt()
+        {
+            var mask = _saveData.prologue.mailboxDetailsMask;
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.mailbox.phase", "СЦЕНА 2 • ПОЧТОВЫЕ ЯЩИКИ"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "speaker.viewfinder", "ВИДОИСКАТЕЛЬ"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.mailbox.prompt", "Мне нужен ещё один кадр перед выходом. В одной композиции видны повестка и бабочка."));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.mailbox.status", "Найдено деталей: {0}/2", CountMailboxDetails(mask)));
+            ClearActions();
+            CreateActionButton(((mask & PhotoPrologueRules.SummonsDetailBit) != 0 ? "[X] " : string.Empty) + Loc.Get(LocalizationTables.Photo, "production.mailbox.summons", "ПОВЕСТКА"), () => DiscoverMailbox(PhotoPrologueRules.SummonsDetailBit), (mask & PhotoPrologueRules.SummonsDetailBit) == 0, new Color(0.32f, 0.82f, 0.68f, 1f));
+            CreateActionButton(((mask & PhotoPrologueRules.ButterflyDetailBit) != 0 ? "[X] " : string.Empty) + Loc.Get(LocalizationTables.Photo, "production.mailbox.butterfly", "БАБОЧКА"), () => DiscoverMailbox(PhotoPrologueRules.ButterflyDetailBit), (mask & PhotoPrologueRules.ButterflyDetailBit) == 0, AccentColor);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.shutter", "СПУСК ЗАТВОРА"), BeginMailboxPublication, mask != 0, TextColor);
+        }
+
+        private void DiscoverMailbox(int detailBit)
+        {
+            if (PhotoPrologueRules.DiscoverMailboxDetail(_saveData.prologue, detailBit))
+            {
+                SaveCheckpoint(ExploreCheckpoint);
+                RenderMailboxHunt();
+            }
+        }
+
+        private void BeginMailboxPublication()
+        {
+            if (PhotoPrologueRules.BeginMailboxPublication(_saveData.prologue))
+            {
+                EnterProductionStep(PhotoPrologueStep.MailboxPublication, true);
+            }
+        }
+
+        private void RenderMailboxPublication()
+        {
+            var mask = _saveData.prologue.mailboxDetailsMask;
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.publish.phase", "ПЕРЕЛОМНЫЙ МОМЕНТ • КАКОЙ КАДР ОПУБЛИКОВАТЬ?"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "production.heroine", "ОНА"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.publish.prompt", "Красивый образ защищает. Честный кадр рискует безопасностью. Баланс оставляет решение открытым."));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.publish.status", "Выберите, что увидит аудитория — и что останется за рамкой."));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.publish.wings", "МАСКА «КРЫЛЬЯ»  •  +50 Признание"), () => ChooseMailboxPublication(PhotoMailboxPublication.Wings), (mask & PhotoPrologueRules.ButterflyDetailBit) != 0, AccentColor);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.publish.honest", "ЧЕСТНОЕ ФОТО ПОВЕСТКИ  •  +50 Честность"), () => ChooseMailboxPublication(PhotoMailboxPublication.Honest), (mask & PhotoPrologueRules.SummonsDetailBit) != 0, new Color(0.32f, 0.82f, 0.68f, 1f));
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.publish.balance", "КАДРИРОВАНИЕ / БАЛАНС  •  +25 / +25"), () => ChooseMailboxPublication(PhotoMailboxPublication.Balance), mask == PhotoPrologueRules.AllMailboxDetailsMask, new Color(0.65f, 0.66f, 0.54f, 1f));
+        }
+
+        private void ChooseMailboxPublication(PhotoMailboxPublication publication)
+        {
+            if (PhotoPrologueRules.ApplyMailboxPublication(_saveData.prologue, publication))
+            {
+                EnterProductionStep(PhotoPrologueStep.MailboxReaction, true);
+            }
+        }
+
+        private void RenderMailboxReaction()
+        {
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.reaction.phase", "FORBIDGRAM • ПУБЛИКАЦИЯ"));
+            SetSpeaker(LocalizeProductionPath(_saveData.prologue.path));
+            SetContent(_saveData.prologue.path switch
+            {
+                PhotoProloguePath.Honesty => Loc.Get(LocalizationTables.Photo, "production.reaction.honesty", "Пост скрывают из ленты. В личку приходит предупреждение: «Удали, в аэропорту проверяют публикации»."),
+                PhotoProloguePath.Recognition => Loc.Get(LocalizationTables.Photo, "production.reaction.recognition", "Лайки растут. Никто не спрашивает, что находилось в нескольких сантиметрах от бабочки."),
+                _ => Loc.Get(LocalizationTables.Photo, "production.reaction.balance", "Отклик остаётся ровным. Правда и красота помещаются рядом, но решение не становится легче.")
+            });
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.path.status", "Выбранный путь: {0}", LocalizeProductionPath(_saveData.prologue.path)));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.action.airport", "ЕХАТЬ В АЭРОПОРТ"), ContinueToAirport, true, AccentColor);
+        }
+
+        private void ContinueToAirport()
+        {
+            if (PhotoPrologueRules.ContinueToAirport(_saveData.prologue))
+            {
+                EnterProductionStep(PhotoPrologueStep.AirportPhoto, true);
+            }
+        }
+
+        private void RenderAirportPhoto()
+        {
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.airport.phase", "СЦЕНА 3 • АЭРОПОРТ ПУЛКОВО"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "speaker.viewfinder", "ВИДОИСКАТЕЛЬ"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.airport.photo.prompt", "Ещё одно фото. Последнее с этой стороны границы."));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.airport.photo.status", "Этот снимок не меняет путь — его можно сделать или пропустить."));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.airport.photo.take", "СНЯТЬ ОТРАЖЕНИЕ"), () => ResolveAirportPhoto(true), true, TextColor);
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.airport.photo.skip", "НЕ СНИМАТЬ"), () => ResolveAirportPhoto(false));
+        }
+
+        private void ResolveAirportPhoto(bool takePhoto)
+        {
+            if (PhotoPrologueRules.ResolveAirportPhoto(_saveData.prologue, takePhoto))
+            {
+                EnterProductionStep(PhotoPrologueStep.BorderControl, true);
+            }
+        }
+
+        private void RenderBorderControl()
+        {
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.border.phase", "ПАСПОРТНЫЙ КОНТРОЛЬ"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "production.border.officer", "ПОГРАНИЧНИК"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.border.prompt", "Цель поездки? Когда обратно?"));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.path.status", "Выбранный путь: {0}", LocalizeProductionPath(_saveData.prologue.path)));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.border.honest", "Обратного билета нет."), () => ChooseBorderReply(PhotoBorderReply.Honest), PhotoPrologueRules.IsBorderReplyAvailable(_saveData.prologue, PhotoBorderReply.Honest), new Color(0.32f, 0.82f, 0.68f, 1f));
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.border.recognition", "Ну как я могу не вернуться в лучший город на планете?"), () => ChooseBorderReply(PhotoBorderReply.Recognition), PhotoPrologueRules.IsBorderReplyAvailable(_saveData.prologue, PhotoBorderReply.Recognition), AccentColor);
+        }
+
+        private void ChooseBorderReply(PhotoBorderReply reply)
+        {
+            if (PhotoPrologueRules.ApplyBorderReply(_saveData.prologue, reply))
+            {
+                EnterProductionStep(PhotoPrologueStep.Summary, true);
+            }
+        }
+
+        private void RenderProductionSummary()
+        {
+            SetPhase(Loc.Get(LocalizationTables.Photo, "production.summary.phase", "РЕЖИМ ПОЛЁТА: ВКЛЮЧЁН"));
+            SetSpeaker(Loc.Get(LocalizationTables.Photo, "production.heroine", "ОНА"));
+            SetContent(Loc.Get(LocalizationTables.Photo, "production.summary.body", "Началось.\n\nИтоговый путь: {0}", LocalizeProductionPath(_saveData.prologue.path)));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.summary.status", "Штамп поставлен. Следующая остановка — транзитная гостиница."));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "production.summary.complete", "ЗАВЕРШИТЬ ПРОЛОГ"), CompleteProductionPrologue, true, AccentColor);
+        }
+
+        private void CompleteProductionPrologue()
+        {
+            if (_outroCutsceneRunning || _episodeHandedOff)
+            {
+                return;
+            }
+
+            if (_saveData.prologue.step == PhotoPrologueStep.Summary
+                && !PhotoPrologueRules.Complete(_saveData.prologue))
+            {
+                return;
+            }
+
+            _saveData.prologue.completed = true;
+            _phase = PhotoWhiteboxPhase.Arrival;
+            SaveCheckpoint(ArrivalCheckpoint);
+            StartOutroCutsceneOrComplete();
+        }
+
+        private void StartOutroCutsceneOrComplete()
+        {
+            var director = CutsceneDirector.Instance;
+            if (director == null)
+            {
+                CompleteProductionFlow();
+                return;
+            }
+
+            _outroCutsceneRunning = true;
+            ClearActions();
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.outro.loading", "Финальная сцена…"));
+            director.Finished += HandleOutroCutsceneFinished;
+
+            var context = new CutsceneContext
+            {
+                characterId = CharacterId.Photo.ToString(),
+                startCheckpointId = PublishedCheckpoint,
+                completionCheckpointId = ArrivalCheckpoint
+            };
+
+            if (director.TryPlay(OutroCutsceneId, context, out var error))
+            {
+                return;
+            }
+
+            UnsubscribeFromOutroCutscene();
+            _outroCutsceneRunning = false;
+            Debug.LogWarning($"Photo outro cutscene fallback: {error}");
+            CompleteProductionFlow();
+        }
+
+        private void HandleOutroCutsceneFinished(CutsceneResult result)
+        {
+            if (result.CutsceneId != OutroCutsceneId)
+            {
+                return;
+            }
+
+            UnsubscribeFromOutroCutscene();
+            _outroCutsceneRunning = false;
+            CompleteProductionFlow();
+        }
+
+        private void UnsubscribeFromOutroCutscene()
+        {
+            if (CutsceneDirector.Instance != null)
+            {
+                CutsceneDirector.Instance.Finished -= HandleOutroCutsceneFinished;
+            }
+        }
+
+        private void CompleteProductionFlow()
+        {
+            if (_episodeHandedOff)
+            {
+                return;
+            }
+
+            _episodeHandedOff = true;
+
+            var result = new EpisodeResult
+            {
+                characterId = CharacterId.Photo,
+                sceneName = gameObject.scene.name,
+                checkpointId = ArrivalCheckpoint,
+                payloadJson = PhotoCheckpointAdapter.Serialize(_saveData, ArrivalCheckpoint),
+                episodeCompleted = true,
+                arrivalTable = LocalizationTables.Photo,
+                arrivalKey = "production.arrival.body",
+                arrivalFallback = "Дверь транзитного номера закрывается. Впервые за день уведомления молчат."
+            };
+
+            result
+                .AddLine(LocalizationTables.Photo, "production.result.path", "ПУТЬ", LocalizeProductionPath(_saveData.prologue.path));
+
+            GameFlowService.CompleteEpisodeAndReturnToCharacterSelect(result);
+        }
+
+        private void SetScaleStatus()
+        {
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.scales", "Честность {0}/100  •  Признание {1}/100", _saveData.prologue.honesty, _saveData.prologue.recognition));
+        }
+
+        private static int CountMailboxDetails(int mask)
+        {
+            var count = 0;
+            if ((mask & PhotoPrologueRules.SummonsDetailBit) != 0) count++;
+            if ((mask & PhotoPrologueRules.ButterflyDetailBit) != 0) count++;
+            return count;
+        }
+
+        private static PhotoWhiteboxPhase PhaseForProductionStep(PhotoPrologueStep step)
+        {
+            return step switch
+            {
+                PhotoPrologueStep.MailboxPublication => PhotoWhiteboxPhase.Camera,
+                PhotoPrologueStep.MailboxReaction => PhotoWhiteboxPhase.Publish,
+                PhotoPrologueStep.AirportPhoto => PhotoWhiteboxPhase.Publish,
+                PhotoPrologueStep.BorderControl => PhotoWhiteboxPhase.ReflectionDialogue,
+                PhotoPrologueStep.Summary => PhotoWhiteboxPhase.ReflectionDialogue,
+                PhotoPrologueStep.Complete => PhotoWhiteboxPhase.Arrival,
+                _ => PhotoWhiteboxPhase.Explore
+            };
+        }
+
+        private static string CheckpointForProductionStep(PhotoPrologueStep step)
+        {
+            return step switch
+            {
+                PhotoPrologueStep.MailboxPublication => CameraCheckpoint,
+                PhotoPrologueStep.MailboxReaction => PublishedCheckpoint,
+                PhotoPrologueStep.AirportPhoto => PublishedCheckpoint,
+                PhotoPrologueStep.BorderControl => PublishedCheckpoint,
+                PhotoPrologueStep.Summary => PublishedCheckpoint,
+                PhotoPrologueStep.Complete => ArrivalCheckpoint,
+                _ => ExploreCheckpoint
+            };
+        }
+
+        private static string LocalizeProductionPath(PhotoProloguePath path)
+        {
+            return path switch
+            {
+                PhotoProloguePath.Honesty => Loc.Get(LocalizationTables.Photo, "production.path.honesty", "ЧЕСТНОСТЬ"),
+                PhotoProloguePath.Recognition => Loc.Get(LocalizationTables.Photo, "production.path.recognition", "ПРИЗНАНИЕ"),
+                PhotoProloguePath.Balance => Loc.Get(LocalizationTables.Photo, "production.path.balance", "БАЛАНС"),
+                _ => Loc.Get(LocalizationTables.Photo, "production.path.undecided", "НЕ ОПРЕДЕЛЁН")
+            };
         }
 
         private void RenderExplore()

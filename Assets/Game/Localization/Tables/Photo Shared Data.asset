@@ -239,6 +239,254 @@ MonoBehaviour:
     m_Key: choice.butterfly
     m_Metadata:
       m_Items: []
+  - m_Id: 246070956253184
+    m_Key: production.heroine
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527872
+    m_Key: production.scales
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527873
+    m_Key: production.room.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527874
+    m_Key: production.room.secret.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527875
+    m_Key: production.room.secret.deny
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527876
+    m_Key: production.room.secret.know
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527877
+    m_Key: production.room.secret.tell
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527878
+    m_Key: production.room.camera.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527879
+    m_Key: production.room.camera.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527880
+    m_Key: production.room.camera.honest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527881
+    m_Key: production.room.camera.wings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527882
+    m_Key: production.mother.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527883
+    m_Key: production.mother.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527884
+    m_Key: production.mother.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527885
+    m_Key: production.mother.honest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527886
+    m_Key: production.mother.lie
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527887
+    m_Key: production.mailbox.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527888
+    m_Key: production.mailbox.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527889
+    m_Key: production.mailbox.status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527890
+    m_Key: production.mailbox.summons
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527891
+    m_Key: production.mailbox.butterfly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527892
+    m_Key: production.publish.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527893
+    m_Key: production.publish.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527894
+    m_Key: production.publish.wings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527895
+    m_Key: production.publish.honest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527896
+    m_Key: production.publish.balance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527897
+    m_Key: production.reaction.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527898
+    m_Key: production.reaction.honesty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527899
+    m_Key: production.reaction.recognition
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527900
+    m_Key: production.reaction.balance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527901
+    m_Key: production.action.airport
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527902
+    m_Key: production.airport.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527903
+    m_Key: production.airport.photo.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527904
+    m_Key: production.airport.photo.take
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527905
+    m_Key: production.airport.photo.skip
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527906
+    m_Key: production.border.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527907
+    m_Key: production.border.officer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527908
+    m_Key: production.border.prompt
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527909
+    m_Key: production.border.honest
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527910
+    m_Key: production.border.recognition
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527911
+    m_Key: production.summary.phase
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527912
+    m_Key: production.summary.body
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527913
+    m_Key: production.summary.status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527914
+    m_Key: production.summary.complete
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527915
+    m_Key: production.path.honesty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527916
+    m_Key: production.path.recognition
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527917
+    m_Key: production.path.balance
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527918
+    m_Key: production.path.undecided
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527919
+    m_Key: production.arrival.body
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527920
+    m_Key: production.result.path
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527921
+    m_Key: production.result.honesty
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527922
+    m_Key: production.result.recognition
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500416335872
+    m_Key: production.scales.hidden
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221952
+    m_Key: production.mother.status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221953
+    m_Key: production.publish.status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221954
+    m_Key: production.path.status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221955
+    m_Key: production.airport.photo.status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221956
+    m_Key: production.outro.loading
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221957
+    m_Key: production.outro.001.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221958
+    m_Key: production.outro.001.text
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221959
+    m_Key: production.outro.002.speaker
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221960
+    m_Key: production.outro.002.text
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

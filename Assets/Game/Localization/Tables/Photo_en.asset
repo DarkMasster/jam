@@ -257,6 +257,267 @@ MonoBehaviour:
     m_Localized: Butterfly
     m_Metadata:
       m_Items: []
+  - m_Id: 246070956253184
+    m_Localized: HER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527872
+    m_Localized: "Honesty {0}/100  \u2022  Recognition {1}/100"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527873
+    m_Localized: "SCENE 1 \u2022 NEON ROOM"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527874
+    m_Localized: "They will never know\u2026"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527875
+    m_Localized: They will not know.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527876
+    m_Localized: "They already know.  \u2022  +20 Recognition"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527877
+    m_Localized: "Let them know.  \u2022  +20 Honesty"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527878
+    m_Localized: "ROOM \u2022 FIRST PHOTOGRAPH"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527879
+    m_Localized: A vintage lamp fills the frame. Keep the mess and dust, or hide
+      them behind a beautiful filter.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527880
+    m_Localized: "Honest shot: mess and dust  \u2022  +20 Honesty"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527881
+    m_Localized: "Glitch filter with wings  \u2022  +20 Recognition"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527882
+    m_Localized: "ROOM \u2022 MOTHER IN THE DOORWAY"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527883
+    m_Localized: MOTHER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527884
+    m_Localized: Are you still wasting time on this nonsense? Why are you not at
+      work?!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527885
+    m_Localized: "I am quitting and leaving. Mum\u2026 I am tired.  \u2022  \u221220
+      Honesty"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527886
+    m_Localized: "I am working on a major international project.  \u2022  +20 Recognition"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527887
+    m_Localized: "SCENE 2 \u2022 MAILBOXES"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527888
+    m_Localized: I need one more shot before I leave. A draft notice and a butterfly
+      share the frame.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527889
+    m_Localized: 'Details found: {0}/2'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527890
+    m_Localized: DRAFT NOTICE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527891
+    m_Localized: BUTTERFLY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527892
+    m_Localized: "TURNING POINT \u2022 WHICH SHOT DO YOU POST?"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527893
+    m_Localized: A beautiful image offers protection. An honest shot risks safety.
+      Balance keeps the decision open.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527894
+    m_Localized: "WINGS MASK  \u2022  +50 Recognition"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527895
+    m_Localized: "HONEST DRAFT-NOTICE PHOTO  \u2022  +50 Honesty"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527896
+    m_Localized: "FRAMING / BALANCE  \u2022  +25 / +25"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527897
+    m_Localized: "FORBIDGRAM \u2022 PUBLISHED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527898
+    m_Localized: "The post is hidden from the feed. A private message warns: \u2018Delete
+      it. They check posts at the airport.\u2019"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527899
+    m_Localized: Likes rise. Nobody asks what lay only centimetres from the butterfly.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527900
+    m_Localized: The response stays measured. Truth and beauty fit side by side,
+      but the decision is no easier.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527901
+    m_Localized: GO TO THE AIRPORT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527902
+    m_Localized: "SCENE 3 \u2022 PULKOVO AIRPORT"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527903
+    m_Localized: One more photograph. The last one from this side of the border.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527904
+    m_Localized: PHOTOGRAPH THE REFLECTION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527905
+    m_Localized: DO NOT TAKE IT
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527906
+    m_Localized: PASSPORT CONTROL
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527907
+    m_Localized: BORDER OFFICER
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527908
+    m_Localized: Purpose of travel? When are you coming back?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527909
+    m_Localized: There is no return ticket.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527910
+    m_Localized: How could I not return to the best city on Earth?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527911
+    m_Localized: 'FLIGHT MODE: ON'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527912
+    m_Localized: 'It has begun.
+
+
+      Final path: {0}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527913
+    m_Localized: 'The passport is stamped. Next stop: a transit hotel.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527914
+    m_Localized: COMPLETE PROLOGUE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527915
+    m_Localized: HONESTY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527916
+    m_Localized: RECOGNITION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527917
+    m_Localized: BALANCE
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527918
+    m_Localized: UNDECIDED
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527919
+    m_Localized: The transit-room door closes. For the first time all day, the notifications
+      fall silent.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527920
+    m_Localized: PATH
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527921
+    m_Localized: HONESTY
+    m_Metadata:
+      m_Items: []
+  - m_Id: 246071048527922
+    m_Localized: RECOGNITION
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500416335872
+    m_Localized: Numeric values are hidden. Choices shape the direction of the story.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221952
+    m_Localized: 'Your answer decides what matters more right now: honesty or recognition.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221953
+    m_Localized: Publishing will reinforce the heroine's chosen persona.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221954
+    m_Localized: The chosen path affects available dialogue and consequences.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221955
+    m_Localized: 'The photo is optional: sometimes keeping a moment matters more
+      than publishing it.'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221956
+    m_Localized: Transit hotel. Dubai.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221957
+    m_Localized: DUBAI
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221958
+    m_Localized: The transit room door closes. For the first time today, the notifications
+      fall silent.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221959
+    m_Localized: REFLECTION / MOMENTUM
+    m_Metadata:
+      m_Items: []
+  - m_Id: 249500500221960
+    m_Localized: TO BE CONTINUED
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
