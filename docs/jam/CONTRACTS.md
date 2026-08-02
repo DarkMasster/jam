@@ -47,6 +47,10 @@
 
 - `Assets/Game/Scenes/Main.unity` — сцена с build index `0` и единственная точка
   входа в игру.
+- Состав Build Settings: `Main` (0), `CharacterSelect` (1), `SampleScene` (2),
+  `Prologue_Photo` (3), `Prologue_Office` (4), `HotelArrival` (5). Изменение
+  порядка согласуется с интегратором, потому что «Продолжить» и общий flow
+  проверяют наличие сцены в Build Settings.
 - `GameEntryPoint` существует в `Main`, переживает смену сцен через
   `DontDestroyOnLoad` и не допускает дубликатов.
 - «Новая игра» очищает прежний слот, создаёт прогресс и загружает
@@ -59,6 +63,37 @@
 - Эпизод читает свой checkpoint через `TryGetCharacterCheckpoint` и сообщает
   завершение через `CompleteMainStoryLine` либо компонент
   `EpisodeProgressReporter`.
+
+## Результат эпизода и общий flow
+
+- `EpisodeResult` в `Assets/Game/Core/Flow/` — единственная форма, в которой эпизод
+  сообщает свой результат общему flow: `characterId`, имя собственной сцены,
+  `checkpointId`, episode-owned `payloadJson`, признак завершения эпизода, ключи
+  текста прибытия и список читаемых строк итога `EpisodeResultLine`. Core не
+  интерпретирует payload и не знает, что означают строки.
+- `GameFlowService.CompleteEpisode(EpisodeResult)` сохраняет checkpoint эпизода и
+  открывает сцену прибытия. `GameFlowService.FinishArrival(result)` возвращает
+  checkpoint на сцену самого эпизода, вызывает `GameSaveService.LeaveCharacterLine`
+  и открывает `CharacterSelect`.
+- Эпизод не загружает напрямую ни сцену другого эпизода, ни `HotelArrival`, ни
+  главное меню. Он отдаёт один `EpisodeResult` и не знает имени сцены прибытия.
+- `PendingResult` переносит результат через загрузку сцены; `IsSceneInBuild`
+  защищает оба перехода. Если `HotelArrival` отсутствует в Build Settings, flow
+  безопасно деградирует до `CharacterSelect`.
+- `Assets/Game/Scenes/HotelArrival.unity` — общая параметризованная сцена прибытия
+  для всех трёх героев. `HotelArrivalController` собирает UI в коде по данным
+  `EpisodeResult` и откатывается к персональным строкам таблицы `Common`. Сцена
+  пересобирается пунктом меню `Jam/Flow/Rebuild Hotel Arrival`.
+- `GameEntryPoint` записывает как последнюю сцену линии любую загруженную сцену,
+  поэтому переход через общую сцену прибытия обязан вернуть в checkpoint имя сцены
+  самого эпизода. Без этого повторный выбор героя открывает экран прибытия вместо
+  забега.
+- Офисные checkpoint ID: `office.setup`, `office.run`, `office.arrival`.
+  Пробуждение не является границей сохранения. Payload
+  (`OfficeCharacterSaveData`, схема `1`) принадлежит эпизоду, сериализуется только
+  `OfficeCheckpointAdapter` и остаётся непрозрачным для Core.
+- `OfficeStoryDirector` владеет фазами `Setup → Run → Awakening → Arrival` и
+  предоставляет `IGameModeSaveProvider` только пока забег действительно идёт.
 
 ## Глобальный HUD и ручное сохранение
 
@@ -78,8 +113,9 @@
 - Photo реализует provider через `PhotoCheckpointAdapter`; допустимы checkpoint
   `photo.intro`, `photo.explore`, `photo.camera`, `photo.published`, `photo.arrival`.
 - `FinaleUnlocked` становится истинным только после завершения всех трёх линий.
-- `CharacterSelect` имеет build index `1`; отсутствующие эпизодные сцены временно
-  заменяются `SampleScene`, но выбранный `CharacterId` всё равно сохраняется.
+- `CharacterSelect` имеет build index `1`; отсутствующая эпизодная сцена линии
+  Drive временно заменяется `SampleScene`, но выбранный `CharacterId` всё равно
+  сохраняется.
 
 ## Катсцены
 
@@ -111,6 +147,10 @@
   владельцем является интегратор.
 - Эпизоды используют согласованные action maps и запрашивают новые actions у
   интегратора вместо создания параллельных assets.
+- Карта `Office` содержит `Move`, `Aim`, `Primary`, `Secondary` и `Interact` для
+  связок «клавиатура + мышь» и геймпада. Офисный эпизод читает `Office/Move` и
+  `Office/Primary`; временные `Player/Move` и `Player/Attack` в офисе больше не
+  используются.
 - Legacy Input Manager, `UnityEngine.Input` и `StandaloneInputModule` запрещены.
 - UI работает через `InputSystemUIInputModule`; gameplay — через `InputAction`,
   `PlayerInput` или общий адаптер ввода.

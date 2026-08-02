@@ -179,6 +179,38 @@ MonoBehaviour:
     m_Key: ui.character.error.no_scene
     m_Metadata:
       m_Items: []
+  - m_Id: 58021009940480
+    m_Key: ui.arrival.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106304
+    m_Key: ui.arrival.status
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106305
+    m_Key: ui.arrival.continue
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106306
+    m_Key: ui.arrival.route.unknown
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106307
+    m_Key: ui.arrival.default
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106308
+    m_Key: ui.arrival.drive
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106309
+    m_Key: ui.arrival.office
+    m_Metadata:
+      m_Items: []
+  - m_Id: 58021035106310
+    m_Key: ui.arrival.photo
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

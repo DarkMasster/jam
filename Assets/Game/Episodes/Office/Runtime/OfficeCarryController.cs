@@ -151,6 +151,7 @@ namespace Jam.Episodes.Office
             var force = momentum != null ? throwForce * momentum.ThrowMultiplier : throwForce;
             item.Throw(direction, force, pickupLockout);
             episodeController?.ReportCarryThrow(item.DisplayName);
+            OfficeFeedback.Instance?.ReportThrow(transform.position);
         }
 
         private OfficeCarryable FindCandidate(out float bestDistance)

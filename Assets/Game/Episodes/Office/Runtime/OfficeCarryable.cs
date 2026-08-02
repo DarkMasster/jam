@@ -168,6 +168,9 @@ namespace Jam.Episodes.Office
             // Один и тот же бросок ломает и технику окружения, и ожившее кресло.
             var target = collision.collider.GetComponentInParent<IOfficeImpactTarget>();
             target?.TryTakeImpact(collision.relativeVelocity.magnitude);
+            OfficeFeedback.Instance?.ReportImpact(
+                collision.contactCount > 0 ? collision.GetContact(0).point : transform.position,
+                Mathf.Clamp01(collision.relativeVelocity.magnitude / 12f));
         }
 
         private void OnTriggerEnter(Collider other)
@@ -181,6 +184,9 @@ namespace Jam.Episodes.Office
 
             var target = other.GetComponentInParent<IOfficeImpactTarget>();
             target?.TryTakeImpact(_rigidbody.linearVelocity.magnitude);
+            OfficeFeedback.Instance?.ReportImpact(
+                transform.position,
+                Mathf.Clamp01(_rigidbody.linearVelocity.magnitude / 12f));
         }
     }
 }

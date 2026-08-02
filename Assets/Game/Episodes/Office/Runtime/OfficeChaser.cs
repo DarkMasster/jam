@@ -164,6 +164,7 @@ namespace Jam.Episodes.Office
             ApplyState();
             momentum?.AddEnemyDefeated();
             episodeController?.RegisterChaserWrecked(displayName);
+            OfficeFeedback.Instance?.ReportBreak(transform.position);
             return true;
         }
 

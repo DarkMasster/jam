@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Jam.Episodes.Office
@@ -27,6 +28,12 @@ namespace Jam.Episodes.Office
         private float _restartAtTime;
         private bool _isDown;
         private bool _storyCompleted;
+
+        /// <summary>
+        /// Сюжетный финал сна достигнут. Сюда подключается пробуждение и передача
+        /// результата в общий flow; обычное поражение это событие не поднимает.
+        /// </summary>
+        public event Action StoryCompleted;
 
         public int MaxIntegrity => maxIntegrity;
 
@@ -96,6 +103,11 @@ namespace Jam.Episodes.Office
             _invulnerableUntil = Time.time + invulnerabilityDuration;
             episodeController?.ReportRunState(Integrity, maxIntegrity, Attempt);
 
+            if (player != null)
+            {
+                OfficeFeedback.Instance?.ReportPlayerHit(player.position);
+            }
+
             if (Integrity > 0)
             {
                 episodeController?.ReportPlayerHit(sourceName, Integrity, maxIntegrity);
@@ -149,6 +161,7 @@ namespace Jam.Episodes.Office
             episodeController?.ReportRunState(Integrity, maxIntegrity, Attempt);
             episodeController?.ReportStoryBeat(sourceName);
             episodeController?.ReportBossFinalStrike();
+            StoryCompleted?.Invoke();
         }
 
         /// <summary>
