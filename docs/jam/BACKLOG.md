@@ -24,6 +24,7 @@
 | P0 | White-box запуск истории персонажа 3 из главного меню | ИИ/интегратор | `feature/photo-prologue-whitebox` | Done | Готово |
 | P0 | Сохранение всей Photo-линии по актам, миграция v1 → v2 | ИИ/интегратор | `feature/photo-save-v2` | Done | Готово |
 | P0 | Общий HUD, pause-меню и контракт сохранения игровых режимов | ИИ/интегратор | `feature/global-game-hud` | Done | Готово |
+| P0 | Запуск Office из Main и безопасный возврат | ИИ/интегратор | `feature/office-main-menu-flow` | Done | Готово |
 | P0 | Базовая гибридная система катсцен: NodeCanvas + Storyboard + Timeline | ИИ/интегратор | `feature/cutscene-foundation` | Done | Готово |
 | P0 | Реализовать вертикальный срез фотопролога | TBD | `feature/photo-prologue` | Todo | Час 12 |
 | P0 | Первый Unity-срез офисного кошмара | ИИ-агент | `feature/office-unity-scene` | Done | Час 12 |

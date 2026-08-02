@@ -2,7 +2,7 @@
 
 - Тип: живой план реализации и передачи контекста
 - Статус: активен
-- Последнее обновление: 2026-08-01
+- Последнее обновление: 2026-08-02
 - Владелец актуальности: исполнитель текущей офисной задачи
 - Текущая контрольная точка: `M4 — сюжет, сохранение и общий flow` завершена; далее `M5 — build-ready`
 
@@ -79,7 +79,7 @@ Setup: герой засыпает в машине у границы
 | Область | Статус | Проверенный результат | Условие перехода дальше |
 |---|---|---|---|
 | `M0` Playable greybox | Done | Пять зон, top-down движение и камера, pickups, HUD, закрытый `EXIT` | Сохранить как стабильную тестовую основу |
-| Общая интеграция | Done | Карта `Office` в общем input asset, `Prologue_Office` и `HotelArrival` в Build Settings, переход из `CharacterSelect` работает | Сохранить как основу сборки `M5` |
+| Общая интеграция | Done | Карта `Office` в общем input asset, `Prologue_Office` и `HotelArrival` в Build Settings; запуск из Main и возврат из Office/HotelArrival проверены | Сохранить как основу сборки `M5` |
 | `M1A` Предмет и разрушение | Done | Клавиатура с подсветкой цели, автоподбор, бросок, lockout и принтер `Intact → Broken` со счётчиком в HUD | Сохранить как основу боевого цикла для `M1B` |
 | `M1B` Давление и restart | Done | Ожившее офисное кресло с телеграфом и рывком, Momentum со шкалой в HUD, работоспособность из трёх делений и мягкий restart за 1,1 с | Сохранить как источник давления для маршрута `M2` |
 | `M2` Полный офисный маршрут | Done | Последовательные HUD-подсказки, Reflection beat и физически обязательный fallback ноутбука/кружки доводят пять зон до `EXIT` | Сохранить маршрут как основу постановки `M3` |
@@ -315,6 +315,7 @@ placeholder и оставляет точную инструкцию интегр
 
 | Дата | Ветка / задача | Изменение | Проверка |
 |---|---|---|---|
+| 2026-08-02 | `feature/office-main-menu-flow` | Повторно проверен запуск второго персонажа `Main → CharacterSelect → Prologue_Office`; гостиница получила отдельные выходы в выбор историй и `Main`, общий HUD там скрыт, а Continue после выхода в главное меню остаётся на `CharacterSelect` вместо runtime-only сцены результата | Controlled Play Mode: Office build index `4`, выход через HUD дал `Continue=Prologue_Office`; обе ветки HotelArrival дали `activeCharacter=None`, возврат в Main дал `Continue=CharacterSelect`; Console — 0 ошибок/предупреждений, EditMode tests `1/1` |
 | 2026-08-01 | `feature/office-unity-scene` | Создан roadmap; зафиксированы `M0`, обязательное чтение/редактирование, milestones, зависимости и следующий срез `M1A` | Сверено с `DEVELOPMENT_SPEC.md`, `STATE.md` и handoff первого Unity-среза |
 | 2026-08-01 | `feature/office-unity-scene` | `OfficeSceneBuilder` переведён на переиспользуемые prefab-ассеты для повторяющейся мебели (`Desk`, `Desk_Background`, `Chair`, `ServerRack`, `ReceptionDesk`, `Turnstile` в `Assets/Game/Episodes/Office/Prefabs/`) вместо копирования иерархии объектов на каждый вызов; заодно перестроен силуэт `Turnstile` (пост + три луча-вертушки вместо одиночного диагонального штыря, выглядевшего как антенна); `M0` не регрессировал | Rebuild через `Jam/Office/Rebuild Prologue Office`, `manage_scene validate` — 0 issues/missing scripts/broken prefabs, Play Mode smoke test (движение, HUD, pickups) — console чист, силуэт турникета проверен скриншотом сверху |
 | 2026-08-01 | `feature/office-unity-scene` / `M1A` | `M1A` переведён в `Done`: добавлены `OfficeCarryable` (клавиатура), `OfficeCarryController` (автовыбор с обводкой, автоподбор, занятые руки, бросок по `Primary`, lockout 0,8 с) и `OfficeBreakable` (принтер `Intact → Broken` со вспышкой и счётчиком в HUD); HUD получил строку состояния рук; `Primary` временно берётся из `Player/Attack`; следующий срез — `M1B` | Rebuild через `Jam/Office/Rebuild Prologue Office`, `manage_scene validate` — 0 issues/missing scripts/broken prefabs, Console — 0 errors; controlled Play Mode: обводка до подбора, автоподбор, отказ от замены при занятых руках, бросок 17 м/с, `IsAvailable=false` и пропуск предмета в выборе после броска, реальное столкновение ломает принтер (счётчик `1/4`), `M0` (зоны, ноутбук, кружка, ложный `EXIT`) без регрессий |

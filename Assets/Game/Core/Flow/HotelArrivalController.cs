@@ -33,6 +33,8 @@ namespace Jam.Core.Flow
         private RectTransform _resultPanel;
         private Button _continueButton;
         private TMP_Text _continueLabel;
+        private Button _mainMenuButton;
+        private TMP_Text _mainMenuLabel;
         private bool _isLeaving;
 
         private void Awake()
@@ -56,18 +58,26 @@ namespace Jam.Core.Flow
         /// <summary>Закрывает дверь номера и возвращает игрока в выбор героя.</summary>
         public void Continue()
         {
-            if (_isLeaving)
+            if (!BeginLeaving())
             {
                 return;
             }
 
-            _isLeaving = true;
-            if (_continueButton != null)
+            GameFlowService.FinishArrival(_result);
+        }
+
+        /// <summary>
+        /// Финализирует прибытие и открывает Main. Сохранённой точкой продолжения
+        /// остаётся CharacterSelect, а не runtime-only экран результата.
+        /// </summary>
+        public void ReturnToMainMenu()
+        {
+            if (!BeginLeaving())
             {
-                _continueButton.interactable = false;
+                return;
             }
 
-            GameFlowService.FinishArrival(_result);
+            GameFlowService.FinishArrivalToMainMenu(_result);
         }
 
         private void RefreshContent()
@@ -87,6 +97,7 @@ namespace Jam.Core.Flow
                 "ui.arrival.status",
                 "Прогресс сохранён. Оставшиеся истории доступны в любом порядке.");
             _continueLabel.text = Loc.Get(LocalizationTables.Common, "ui.arrival.continue", "ВЕРНУТЬСЯ К ВЫБОРУ ИСТОРИИ");
+            _mainMenuLabel.text = Loc.Get(LocalizationTables.Common, "ui.hud.exit", "ВЫЙТИ В ГЛАВНОЕ МЕНЮ");
 
             RefreshResultLines();
         }
@@ -215,7 +226,7 @@ namespace Jam.Core.Flow
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 Vector2.zero,
-                new Vector2(1180f, 760f));
+                new Vector2(1180f, 840f));
 
             var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(70, 70, 46, 38);
@@ -261,9 +272,30 @@ namespace Jam.Core.Flow
             CreateSpacer(panel.rectTransform, 12f);
             _continueButton = CreateButton("ContinueButton", panel.rectTransform, string.Empty, Continue, 64f);
             _continueLabel = _continueButton.transform.Find("Label").GetComponent<TMP_Text>();
+            _mainMenuButton = CreateButton("MainMenuButton", panel.rectTransform, string.Empty, ReturnToMainMenu, 54f);
+            _mainMenuLabel = _mainMenuButton.transform.Find("Label").GetComponent<TMP_Text>();
             _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 16, FontStyles.Normal, MutedTextColor, 38f);
 
             _continueButton.Select();
+        }
+
+        private bool BeginLeaving()
+        {
+            if (_isLeaving)
+            {
+                return false;
+            }
+
+            _isLeaving = true;
+            if (_continueButton != null)
+            {
+                _continueButton.interactable = false;
+            }
+            if (_mainMenuButton != null)
+            {
+                _mainMenuButton.interactable = false;
+            }
+            return true;
         }
 
         private Button CreateButton(

@@ -15,6 +15,7 @@ namespace Jam.Core.UI
     {
         private const string MainScene = "Main";
         private const string CharacterSelectScene = "CharacterSelect";
+        private const string HotelArrivalScene = "HotelArrival";
 
         private static readonly Color OverlayColor = new(0.02f, 0.025f, 0.04f, 0.86f);
         private static readonly Color PanelColor = new(0.075f, 0.09f, 0.12f, 0.99f);
@@ -160,7 +161,8 @@ namespace Jam.Core.UI
             _isGameplayScene = scene.IsValid()
                                && scene.isLoaded
                                && scene.name != MainScene
-                               && scene.name != CharacterSelectScene;
+                               && scene.name != CharacterSelectScene
+                               && scene.name != HotelArrivalScene;
             _canvas.enabled = _isGameplayScene;
             _menuButton.gameObject.SetActive(_isGameplayScene && !_menuOpen && !_cutsceneActive);
             _overlay.SetActive(_isGameplayScene && _menuOpen);

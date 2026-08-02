@@ -14,6 +14,7 @@ namespace Jam.Core.Flow
     {
         public const string CharacterSelectScene = "CharacterSelect";
         public const string ArrivalScene = "HotelArrival";
+        public const string MainScene = "Main";
 
         /// <summary>
         /// Результат последнего завершённого эпизода. Переживает загрузку сцены,
@@ -60,6 +61,22 @@ namespace Jam.Core.Flow
         /// </summary>
         public static void FinishArrival(EpisodeResult result)
         {
+            FinishArrivalAndLoad(result, CharacterSelectScene);
+        }
+
+        /// <summary>
+        /// Финализирует прибытие так же, как обычное продолжение, но открывает
+        /// главное меню. Continue остаётся направлен на выбор историй, потому что
+        /// runtime-only <see cref="PendingResult"/> нельзя восстановить после
+        /// перезапуска приложения.
+        /// </summary>
+        public static void FinishArrivalToMainMenu(EpisodeResult result)
+        {
+            FinishArrivalAndLoad(result, MainScene);
+        }
+
+        private static void FinishArrivalAndLoad(EpisodeResult result, string targetScene)
+        {
             var characterId = result?.characterId ?? GameSaveService.ActiveCharacter;
             PendingResult = null;
 
@@ -80,14 +97,19 @@ namespace Jam.Core.Flow
                 GameSaveService.LeaveCharacterLine(characterId, CharacterSelectScene);
                 GameSaveService.Flush();
             }
-
-            if (!IsSceneInBuild(CharacterSelectScene))
+            else if (GameSaveService.HasSave)
             {
-                Debug.LogError($"Scene '{CharacterSelectScene}' is not in Build Settings.");
+                GameSaveService.SetLastScene(CharacterSelectScene);
+                GameSaveService.Flush();
+            }
+
+            if (!IsSceneInBuild(targetScene))
+            {
+                Debug.LogError($"Scene '{targetScene}' is not in Build Settings.");
                 return;
             }
 
-            SceneManager.LoadSceneAsync(CharacterSelectScene, LoadSceneMode.Single);
+            SceneManager.LoadSceneAsync(targetScene, LoadSceneMode.Single);
         }
 
         /// <summary>Забирает результат один раз: повторная загрузка его не показывает.</summary>

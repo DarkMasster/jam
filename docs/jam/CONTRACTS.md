@@ -75,6 +75,9 @@
   открывает сцену прибытия. `GameFlowService.FinishArrival(result)` возвращает
   checkpoint на сцену самого эпизода, вызывает `GameSaveService.LeaveCharacterLine`
   и открывает `CharacterSelect`.
+- `GameFlowService.FinishArrivalToMainMenu(result)` выполняет ту же финализацию,
+  но открывает `Main`. Сохранённой Continue-сценой остаётся `CharacterSelect`,
+  потому что runtime-only `PendingResult` нельзя восстановить после перезапуска.
 - Эпизод не загружает напрямую ни сцену другого эпизода, ни `HotelArrival`, ни
   главное меню. Он отдаёт один `EpisodeResult` и не знает имени сцены прибытия.
 - `PendingResult` переносит результат через загрузку сцены; `IsSceneInBuild`
@@ -82,8 +85,9 @@
   безопасно деградирует до `CharacterSelect`.
 - `Assets/Game/Scenes/HotelArrival.unity` — общая параметризованная сцена прибытия
   для всех трёх героев. `HotelArrivalController` собирает UI в коде по данным
-  `EpisodeResult` и откатывается к персональным строкам таблицы `Common`. Сцена
-  пересобирается пунктом меню `Jam/Flow/Rebuild Hotel Arrival`.
+  `EpisodeResult`, откатывается к персональным строкам таблицы `Common` и даёт два
+  явных выхода: в `CharacterSelect` и в `Main`. Сцена пересобирается пунктом меню
+  `Jam/Flow/Rebuild Hotel Arrival`.
 - `GameEntryPoint` записывает как последнюю сцену линии любую загруженную сцену,
   поэтому переход через общую сцену прибытия обязан вернуть в checkpoint имя сцены
   самого эпизода. Без этого повторный выбор героя открывает экран прибытия вместо
@@ -99,8 +103,9 @@
 
 - Persistent `GameEntryPoint` создаёт `GlobalHudController` при запуске любой
   сцены; отдельные игровые сцены не создают собственное pause-меню.
-- HUD скрыт в `Main` и `CharacterSelect`, а в игровых сценах показывает кнопку
-  `МЕНЮ [ESC]` и overlay: `Продолжить`, `Сохранить`, `Выйти в главное меню`.
+- HUD скрыт в `Main`, `CharacterSelect` и `HotelArrival`. В гостинице навигацией
+  владеет `HotelArrivalController`; в остальных игровых сценах HUD показывает
+  кнопку `МЕНЮ [ESC]` и overlay: `Продолжить`, `Сохранить`, `Выйти в главное меню`.
 - Открытый overlay ставит `Time.timeScale = 0`, освобождает курсор и обязан
   восстановить прежние значения при закрытии или смене сцены.
 - Режим, поддерживающий ручное сохранение, предоставляет ровно один активный
