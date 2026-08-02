@@ -1,7 +1,7 @@
 # Photo production Dialogue Trees и AudioCue
 
 - Владелец: `ИИ-агент / команда Photo`
-- Статус: `Doing`
+- Статус: `Done`
 - Приоритет: `P1`
 - Ветка: `feature/photo-dialogue-audio`
 - Зависимости: Photo production slice, NodeCanvas 3.42, общий AudioService
@@ -18,7 +18,7 @@ assets и подключить слышимые project-owned AudioCue без и
 - [x] TMP presentation обрабатывает subtitle и multiple-choice events NodeCanvas.
 - [x] Выборы применяются через `PhotoPrologueRules`, а не через graph/save.
 - [x] Подключены AudioCue комнаты, аэропорта, затвора, двери и штампа.
-- [ ] Оба дерева пройдены вручную из `Main` по всем доступным веткам.
+- [x] Оба дерева пройдены вручную из `Main` по всем доступным веткам.
 
 ## Разрешённая область
 
@@ -32,8 +32,10 @@ assets и подключить слышимые project-owned AudioCue без и
   NodeCanvas events, пять AudioCue и локальные прототипные WAV.
 - Как проверено: Unity compilation и script validation без ошибок/предупреждений;
   созданные graph/cue assets привязаны в `Prologue_Photo`; сцена запускается в
-  Play Mode без ошибок Console.
-- Что осталось: ручной прогон обоих деревьев из `Main`, замена прототипных WAV на
-  финальный саунд-дизайн и добавление AudioCue во вступительный storyboard.
+  Play Mode без ошибок Console. Продюсер вручную прошёл оба Dialogue Tree из
+  `Main` по доступным веткам и подтвердил успешный результат.
+- Что осталось: замена прототипных WAV на финальный саунд-дизайн и добавление
+  AudioCue во вступительный storyboard.
+- Реализационный commit: `7176b21`.
 - Известные ограничения: звуки синтетические и предназначены только для проверки
   пайплайна; финальные аудиофайлы не входят в текущий scope.
