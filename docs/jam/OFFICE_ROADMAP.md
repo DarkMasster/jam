@@ -308,10 +308,56 @@ placeholder и оставляет точную инструкцию интегр
 Не менять правила боя, величину урона, сюжет, маршрут, общий input asset или
 vendor-каталог Damage Numbers Pro.
 
+## План визуального прохода POLYGON Office — Planned / P1
+
+Визуальное направление: относительно нормальный тёплый кабинет увольнения
+переходит в повторяющийся холодный open space, стеклянную переговорную, плотную
+красную серверную, пустую парадную рецепцию и почти лишённую декора арену. По мере
+движения офис должен выглядеть всё менее человеческим, но навигационная полоса,
+красные телеграфы и интерактивные предметы остаются читаемыми сверху.
+
+Art-pass не меняет текущую gameplay-геометрию. Все vendor-модели добавляются как
+visual children существующих project-owned prefab'ов; непрерывные greybox-
+коллайдеры стен и пола остаются авторитетными.
+
+| Текущий объект | Visual из POLYGON Office | Ограничение |
+|---|---|---|
+| `Desk` | `SM_Prop_Desk_03` или `SM_Prop_Desk_04`, `SM_Prop_Computer_Setup_01` | Сохранить footprint и collider |
+| `Chair` | `SM_Prop_Chair_05` или `SM_Prop_Chair_06` | Сохранить ориентацию спинки от стола |
+| `HostileChair` | `SM_Prop_Chair_08` или `SM_Prop_Chair_09` | Не менять `OfficeChaser`, trigger и hitbox |
+| `Meeting Table` | `SM_Prop_Table_Conference_02` | Не сужать центральный проход |
+| `ServerRack` и стойки босса | варианты `SM_Prop_Server_Cabinet_01/02/03_Full` | Один gameplay-prefab, несколько visual-вариантов; босс собирается из знакомого окружения |
+| `Printer` | `SM_Prop_Printer_01` | Только intact visual; broken-state остаётся project-owned |
+| `Keyboard` | `SM_Prop_Computer_Keyboard_01` | Сохранить carryable root, Rigidbody и pickup lockout |
+| `Laptop Pickup` | `SM_Prop_Laptop_02` | Сохранить collectible root, marker и collider |
+| `Mug Pickup` | `SM_Prop_Cup_Red_01` | Красный силуэт остаётся уникальной сюжетной целью |
+| Стартовые шкафы и лампа | `SM_Prop_Cabinets_02`, `SM_Prop_DeskLamp_06` | Существующий тёплый Point Light сохраняется |
+| Переговорная | `SM_Bld_Wall_Glass_Large_01`, `SM_Bld_Wall_Glass_Large_Door_01` | Reflection-логику и ширину дверей не менять |
+| Пол | `Floor_Carpet_01` → `Floor_Panel_01` → `Floor_Tiles_01` | Carpet: старт/open space; Panel: серверная; Tiles: рецепция |
+| Стены и потолок | `Wall_Blank_01`, `Wall_Trim_01`, `Ceiling_Panel_Light_01/02` | Только visual-модули поверх greybox |
+| `Exit Door` и метка | `Door_Large_01_L/R`, `SM_Prop_Sign_Exit_01` | Gameplay-blocker и локализованный TMP label сохраняются |
+| Reception desks | композиция из двух `SM_Prop_Desk_06` | В паке нет отдельного reception desk |
+| `Turnstile` | project-owned модель остаётся | Прямого аналога в паке нет |
+
+Порядок внедрения:
+
+1. Проверочный срез: стартовый кабинет, одна пара столов, одна секция стекла и две
+   серверные стойки.
+2. Проверить масштаб сверху, проходы, line of sight, броски, материалы URP и
+   отсутствие новых предупреждений.
+3. Распространить адаптеры на open space, переговорную, серверную и рецепцию.
+4. Последним заменить визуалы интерактивных предметов, врагов и стоек босса,
+   повторно проверить полный run/restart/boss flow.
+
+Не входят в этот проход: персонажи пака, изменение маршрута, новая механика дверей,
+физика vendor-prefab'ов, замена красных gameplay-телеграфов и редактирование
+`Assets/PolygonOffice/**`.
+
 ## История изменений
 
 | Дата | Ветка / задача | Изменение | Проверка |
 |---|---|---|---|
+| 2026-08-02 | `feature/office-assets-import` | Добавлен read-only vendor-каталог `Assets/PolygonOffice`; зафиксированы структура пака, направление art-pass, таблица замен и безопасный visual-child паттерн. Milestone `M7` и следующий gameplay-срез не изменены | Source/target: 4 850 файлов, `diff -qr` без различий; Unity 6000.5.6f1 распознал 808 prefab'ов, Console — 0 ошибок, 7 служебных предупреждений MCP о смене порта после reload |
 | 2026-08-02 | `feature/office-main-menu-flow` | Повторно проверен запуск второго персонажа `Main → CharacterSelect → Prologue_Office`; гостиница получила отдельные выходы в выбор историй и `Main`, общий HUD там скрыт, а Continue после выхода в главное меню остаётся на `CharacterSelect` вместо runtime-only сцены результата | Controlled Play Mode: Office build index `4`, выход через HUD дал `Continue=Prologue_Office`; обе ветки HotelArrival дали `activeCharacter=None`, возврат в Main дал `Continue=CharacterSelect`; Console — 0 ошибок/предупреждений, EditMode tests `1/1` |
 | 2026-08-02 | `polish/office-dnp-feedback` / `M7` | Зафиксирован следующий срез DNP: `−1` только для засчитанного урона, текстовые уведомления для разрушения и подбора, три семантических preset через проектный feedback-адаптер. Из активного roadmap удалены незавершённые build-пункты и инструкции по неподтверждённым сборкам | Сверено с `INTEGRATIONS.md`, `CONTRACTS.md` и фактическими точками событий в офисном runtime-коде; runtime не изменялся |
 | 2026-08-01 | `feature/office-unity-scene` | Создан roadmap; зафиксированы `M0`, обязательное чтение/редактирование, milestones, зависимости и следующий срез `M1A` | Сверено с `DEVELOPMENT_SPEC.md`, `STATE.md` и handoff первого Unity-среза |

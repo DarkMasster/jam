@@ -17,8 +17,9 @@
 8. `docs/jam/CONTRACTS.md`
 9. `docs/jam/INTEGRATIONS.md`
 10. `docs/jam/GIT.md`
-11. `docs/jam/OFFICE_ROADMAP.md`, если задача касается офисного эпизода
-12. назначенный файл из `docs/jam/tasks/`
+11. `docs/jam/UNITY_MCP.md`, если задача использует Unity MCP
+12. `docs/jam/OFFICE_ROADMAP.md`, если задача касается офисного эпизода
+13. назначенный файл из `docs/jam/tasks/`
 
 Если задача противоречит этим документам, остановись и явно опиши конфликт.
 
