@@ -20,6 +20,8 @@
 | P0 | Выбрать движок, платформу и способ сборки | TBD | `feature/project-bootstrap` | Todo | Час 2 |
 | P0 | Создать вертикальный прототип core loop | TBD | `feature/core-loop` | Todo | Час 12 |
 | P0 | Главное меню, выбор героя и сохранение прогресса | Интегратор | `feature/main-menu` | Done | Готово |
+| P0 | Запуск HTML-игры Drive из выбора персонажа | ИИ/интегратор | `feature/drive-browser-game` | Done | Готово |
+| P0 | Браузерный эпилог после завершения Office и Photo | ИИ/интегратор | `feature/drive-browser-game` | Done | Готово |
 | P1 | Production-экспозиция Drive: Москва, 3D storyboard и портрет | ИИ/интегратор | `feature/exposition-cutscene-scenes` | Done | Готово |
 | P1 | 3D-оформление всех Office/Photo storyboard-катсцен | ИИ/интегратор | `feature/exposition-cutscene-scenes` | Done | Готово |
 | P1 | DarkUI art-pass игрового HUD офиса | ИИ/интегратор | `feature/office-darkui-hud` | Done | Готово |

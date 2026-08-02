@@ -1,4 +1,6 @@
+using System;
 using System.IO;
+using Jam.Core.Flow;
 using Jam.Core.Localization;
 using Jam.Core.Save;
 using TMPro;
@@ -13,9 +15,9 @@ namespace Jam.Core.UI
     public sealed class CharacterSelectController : MonoBehaviour
     {
         [SerializeField] private string driveScene = "Prologue_Drive";
+        [SerializeField] private string driveBrowserGamePath = "Web/Drive/hasta-la-vista-jam.html";
         [SerializeField] private string officeScene = "Prologue_Office";
         [SerializeField] private string photoScene = "Prologue_Photo";
-        [SerializeField] private string finaleScene = "Finale";
         [SerializeField] private string mainMenuScene = "Main";
         [SerializeField] private string temporaryGameplayScene = "SampleScene";
         [SerializeField] private Sprite darkButtonSprite;
@@ -68,7 +70,35 @@ namespace Jam.Core.UI
 
         public void SelectDrive()
         {
+            if (TryLaunchDriveBrowserGame())
+            {
+                return;
+            }
+
             SelectCharacter(CharacterId.Drive, driveScene);
+        }
+
+        private bool TryLaunchDriveBrowserGame()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            Debug.LogWarning("The local Drive browser game cannot be opened from a WebGL player. Falling back to the Unity scene.");
+            return false;
+#else
+            var fullPath = Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, driveBrowserGamePath));
+            if (!File.Exists(fullPath))
+            {
+                Debug.LogWarning($"Drive browser game was not found at '{fullPath}'. Falling back to '{driveScene}'.");
+                return false;
+            }
+
+            GameSaveService.SelectCharacter(CharacterId.Drive, gameObject.scene.name);
+            Application.OpenURL(new Uri(fullPath).AbsoluteUri);
+            SetStatus(Loc.Get(
+                LocalizationTables.Common,
+                "ui.character.status.drive_browser_opened",
+                "Игра первого персонажа открыта в браузере. После закрытия вкладки вернитесь в это меню."));
+            return true;
+#endif
         }
 
         public void SelectOffice()
@@ -83,19 +113,15 @@ namespace Jam.Core.UI
 
         public void StartFinale()
         {
-            if (_isLoading || !GameSaveService.FinaleUnlocked)
+            if (_isLoading || !GameSaveService.EpilogueUnlocked)
             {
                 return;
             }
 
-            if (!IsSceneInBuild(finaleScene))
+            if (!EpilogueService.TryOpen())
             {
-                SetStatus(Loc.Get(LocalizationTables.Common, "ui.character.error.no_finale", "Финал разблокирован, но сцена Finale ещё не добавлена в Build Settings."));
-                return;
+                SetStatus(Loc.Get(LocalizationTables.Common, "ui.character.error.no_epilogue", "Не удалось открыть эпилог в браузере."));
             }
-
-            GameSaveService.SetLastScene(finaleScene);
-            LoadScene(finaleScene);
         }
 
         public void ReturnToMainMenu()
@@ -178,12 +204,12 @@ namespace Jam.Core.UI
                 Loc.Get(LocalizationTables.Common, "ui.character.photo.description", "ФОТОГРАФКА • ЧЕСТНЫЙ КАДР"),
                 activeCharacter);
 
-            _finaleButton.interactable = GameSaveService.FinaleUnlocked;
-            _finaleButton.transform.Find("Label").GetComponent<TMP_Text>().text = GameSaveService.FinaleUnlocked
-                ? Loc.Get(LocalizationTables.Common, "ui.character.finale.unlocked", "ФИНАЛ • РАЗБЛОКИРОВАН")
-                : Loc.Get(LocalizationTables.Common, "ui.character.finale.locked", "ФИНАЛ • ЗАБЛОКИРОВАН");
-            SetStatus(GameSaveService.FinaleUnlocked
-                ? Loc.Get(LocalizationTables.Common, "ui.character.status.unlocked", "Все три линии завершены. Финал разблокирован.")
+            _finaleButton.interactable = GameSaveService.EpilogueUnlocked;
+            _finaleButton.transform.Find("Label").GetComponent<TMP_Text>().text = GameSaveService.EpilogueUnlocked
+                ? Loc.Get(LocalizationTables.Common, "ui.character.epilogue.unlocked", "ЭПИЛОГ • РАЗБЛОКИРОВАН")
+                : Loc.Get(LocalizationTables.Common, "ui.character.epilogue.locked", "ЭПИЛОГ • ЗАБЛОКИРОВАН");
+            SetStatus(GameSaveService.EpilogueUnlocked
+                ? Loc.Get(LocalizationTables.Common, "ui.character.status.epilogue_unlocked", "Линии второго и третьего персонажей завершены. Эпилог доступен.")
                 : Loc.Get(LocalizationTables.Common, "ui.character.status.default", "Истории можно проходить в любом порядке. Прогресс сохраняется автоматически."));
         }
 
@@ -216,7 +242,7 @@ namespace Jam.Core.UI
                 button.interactable = value;
             }
 
-            _finaleButton.interactable = value && GameSaveService.FinaleUnlocked;
+            _finaleButton.interactable = value && GameSaveService.EpilogueUnlocked;
             _backButton.interactable = value;
         }
 
@@ -323,7 +349,7 @@ namespace Jam.Core.UI
                 new Color(0.27f, 0.18f, 0.29f, 1f));
 
             CreateSpacer(panel.rectTransform, 10f);
-            _finaleButton = CreateButton("FinaleButton", panel.rectTransform, "ФИНАЛ • ЗАБЛОКИРОВАН", StartFinale, 64f);
+            _finaleButton = CreateButton("EpilogueButton", panel.rectTransform, "ЭПИЛОГ • ЗАБЛОКИРОВАН", StartFinale, 64f);
             _backButton = CreateButton("BackButton", panel.rectTransform, "НАЗАД В ГЛАВНОЕ МЕНЮ", ReturnToMainMenu, 50f, "ui.character.back");
             _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 16, FontStyles.Normal, MutedTextColor, 38f);
 

@@ -135,6 +135,12 @@
 - Photo реализует provider через `PhotoCheckpointAdapter`; допустимы checkpoint
   `photo.intro`, `photo.explore`, `photo.camera`, `photo.published`, `photo.arrival`.
 - `FinaleUnlocked` становится истинным только после завершения всех трёх линий.
+- `EpilogueUnlocked` зависит только от завершения Office и Photo; Drive намеренно
+  исключён из условия. Кнопка эпилога открывает
+  `https://seven-lights-production.up.railway.app` во внешнем браузере.
+- При первом переходе `EpilogueUnlocked: false -> true` `GameFlowService`
+  автоматически открывает эпилог после сохранения результата второй завершённой
+  линии из Office/Photo.
 - `CharacterSelect` имеет build index `1`; отсутствующая эпизодная сцена линии
   Drive временно заменяется `SampleScene`, но выбранный `CharacterId` всё равно
   сохраняется.
@@ -247,7 +253,7 @@
 - Damage Numbers Pro получает только presentation-события через
   `GameFeedbackService` после изменения state.
 - Существующий `EpisodeProgressReporter` не сохраняет промежуточный Photo-state
-  без payload; завершение всей линии происходит только после Photo-финала.
+  без payload; production-эпизод отмечает линию завершённой по `episodeCompleted`.
 - До реализации production-компонентов white-box контроллер временно владеет
   Photo-state и UI, но сохраняет те же checkpoint ID и JSON payload схемы `2`.
 - Production-срез использует payload схемы `3`: `PhotoPrologueStep`, шкалы
@@ -269,8 +275,8 @@
   мигрирует legacy white-box payload версии `1` в схему `2`.
 - Публикация сначала атомарно фиксирует `publicationCommitted` и checkpoint,
   затем запускает presentation; повторная загрузка не начисляет эффект заново.
-- Завершение Пролога выставляет только `prologue.completed`. Метод
-  `CompleteMainStoryLine(Photo)` разрешён лишь после Финала линии.
+- Завершение текущего production-среза выставляет `prologue.completed`, а Core по
+  `episodeCompleted` также отмечает Photo завершённой для доступа к эпилогу.
 - `GameSaveService.LeaveCharacterLine` возвращает в `CharacterSelect`, очищая
   активную сессию, но сохраняя последний checkpoint персонажа.
 
@@ -279,6 +285,16 @@
 - Feature-ветка предоставляет воспроизводимый способ проверки.
 - Если интеграция занимает больше 30 минут, scope задачи уменьшается или изменение
   откатывается отдельным безопасным commit после решения продюсера.
+
+## Браузерная линия Drive
+
+- Кнопка первого персонажа в `CharacterSelect` открывает
+  `StreamingAssets/Web/Drive/hasta-la-vista-jam.html` через системный браузер.
+- Перед запуском `GameSaveService` сохраняет `Drive` как активного персонажа, а
+  `CharacterSelect` — как сцену возврата/Continue.
+- Если HTML отсутствует или запуск выполняется внутри WebGL player, используется
+  прежний fallback на Unity-сцену `Prologue_Drive`.
+- HTML автономен и не отмечает линию Drive завершённой в Unity save-файле.
 
 ## Критерий блокирующей ошибки
 

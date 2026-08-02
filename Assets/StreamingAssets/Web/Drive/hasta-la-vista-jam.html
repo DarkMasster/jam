@@ -1,0 +1,2818 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HASTA LA VISTA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@500;600&family=Saira+Stencil+One&display=swap">
+<style>
+  :root{
+    --ink:#f2e8cd; --dim:#a1977c; --gold:#e5bd6b; --warn:#ee9f5f; --bad:#d85f46; --ok:#95b56b;
+    --olive1:#3c432c; --olive2:#232819; --edge:#5d6740; --bg:#05060a;
+    /* Oswald — узкий гротеск с полной кириллицей, держит трафаретный характер.
+       IBM Plex Sans — самая читаемая кириллица для реплик.
+       IBM Plex Mono — цифры и шкалы, моноширинные и не прыгают. */
+    --stencil:'Oswald','Impact','Franklin Gothic Heavy','Arial Narrow',sans-serif;
+    --ui:'IBM Plex Mono',ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --text:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+    /* Saira Stencil One — трафарет по армейскому ящику, есть вьетнамская диакритика */
+    --mil:'Saira Stencil One','Stardos Stencil','Oswald','Arial Narrow',sans-serif;
+    --sh:0 1px 0 #000, 0 2px 6px #000c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:var(--ui);overflow:hidden;touch-action:manipulation}
+  #stage{position:relative;margin:0 auto}
+  canvas{display:block;width:100%;height:100%}
+  .layer{position:absolute;inset:0;pointer-events:none}
+
+  #ticker{position:absolute;left:0;right:0;top:0;height:1.6em;overflow:hidden;display:none;
+    background:linear-gradient(180deg,#05060ae0,#05060a00)}
+  #ticker span{position:absolute;white-space:nowrap;font-size:.72em;line-height:2.2em;
+    color:#d4bd88;letter-spacing:.12em;text-shadow:var(--sh)}
+  .hrow{display:flex;gap:1.1em;align-items:baseline;justify-content:center;margin-bottom:.3em}
+  .hrow .km{font-size:1.15em;color:var(--gold);letter-spacing:.09em;text-shadow:var(--sh)}
+  .hrow .clock{font-size:.68em;color:var(--dim);letter-spacing:.14em}
+  .hrow .left{font-size:.76em;color:#cbd6a2;letter-spacing:.12em}
+  .hrow .left.hot{color:var(--bad)}
+
+  #wlabel{position:absolute;display:none;transform:translate(-50%,-100%);white-space:nowrap;
+    background:linear-gradient(180deg,#4a4226,#241f10);border:1px solid var(--gold);border-radius:5px;
+    padding:.22em .6em;font-size:.82em;letter-spacing:.1em;color:#ffeab6;box-shadow:0 3px 10px #000b;
+    text-shadow:var(--sh)}
+  #wlabel b{color:var(--gold);font-weight:400}
+  #carlabel{position:absolute;display:none;transform:translate(-50%,-100%);white-space:nowrap;
+    background:linear-gradient(180deg,#26402f,#101c14);border:1px solid #6fae86;border-radius:5px;
+    padding:.22em .6em;font-family:var(--text);font-size:.82em;letter-spacing:.02em;color:#ddf7e5;
+    box-shadow:0 3px 10px #000b;text-shadow:var(--sh)}
+  #carlabel b{color:#8fd6a6;font-weight:400}
+
+  #hud{position:absolute;left:50%;transform:translateX(-50%);top:2em;max-width:calc(100% - 1.2em);
+    background:linear-gradient(180deg,#2c3220f5,#12150cfa);
+    border:1px solid var(--edge);border-radius:12px;
+    box-shadow:inset 0 1px 0 #ffffff18, inset 0 0 22px #000b, 0 3px 0 #0009;
+    padding:.35em .8em .4em}
+  .gauges{display:flex;flex-wrap:wrap;gap:.2em 1.15em;justify-content:center}
+  .g{display:flex;align-items:center;gap:.4em;font-size:.6em;letter-spacing:.1em;color:var(--dim)}
+  .g .lb{min-width:4.8em;flex:none}
+  .g .seg{display:flex;gap:2px;flex:none;margin:0 .15em}
+  .g .seg i{width:.36em;height:.6em;background:#00000099;border-radius:1px;box-shadow:inset 0 0 0 1px #ffffff12}
+  .g .seg i.on{background:#c3b184}
+  .g.warn .seg i.on{background:var(--warn)}
+  .g.bad  .seg i.on{background:var(--bad)}
+  .g.good .seg i.on{background:var(--ok)}
+  .g .vl{min-width:3.2em;color:var(--ink);text-align:right;font-weight:500;letter-spacing:.06em}
+  #stuff{font-size:.62em;color:var(--dim);letter-spacing:.22em;text-align:center;margin-top:.45em;
+    padding-top:.35em;border-top:1px solid #ffffff12}
+
+  #sms{position:absolute;right:.7em;top:8.4em;width:13em;display:flex;flex-direction:column;gap:.45em}
+  .sm{border-left:2px solid var(--gold);padding:.12em 0 .12em .5em;font-size:.74em;line-height:1.45;
+    text-shadow:var(--sh);opacity:0;transform:translateY(-5px);transition:opacity .4s,transform .4s}
+  .sm.on{opacity:1;transform:none}
+  .sm u{display:block;color:var(--gold);text-decoration:none;letter-spacing:.14em;font-size:.85em}
+
+  #panel,#dlg{position:absolute;left:1em;right:1em;bottom:3.4em;pointer-events:auto;display:none;
+    background:linear-gradient(180deg,#312816f8,#120d06fc);
+    border:2px solid #7d6740;border-radius:7px;
+    box-shadow:inset 0 0 0 3px #120d06, inset 0 0 0 4px #574526,
+               inset 0 0 30px #000b, 0 6px 18px #000c;
+    padding:.8em 1em .85em;max-height:54%;overflow:auto;scrollbar-width:thin;
+    scrollbar-color:#6b5836 #1a130a}
+
+  .who .tip{float:right;font-style:normal;color:#7c7358;letter-spacing:.1em;font-size:.85em;
+    text-transform:none}
+  .who{color:var(--gold);letter-spacing:.26em;font-size:.8em;margin-bottom:.5em;
+    border-bottom:1px solid #4a3c22;padding-bottom:.35em;text-shadow:var(--sh)}
+  .say{line-height:1.55;color:#fff6e0;font-size:1.08em;text-shadow:var(--sh);
+    font-family:var(--text);font-weight:400}
+  .opts{margin-top:.55em;display:flex;flex-direction:column;gap:.14em}
+  .opt{background:#ffffff08;border:1px solid #ffffff10;border-radius:5px;
+    color:#f0e2b8;font-family:var(--text);font-size:.98em;text-align:left;
+    padding:.3em .5em;cursor:pointer;display:flex;gap:.65em;align-items:baseline;text-shadow:var(--sh)}
+  .opt:hover,.opt:focus{color:#fff;background:#e5bd6b26;border-color:#e5bd6b66;outline:none}
+  .opt em{font-style:normal;color:#0f0c06;background:var(--gold);border-radius:3px;
+    min-width:1.4em;text-align:center;font-size:.8em;padding:.05em .25em;font-family:var(--ui);
+    font-weight:500;flex:none}
+  .opt.lock{color:#807a68;background:#ffffff04;border-color:#ffffff0a;cursor:not-allowed}
+  .opt.lock em{background:#4e4a3d;color:#171510}
+  .opt.lock:hover{background:#ffffff04;border-color:#ffffff0a;color:#807a68}
+  .opt .why{display:block;margin-top:.15em;font-size:.76em;font-style:italic;
+    color:#6e6857;letter-spacing:.02em}
+  .opt.rage{color:#f08064}
+  .opt.rage em{background:#c0503c;color:#fff}
+  .opt.rage:hover{background:#c0503c2e;border-color:#c0503c88;color:#ffb49f}
+
+  #keys{position:absolute;left:0;right:0;bottom:.7em;display:flex;flex-wrap:wrap;
+    justify-content:center;gap:.35em 1.1em;font-family:var(--text);font-size:.72em;
+    color:#d8cfb4;letter-spacing:.01em;
+    text-shadow:0 1px 3px rgba(0,0,0,.8)}
+  #keys span{display:flex;align-items:center;gap:.32em}
+  #keys kbd{font-family:var(--ui);background:#141810cc;border:1px solid #6d7a4a;border-radius:4px;
+    padding:.06em .4em;color:#ffeeba;font-size:.92em;
+    box-shadow:0 1px 0 #0009, inset 0 1px 0 #ffffff10}
+  #tip{position:absolute;left:0;right:0;bottom:4.5em;text-align:center;
+    font-family:var(--text);font-size:.86em;color:#ffd88f;letter-spacing:.02em;
+    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 18px rgba(255,190,110,.25)}
+  #tip.urgent{color:#ff9a72;font-weight:600;font-size:.95em;
+    text-shadow:0 1px 3px #000, 0 0 20px rgba(255,120,70,.45);animation:pulse .7s infinite alternate}
+  @keyframes pulse{from{opacity:.65}to{opacity:1}}
+  .dlg-esc{position:absolute;right:.7em;top:.55em;background:none;border:1px solid #574526;
+    color:#8a7c58;font-family:var(--ui);font-size:.62em;letter-spacing:.14em;border-radius:3px;
+    padding:.1em .4em;cursor:pointer}
+  .dlg-esc:hover{color:#e8d59d;border-color:#8a7448}
+  #hint{position:absolute;left:0;right:0;bottom:3.1em;text-align:center;
+    font-family:var(--text);font-weight:500;font-size:.88em;
+    color:#fbf1d8;letter-spacing:.04em;
+    text-shadow:0 1px 3px rgba(0,0,0,.8), 0 0 16px rgba(235,205,140,.22)}
+  #toast{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:1.05em;color:var(--gold);
+    letter-spacing:.16em;opacity:0;transition:opacity .35s;text-shadow:var(--sh)}
+
+  #dice{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;
+    background:#05070cdb;pointer-events:auto}
+  #dice .box{background:linear-gradient(180deg,#312816,#120d06);border:2px solid #7d6740;border-radius:7px;
+    box-shadow:inset 0 0 0 1px #0b0906,inset 0 0 26px #000a;padding:1em 1.8em;text-align:center}
+  #dice .faces{font-size:2.8em;letter-spacing:.2em;color:#fff3d2;text-shadow:var(--sh)}
+  #dice .calc{font-size:.78em;color:#b6ab8c;letter-spacing:.08em;line-height:1.8;margin-top:.5em}
+  #dice .res{font-size:1.15em;letter-spacing:.3em;margin-top:.55em;text-shadow:var(--sh)}
+  #dice .res.win{color:var(--ok)} #dice .res.lose{color:var(--bad)}
+  #dice .res.mix{color:var(--warn)}
+
+  .screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:1.2em;pointer-events:auto;overflow:auto;
+    background:radial-gradient(130% 100% at 50% 40%,#1a1e12,#06070a 76%)}
+  .crate{position:relative;width:min(40em,96%);padding:2.2em 2.4em 2em;
+    background:
+      radial-gradient(circle at 10px 10px,#727c50 1.5px,transparent 2px),
+      radial-gradient(circle at calc(100% - 10px) 10px,#727c50 1.5px,transparent 2px),
+      radial-gradient(circle at 10px calc(100% - 10px),#727c50 1.5px,transparent 2px),
+      radial-gradient(circle at calc(100% - 10px) calc(100% - 10px),#727c50 1.5px,transparent 2px),
+      linear-gradient(180deg,var(--olive1),var(--olive2));
+    border:2px solid var(--edge);border-radius:5px;
+    box-shadow:inset 0 0 0 1px #12150c, inset 0 0 60px #000a, 0 6px 0 #00000066}
+  .crate::before{content:'';position:absolute;inset:5px;border:1px solid #4b5433;
+    border-radius:3px;pointer-events:none}
+  .stamp{position:absolute;right:1.4em;top:1.2em;transform:rotate(-7deg);
+    border:2px solid #9c4b3a;color:#cf6349;font-size:.78em;letter-spacing:.18em;
+    padding:.2em .5em;border-radius:2px}
+  .crate h1{margin:0;font-family:var(--stencil);font-weight:400;line-height:.92;
+    font-size:4.4em;letter-spacing:.05em;text-transform:uppercase;
+    background:repeating-linear-gradient(180deg,#efd694 0 .34em,transparent .34em .43em);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    -webkit-text-stroke:.5px #7b6f3d;filter:drop-shadow(0 3px 0 #00000066)}
+  .sub{margin-top:.5em;font-size:.68em;letter-spacing:.26em;color:#a6b078}
+  .rule{height:1px;background:linear-gradient(90deg,transparent,#6c7749,transparent);margin:1.3em 0 1.1em}
+  .langs{display:flex;gap:.5em;margin:1.4em 0 0;flex-wrap:wrap}
+  .langs button{font-size:1.5em;line-height:1;background:none;border:1px solid transparent;
+    border-radius:6px;padding:.12em .22em;cursor:pointer;opacity:.45;filter:grayscale(.7);
+    transition:all .18s}
+  .langs button:hover{opacity:.85;filter:grayscale(0)}
+  .langs button.on{opacity:1;filter:none;border-color:var(--gold);background:#ffffff10}
+  .mitems{display:flex;flex-direction:column;gap:.1em}
+  .mi{background:none;border:0;color:#ddcd97;cursor:pointer;text-align:left;
+    font-family:var(--mil);font-size:1.55em;letter-spacing:.1em;text-transform:uppercase;
+    padding:.24em .4em;display:flex;gap:.6em;align-items:center;border-radius:3px;
+    text-shadow:0 2px 0 #00000066;transition:color .18s,letter-spacing .18s,background .18s}
+  .mi:hover,.mi:focus{color:#fff4c2;background:#ffffff12;letter-spacing:.16em;outline:none}
+  .mi b{color:#8b9a55;font-weight:400;transition:transform .18s}
+  .mi:hover b{transform:translateX(3px);color:#c6d488}
+  .mtext .head{color:#a9b477;letter-spacing:.2em;font-family:var(--mil);font-size:1em;
+    margin:.2em 0 .6em;text-transform:uppercase}
+  .mtext{display:none;margin-top:1.1em;font-size:.95em;line-height:1.75;color:#bdb49a;min-height:0;
+    border-top:1px solid #47502f;padding-top:.7em;font-family:var(--text);
+    max-height:42vh;overflow:auto}
+  .team{margin-top:1.3em;display:flex;align-items:center;gap:.7em;justify-content:flex-end}
+  .team span{font-family:var(--mil);font-size:1.2em;letter-spacing:.16em;
+    color:#b6bd7e;text-transform:uppercase;text-shadow:0 1px 0 #000,0 0 12px #97a35a33;
+    transform:skewX(-4deg)}
+  .team i{flex:1;height:1px;background:linear-gradient(90deg,transparent,#5d6740);font-style:normal}
+  .team b{font-family:var(--ui);font-size:.78em;letter-spacing:.28em;color:#79855a;font-weight:400}
+  .mtext b{color:#efdcab;font-weight:500}
+  .mtext p{margin:0 0 .8em}
+  .mtext p:last-child{margin-bottom:0}
+  .leg{display:flex;gap:.8em;margin:.3em 0;align-items:baseline}
+  .leg u{color:var(--gold);text-decoration:none;min-width:6.6em;flex:none;
+    font-family:var(--ui);font-size:.9em;letter-spacing:.12em}
+  .keys{display:flex;flex-wrap:wrap;gap:.35em .9em;margin:.1em 0 .7em}
+  .keys kbd{font-family:var(--ui);font-size:.82em;background:#0f120a;border:1px solid #5d6740;
+    border-radius:3px;padding:.08em .45em;color:#e2d29a}
+  #end .crate h1{font-size:2.6em}
+  /* ---- проигрыш: ржавчина и запёкшийся красный ---- */
+  #end.fail{background:radial-gradient(125% 100% at 50% 38%,#2a1109,#0b0605 78%)}
+  #end.fail .crate{
+    background:
+      radial-gradient(circle at 10px 10px,#8a4a30 1.5px,transparent 2px),
+      radial-gradient(circle at calc(100% - 10px) 10px,#8a4a30 1.5px,transparent 2px),
+      radial-gradient(circle at 10px calc(100% - 10px),#8a4a30 1.5px,transparent 2px),
+      radial-gradient(circle at calc(100% - 10px) calc(100% - 10px),#8a4a30 1.5px,transparent 2px),
+      repeating-linear-gradient(112deg,#00000000 0 7px,#5a24120f 7px 9px),
+      linear-gradient(180deg,#3d1d11,#1a0b06);
+    border-color:#8a4025;
+    box-shadow:inset 0 0 0 1px #180a05, inset 0 0 70px #000c, 0 6px 0 #00000066}
+  #end.fail .crate::before{border-color:#6d3520}
+  #end.fail .crate h1{
+    background:repeating-linear-gradient(180deg,#f0a077 0 .34em,transparent .34em .43em);
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-stroke:.5px #7d3a22;filter:drop-shadow(0 3px 0 #00000077)}
+  #end.fail .rule{background:linear-gradient(90deg,transparent,#98492b,transparent)}
+  #end.fail .et-lead{color:#f3d6c6}
+  #end.fail .et-stat{color:#a37f6c;border-top-color:#5e2c1a}
+  #end.fail .et-verdict{color:#eba381}
+  #end.fail .mi{color:#f0bda3}
+  #end.fail .mi b{color:#b05834}
+  #end.fail .mi:hover{color:#fff0e4;background:#c0552e26}
+  #end.fail .team span{color:#cf9077;text-shadow:0 1px 0 #000,0 0 12px #b0522e33}
+  #end.fail .team i{background:linear-gradient(90deg,transparent,#8a4025)}
+  #end.fail .stamp{border-color:#b8503a;color:#e07354;right:1.4em;top:1.3em;
+    transform:rotate(-9deg);font-size:.72em}
+  .endtext{display:block;font-family:var(--text);font-size:.98em;line-height:1.75}
+  .et-lead{color:#f0e6c8}
+  .et-stat{margin-top:.9em;font-family:var(--ui);font-size:.78em;letter-spacing:.08em;color:#95907a;
+    border-top:1px solid #47502f;padding-top:.6em}
+  .et-verdict{margin-top:.7em;color:#cdd39a}
+
+  #touch{position:absolute;inset:auto 0 2.6em 0;display:none;justify-content:space-between;padding:0 .5em;pointer-events:auto}
+  #touch button{width:2.7em;height:2.7em;border:1px solid var(--edge);background:#0f120acc;color:var(--ink);
+    font:inherit;border-radius:8px}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+
+  <div class="layer"><div id="ticker"><span id="tick-txt"></span></div></div>
+
+  <div class="layer"><div id="wlabel"></div><div id="carlabel"></div></div>
+  <div class="layer"><div id="sms"></div></div>
+  <div class="layer"><div id="toast"></div></div>
+  <div class="layer"><div id="tip"></div></div>
+  <div class="layer"><div id="hint"></div></div>
+  <div class="layer"><div id="keys"></div></div>
+  <div class="layer">
+    <div id="hud">
+      <div class="hrow">
+        <span class="km" id="km">12.0 КМ</span>
+        <span class="clock" id="clock">ДЕНЬ 1 · 16:00</span>
+        <span class="left" id="left">6:00</span>
+      </div>
+      <div class="gauges" id="gauges"></div>
+      <div id="stuff">СИГАРЕТ 14 · 40 000 ₽</div>
+    </div>
+  </div>
+
+  <div id="panel"></div>
+  <div id="dlg"></div>
+
+  <div id="dice"><div class="box">
+    <div class="faces" id="dice-f">⚄ ⚂</div>
+    <div class="calc" id="dice-c"></div>
+    <div class="res" id="dice-r"></div>
+  </div></div>
+
+  <div class="screen" id="title">
+    <div class="crate">
+      <div class="stamp">24 · 09 · 2022</div>
+      <h1>Hasta<br>la vista</h1>
+      <div class="rule"></div>
+      <div class="mitems">
+        <button class="mi" id="start"><b>›</b>Новая игра</button>
+        <button class="mi" id="m-ctrl"><b>›</b>Управление</button>
+        <button class="mi" id="m-about"><b>›</b>О чём это</button>
+      </div>
+      <div class="mtext" id="mtext"></div>
+      <div class="langs" id="langs">
+        <button data-l="ru" title="Русский">🇷🇺</button>
+        <button data-l="en" title="English">🇬🇧</button>
+        <button data-l="zh" title="中文">🇨🇳</button>
+        <button data-l="vi" title="Tiếng Việt">🇻🇳</button>
+      </div>
+      <div class="team"><i></i><span>HangaPlay Team</span><b>2026</b></div>
+    </div>
+  </div>
+
+  <div class="screen" id="end" style="display:none">
+    <div class="crate">
+      <div class="stamp" id="end-stamp" style="display:none">НЕ ДОЕХАЛИ</div>
+      <h1 id="end-h">…</h1>
+      <div class="rule"></div>
+      <div class="endtext">
+        <div id="end-t" class="et-lead"></div>
+        <div id="end-s" class="et-stat"></div>
+        <div id="end-v" class="et-verdict"></div>
+      </div>
+      <div class="mitems" style="margin-top:.9em"><button class="mi" id="again"><b>›</b>Ещё раз</button></div>
+    </div>
+  </div>
+
+  <div id="touch">
+    <button data-k="ArrowLeft">←</button><button data-k="KeyE">E</button>
+    <button data-k="Space">⏎</button><button data-k="KeyC">🚬</button>
+    <button data-k="KeyF">F</button><button data-k="ArrowRight">→</button>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ==========================================================
+   Два слоя: подвижный фон рисуется вектором в высоком
+   разрешении и масштабируется со сглаживанием; передний план
+   рисуется в буфер 320x180 и растягивается ступеньками.
+   ========================================================== */
+const W=320,H=180,BS=3;                       /* BS — множитель фонового холста */
+const buf=document.createElement('canvas');buf.width=W;buf.height=H;
+const ctx=buf.getContext('2d');
+const bgc=document.createElement('canvas');bgc.width=W*BS;bgc.height=H*BS;
+const bctx=bgc.getContext('2d');bctx.setTransform(BS,0,0,BS,0,0);
+bctx.imageSmoothingEnabled=true;
+const cv=document.getElementById('cv'),dctx=cv.getContext('2d');
+const stage=document.getElementById('stage');
+let kDev=3,kCss=3;
+function resize(){
+  kCss=Math.min(innerWidth/W,innerHeight/H);
+  const cssW=Math.floor(W*kCss),cssH=Math.floor(H*kCss);
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  kDev=Math.max(1,Math.round(cssW*dpr/W));
+  cv.width=W*kDev;cv.height=H*kDev;
+  cv.style.width=cssW+'px';cv.style.height=cssH+'px';
+  stage.style.width=cssW+'px';stage.style.height=cssH+'px';
+  stage.style.fontSize=Math.max(11,Math.min(23,Math.round(kCss*4.7)))+'px';
+}
+addEventListener('resize',resize);resize();
+if('ontouchstart' in window)document.getElementById('touch').style.display='flex';
+
+let LANG='ru';
+const TR={};
+/* ============ словари ============ */
+TR.en={
+ /* меню */
+ 'Новая игра':'New game','Управление':'Controls','О чём это':'About',
+ 'Ещё раз':'Play again','ЕЩЁ РАЗ':'PLAY AGAIN',
+ /* шкалы */
+ 'БЕНЗ':'FUEL','ВОДА':'WATER','ТЕЛЕФОН':'PHONE','СТРЕСС':'STRESS','ТЯГА':'CRAVING','СЕМЬЯ':'FAMILY',
+ 'ДЕНЬ':'DAY','КМ':'KM',
+ /* подсказки состояния */
+ 'Вы в машине · E — меню · C — закурить · F — выйти':'In the car · E menu · C smoke · F get out',
+ 'E — сесть в машину':'E — get in the car',
+ 'Вы снаружи · ← → идти · E — подойти и поговорить':'Outside · ← → walk · E — approach and talk',
+ 'ваша машина':'your car','сесть в машину':'get in the car',
+ 'Ты на пределе · E — успокоить семью или позвонить домой':'You are at your limit · E — calm the family or call home',
+ 'Ты на пределе · костёр слева, сигарета, разговор':'You are at your limit · campfire to the left, a cigarette, a talk',
+ 'Семья на пределе · E — «Успокоить семью», иначе развернутся':'Family at breaking point · E — “Calm the family”, or they turn back',
+ 'Семья на пределе · вернитесь в машину и поговорите':'Family at breaking point · get back to the car and talk',
+ 'Тяга · C — закурить, снаружи это бесплатно':'Craving · C — smoke, outside it costs nothing',
+ 'Стресс высокий · костёр слева, сигарета или разговор снимают':'High stress · the campfire, a cigarette or a talk help',
+ 'Вода кончается · ларёк справа по ряду':'Running out of water · kiosk to the right along the line',
+ 'Бензин кончается · мужик с канистрой справа':'Running out of fuel · man with a jerrycan to the right',
+ 'Телефон садится · выключите радио в меню машины':'Phone is dying · turn off the radio in the car menu',
+ 'Велосипед куплен · E — меню машины, «бросить машину и ехать дальше»':'Bicycle bought · E — car menu, “abandon the car and ride on”',
+ 'ПЕРЕМОТКА ВРЕМЕНИ · ПРОБЕЛ — остановить':'FAST FORWARD · SPACE to stop',
+ 'Нужно отлить · F — выйти, потом идти налево к камню':'You need to piss · F to get out, then walk left to the boulder',
+ 'Нужно отлить · камень слева, ':'You need to piss · boulder to the left, ',
+ 'РЯД СЕЙЧАС ТРОНЕТСЯ · до машины ':'THE LINE IS ABOUT TO MOVE · to your car ',
+ 'РЯД СЕЙЧАС ТРОНЕТСЯ · вы у машины, E — сесть':'THE LINE IS ABOUT TO MOVE · you are at the car, press E',
+ /* всплывающие */
+ 'ВЫ СЕЛИ В МАШИНУ':'YOU GOT IN','ПЕРЕМОТКА ВРЕМЕНИ':'FAST FORWARD','ПЕРЕМОТКА ОСТАНОВЛЕНА':'FAST FORWARD STOPPED',
+ 'СИГНАЛЯТ СЗАДИ — ПОРА К МАШИНЕ':'HORNS BEHIND YOU — GET TO THE CAR',
+ 'ТЫ БЫЛ СЛИШКОМ ДАЛЕКО ОТ МАШИНЫ':'YOU WERE TOO FAR FROM YOUR CAR',
+ 'РЯД УШЁЛ БЕЗ ТЕБЯ':'THE LINE MOVED WITHOUT YOU',
+ 'СЕМЬЯ НА ПРЕДЕЛЕ':'FAMILY AT BREAKING POINT','МАРЬЯ ГОТОВА РАЗВЕРНУТЬСЯ':'MARYA IS READY TO TURN BACK',
+ 'ДЕНЕГ НЕ ХВАТАЕТ':'NOT ENOUGH MONEY','СИГАРЕТ НЕТ':'NO CIGARETTES','ВОДЫ НЕТ':'NO WATER',
+ 'ЗАКУРИЛ':'YOU LIT ONE UP','ЗАКУРИЛ В МАШИНЕ':'YOU SMOKED IN THE CAR','ПОПИЛ ВОДЫ':'YOU DRANK SOME WATER',
+ 'НЕБО НАД УЩЕЛЬЕМ СВЕТЛЕЕТ':'THE SKY OVER THE GORGE IS GETTING LIGHTER',
+ 'ВЫ УСПОКАИВАЛИ ИХ НЕДАВНО · ЭФФЕКТ СЛАБЕЕ':'YOU CALMED THEM RECENTLY · WEAKER EFFECT',
+ /* панели */
+ 'МАШИНА':'THE CAR','ТЕЛЕФОН · ':'PHONE · ','МАРЬЯ И ТЕО':'MARYA AND TEO','ЗАКУРИТЬ':'SMOKE',
+ 'ТЫ НА ПРЕДЕЛЕ':'YOU ARE AT YOUR LIMIT','СУХОЙ БАК · РЯД УХОДИТ БЕЗ ТЕБЯ':'EMPTY TANK · THE LINE LEAVES WITHOUT YOU',
+ 'цифра или клик · ESC закрыть':'number key or click · ESC to close',
+ 'Дальше':'Next','Назад':'Back',
+ 'недоступно при стрессе выше ':'unavailable above stress ','нужен стресс от ':'requires stress of at least ',
+ ' · сейчас ':' · now ','недоступно':'unavailable',
+ /* финалы */
+ 'Перешли':'Across','Границу открыли':'The border opened','Налегке':'Travelling light',
+ 'Разворот':'Turned back','Они не поехали':'They would not go','Во Владикавказ':'Back to Vladikavkaz',
+ 'Задержали':'Detained','Пустой бак':'Empty tank',
+ 'ГРАНИЦА':'THE BORDER','НАЗАД':'BACK','ТБИЛИСИ':'TBILISI',
+ 'Ехать в Тбилиси':'Drive to Tbilisi','Закрыть за собой дверь':'Close the door behind you',
+ 'Смотреть в зеркало заднего вида':'Look in the rear-view mirror',
+ 'В очереди: ':'In the line: ',' ч':' h','пропущено продвижений: ':'missed advances: ','драк: ':'fights: ',
+ 'сухой бак: ':'empty tank: ','стресс: ':'stress: ','семья: ':'family: ','осталось: ':'money left: ',
+};
+TR.zh={
+ 'Новая игра':'新游戏','Управление':'操作说明','О чём это':'关于本作',
+ 'Ещё раз':'再来一次','ЕЩЁ РАЗ':'再来一次',
+ 'БЕНЗ':'汽油','ВОДА':'水','ТЕЛЕФОН':'手机','СТРЕСС':'压力','ТЯГА':'烟瘾','СЕМЬЯ':'家人',
+ 'ДЕНЬ':'第','КМ':'公里',
+ 'Вы в машине · E — меню · C — закурить · F — выйти':'在车内 · E 菜单 · C 抽烟 · F 下车',
+ 'E — сесть в машину':'E — 上车',
+ 'Вы снаружи · ← → идти · E — подойти и поговорить':'在车外 · ← → 行走 · E — 上前交谈',
+ 'ваша машина':'你的车','сесть в машину':'上车',
+ 'Ты на пределе · E — успокоить семью или позвонить домой':'你快撑不住了 · E — 安抚家人或打电话回家',
+ 'Ты на пределе · костёр слева, сигарета, разговор':'你快撑不住了 · 左边有篝火，一支烟，一次交谈',
+ 'Семья на пределе · E — «Успокоить семью», иначе развернутся':'家人快撑不住了 · E —「安抚家人」，否则他们会掉头回去',
+ 'Семья на пределе · вернитесь в машину и поговорите':'家人快撑不住了 · 回到车里好好谈谈',
+ 'Тяга · C — закурить, снаружи это бесплатно':'烟瘾 · C — 抽烟，在车外不用付出代价',
+ 'Стресс высокий · костёр слева, сигарета или разговор снимают':'压力很高 · 篝火、香烟或交谈都能缓解',
+ 'Вода кончается · ларёк справа по ряду':'水快没了 · 车队右前方有小摊',
+ 'Бензин кончается · мужик с канистрой справа':'汽油快没了 · 右边有拎油桶的人',
+ 'Телефон садится · выключите радио в меню машины':'手机快没电了 · 在车内菜单里关掉收音机',
+ 'Велосипед куплен · E — меню машины, «бросить машину и ехать дальше»':'已买下自行车 · E — 车内菜单「弃车前行」',
+ 'ПЕРЕМОТКА ВРЕМЕНИ · ПРОБЕЛ — остановить':'快进中 · 空格键停止',
+ 'Нужно отлить · F — выйти, потом идти налево к камню':'需要方便一下 · F 下车，然后往左走到大石头',
+ 'Нужно отлить · камень слева, ':'需要方便一下 · 左边的大石头，',
+ 'РЯД СЕЙЧАС ТРОНЕТСЯ · до машины ':'车队马上要动了 · 距离你的车 ',
+ 'РЯД СЕЙЧАС ТРОНЕТСЯ · вы у машины, E — сесть':'车队马上要动了 · 你已在车旁，按 E 上车',
+ 'ВЫ СЕЛИ В МАШИНУ':'你上车了','ПЕРЕМОТКА ВРЕМЕНИ':'快进中','ПЕРЕМОТКА ОСТАНОВЛЕНА':'快进已停止',
+ 'СИГНАЛЬ':'鸣笛','СИГНАЛЯТ СЗАДИ — ПОРА К МАШИНЕ':'后面在按喇叭 — 快回车上',
+ 'ТЫ БЫЛ СЛИШКОМ ДАЛЕКО ОТ МАШИНЫ':'你离车太远了',
+ 'РЯД УШЁЛ БЕЗ ТЕБЯ':'车队没等你就走了',
+ 'СЕМЬЯ НА ПРЕДЕЛЕ':'家人快撑不住了','МАРЬЯ ГОТОВА РАЗВЕРНУТЬСЯ':'玛丽亚已经想掉头回去',
+ 'ДЕНЕГ НЕ ХВАТАЕТ':'钱不够','СИГАРЕТ НЕТ':'没有香烟了','ВОДЫ НЕТ':'没有水了',
+ 'ЗАКУРИЛ':'你点了一支烟','ЗАКУРИЛ В МАШИНЕ':'你在车里抽了烟','ПОПИЛ ВОДЫ':'你喝了点水',
+ 'НЕБО НАД УЩЕЛЬЕМ СВЕТЛЕЕТ':'峡谷上方的天开始亮了',
+ 'ВЫ УСПОКАИВАЛИ ИХ НЕДАВНО · ЭФФЕКТ СЛАБЕЕ':'你刚安抚过他们 · 效果减弱',
+ 'МАШИНА':'车','ТЕЛЕФОН · ':'手机 · ','МАРЬЯ И ТЕО':'玛丽亚和特奥','ЗАКУРИТЬ':'抽烟',
+ 'ТЫ НА ПРЕДЕЛЕ':'你到极限了','СУХОЙ БАК · РЯД УХОДИТ БЕЗ ТЕБЯ':'油箱见底 · 车队正把你甩下',
+ 'цифра или клик · ESC закрыть':'按数字键或点击 · ESC 关闭',
+ 'Дальше':'继续','Назад':'返回',
+ 'недоступно при стрессе выше ':'压力高于 ','нужен стресс от ':'需要压力至少 ',
+ ' · сейчас ':' 时不可选 · 当前 ','недоступно':'不可选',
+ 'Перешли':'过境了','Границу открыли':'边境开放了','Налегке':'轻装上路',
+ 'Разворот':'掉头','Они не поехали':'他们不走了','Во Владикавказ':'返回弗拉季高加索',
+ 'Задержали':'被扣下了','Пустой бак':'油箱空了',
+ 'ГРАНИЦА':'边境','НАЗАД':'返程','ТБИЛИСИ':'第比利斯',
+ 'Ехать в Тбилиси':'开往第比利斯','Закрыть за собой дверь':'随手关上门',
+ 'Смотреть в зеркало заднего вида':'看向后视镜',
+ 'В очереди: ':'排队时长：',' ч':' 小时','пропущено продвижений: ':'错过前进：','драк: ':'冲突：',
+ 'сухой бак: ':'油箱见底：','стресс: ':'压力：','семья: ':'家人：','осталось: ':'剩余：',
+};
+TR.vi={
+ 'Новая игра':'Chơi mới','Управление':'Điều khiển','О чём это':'Về trò chơi',
+ 'Ещё раз':'Chơi lại','ЕЩЁ РАЗ':'CHƠI LẠI',
+ 'БЕНЗ':'XĂNG','ВОДА':'NƯỚC','ТЕЛЕФОН':'ĐIỆN THOẠI','СТРЕСС':'CĂNG THẲNG','ТЯГА':'THÈM THUỐC','СЕМЬЯ':'GIA ĐÌNH',
+ 'ДЕНЬ':'NGÀY','КМ':'KM',
+ 'Вы в машине · E — меню · C — закурить · F — выйти':'Trong xe · E menu · C hút thuốc · F ra ngoài',
+ 'E — сесть в машину':'E — lên xe',
+ 'Вы снаружи · ← → идти · E — подойти и поговорить':'Bên ngoài · ← → đi bộ · E — lại gần và nói chuyện',
+ 'ваша машина':'xe của bạn','сесть в машину':'lên xe',
+ 'Ты на пределе · E — успокоить семью или позвонить домой':'Bạn sắp không chịu nổi · E — trấn an gia đình hoặc gọi về nhà',
+ 'Ты на пределе · костёр слева, сигарета, разговор':'Bạn sắp không chịu nổi · đống lửa bên trái, một điếu thuốc, một cuộc trò chuyện',
+ 'Семья на пределе · E — «Успокоить семью», иначе развернутся':'Gia đình sắp chịu hết nổi · E — «Trấn an gia đình», nếu không họ sẽ quay về',
+ 'Семья на пределе · вернитесь в машину и поговорите':'Gia đình sắp chịu hết nổi · hãy về xe và nói chuyện',
+ 'Тяга · C — закурить, снаружи это бесплатно':'Thèm thuốc · C — hút, ở ngoài xe thì không mất gì',
+ 'Стресс высокий · костёр слева, сигарета или разговор снимают':'Căng thẳng cao · đống lửa, điếu thuốc hoặc một cuộc trò chuyện sẽ giúp',
+ 'Вода кончается · ларёк справа по ряду':'Sắp hết nước · có quán nhỏ phía bên phải hàng xe',
+ 'Бензин кончается · мужик с канистрой справа':'Sắp hết xăng · người bán can xăng ở bên phải',
+ 'Телефон садится · выключите радио в меню машины':'Điện thoại sắp hết pin · tắt radio trong menu xe',
+ 'Велосипед куплен · E — меню машины, «бросить машину и ехать дальше»':'Đã mua xe đạp · E — menu xe, «bỏ xe và đi tiếp»',
+ 'ПЕРЕМОТКА ВРЕМЕНИ · ПРОБЕЛ — остановить':'TUA NHANH THỜI GIAN · PHÍM CÁCH để dừng',
+ 'Нужно отлить · F — выйти, потом идти налево к камню':'Cần đi vệ sinh · F ra khỏi xe, rồi đi sang trái tới tảng đá',
+ 'Нужно отлить · камень слева, ':'Cần đi vệ sinh · tảng đá bên trái, ',
+ 'РЯД СЕЙЧАС ТРОНЕТСЯ · до машины ':'HÀNG XE SẮP CHUYỂN BÁNH · tới xe của bạn ',
+ 'РЯД СЕЙЧАС ТРОНЕТСЯ · вы у машины, E — сесть':'HÀNG XE SẮP CHUYỂN BÁNH · bạn đã ở cạnh xe, bấm E',
+ 'ВЫ СЕЛИ В МАШИНУ':'BẠN ĐÃ LÊN XE','ПЕРЕМОТКА ВРЕМЕНИ':'TUA NHANH','ПЕРЕМОТКА ОСТАНОВЛЕНА':'ĐÃ DỪNG TUA',
+ 'СИГНАЛЯТ СЗАДИ — ПОРА К МАШИНЕ':'PHÍA SAU BẤM CÒI — VỀ XE NGAY',
+ 'ТЫ БЫЛ СЛИШКОМ ДАЛЕКО ОТ МАШИНЫ':'BẠN Ở QUÁ XA XE',
+ 'РЯД УШЁЛ БЕЗ ТЕБЯ':'HÀNG XE ĐI MÀ KHÔNG CÓ BẠN',
+ 'СЕМЬЯ НА ПРЕДЕЛЕ':'GIA ĐÌNH SẮP CHỊU HẾT NỔI','МАРЬЯ ГОТОВА РАЗВЕРНУТЬСЯ':'MARYA ĐÃ SẴN SÀNG QUAY VỀ',
+ 'ДЕНЕГ НЕ ХВАТАЕТ':'KHÔNG ĐỦ TIỀN','СИГАРЕТ НЕТ':'HẾT THUỐC LÁ','ВОДЫ НЕТ':'HẾT NƯỚC',
+ 'ЗАКУРИЛ':'BẠN CHÂM MỘT ĐIẾU','ЗАКУРИЛ В МАШИНЕ':'BẠN HÚT THUỐC TRONG XE','ПОПИЛ ВОДЫ':'BẠN ĐÃ UỐNG NƯỚC',
+ 'НЕБО НАД УЩЕЛЬЕМ СВЕТЛЕЕТ':'BẦU TRỜI TRÊN HẺM NÚI ĐANG SÁNG DẦN',
+ 'ВЫ УСПОКАИВАЛИ ИХ НЕДАВНО · ЭФФЕКТ СЛАБЕЕ':'BẠN VỪA TRẤN AN HỌ · HIỆU QUẢ YẾU HƠN',
+ 'МАШИНА':'XE','ТЕЛЕФОН · ':'ĐIỆN THOẠI · ','МАРЬЯ И ТЕО':'MARYA VÀ TEO','ЗАКУРИТЬ':'HÚT THUỐC',
+ 'ТЫ НА ПРЕДЕЛЕ':'BẠN ĐÃ TỚI HẠN','СУХОЙ БАК · РЯД УХОДИТ БЕЗ ТЕБЯ':'CẠN XĂNG · HÀNG XE BỎ BẠN LẠI',
+ 'цифра или клик · ESC закрыть':'bấm số hoặc nhấp chuột · ESC để đóng',
+ 'Дальше':'Tiếp','Назад':'Quay lại',
+ 'недоступно при стрессе выше ':'không khả dụng khi căng thẳng trên ','нужен стресс от ':'cần căng thẳng từ ',
+ ' · сейчас ':' · hiện tại ','недоступно':'không khả dụng',
+ 'Перешли':'Đã qua biên giới','Границу открыли':'Biên giới đã mở','Налегке':'Nhẹ gánh',
+ 'Разворот':'Quay đầu','Они не поехали':'Họ đã không đi','Во Владикавказ':'Về Vladikavkaz',
+ 'Задержали':'Bị giữ lại','Пустой бак':'Bình xăng cạn',
+ 'ГРАНИЦА':'BIÊN GIỚI','НАЗАД':'QUAY VỀ','ТБИЛИСИ':'TBILISI',
+ 'Ехать в Тбилиси':'Lái xe tới Tbilisi','Закрыть за собой дверь':'Khép cửa lại sau lưng',
+ 'Смотреть в зеркало заднего вида':'Nhìn vào gương chiếu hậu',
+ 'В очереди: ':'Xếp hàng: ',' ч':' giờ','пропущено продвижений: ':'lỡ lượt tiến: ','драк: ':'ẩu đả: ',
+ 'сухой бак: ':'cạn xăng: ','стресс: ':'căng thẳng: ','семья: ':'gia đình: ','осталось: ':'còn lại: ',
+};
+
+function tr(x){const d=TR[LANG];return (d&&d[x])||x;}
+
+/* полный английский перевод повествования */
+Object.assign(TR.en,{
+ " · В МАШИНЕ":" · IN THE CAR",
+ " · ВЕЛОСИПЕД":" · BICYCLE",
+ " М":" M",
+ " км.":" km.",
+ " м":" m",
+ " м <b>▶</b>":" m <b>▶</b>",
+ " ₽. Через час будет дороже.":" ₽. In an hour it will cost more.",
+ "24.09 · Курс ЦБ: доллар 58,10 · евро 56,90":"24.09 · Central Bank rate: dollar 58.10 · euro 56.90",
+ "24.09 · МВД Северной Осетии рекомендует воздержаться от поездок к границе":"24.09 · North Ossetian police advise against travelling to the border",
+ "24.09 · ФТС: на подъезде к «Верхнему Ларсу» более 2300 автомобилей":"24.09 · Customs Service: over 2,300 vehicles on the approach to Verkhny Lars",
+ "25.09 · Референдумы в ДНР, ЛНР, Херсонской и Запорожской областях — второй день":"25.09 · Referendums in the DPR, LPR, Kherson and Zaporizhzhia regions — day two",
+ "25.09 · Средняя цена АИ-95 по стране — около 40 рублей за литр":"25.09 · Average price of 95 petrol nationwide — about 40 roubles a litre",
+ "26.09 · Зонд NASA DART столкнулся с астероидом Диморф":"26.09 · NASA’s DART probe has struck the asteroid Dimorphos",
+ "26.09 · Сообщения об утечках на «Северном потоке» в Балтийском море":"26.09 · Reports of leaks on Nord Stream in the Baltic Sea",
+ "27.09 · Погода в горах: ночью около нуля, туман, местами дождь":"27.09 · Mountain weather: near zero overnight, fog, rain in places",
+ "28.09 · Ураган «Иан» приближается к побережью Флориды":"28.09 · Hurricane Ian is approaching the coast of Florida",
+ "2d6 · НУЖНО 8 · ":"2d6 · NEED 8 · ",
+ "<b>◀</b> ваша машина · ":"<b>◀</b> your car · ",
+ "«А сама собиралась две недели»":"“And you took two weeks to pack”",
+ "«Бензина на печку у нас ровно до утра»":"“We have exactly enough fuel for the heater until morning”",
+ "«В гостинице „Ларс Хилтон“, конечно»":"“At the Lars Hilton, obviously”",
+ "«В машине. Я откину сиденья и отдам вам оба пледа»":"“In the car. I’ll fold the seats down and give you both blankets”",
+ "«Вас. И себя. Я не умею это разделять»":"“You. And myself. I don’t know how to separate the two”",
+ "«Дай номер, я поговорю с ней сам»":"“Give me the number, I’ll talk to her myself”",
+ "«Дойду до ларька. Возьму хоть что-нибудь горячее»":"“I’ll walk to the kiosk. I’ll get something hot at least”",
+ "«Знал. Будем решать на месте, людей пропускают и с кошками»":"“I knew. We’ll deal with it there, people cross with cats too”",
+ "«Значит, оставим Трампа. Ты этого хочешь услышать?»":"“So we leave Tramp behind. Is that what you want to hear?”",
+ "«И правильно. Я туда больше не вернусь»":"“Good. I’m never going back there”",
+ "«И что ты хочешь от меня прямо сейчас?»":"“And what exactly do you want from me right now?”",
+ "«Кто тогда поедет? Ты без прав»":"“Then who drives? You have no licence”",
+ "«Могла бы и ответить, там люди без зарплаты»":"“You could have answered, there are people there without pay”",
+ "«Моря нет. Зато есть горы прямо в городе»":"“No sea. But there are mountains right in the city”",
+ "«Не сейчас, Тео»":"“Not now, Teo”",
+ "«Ну так не бери трубку»":"“Then don’t answer”",
+ "«Они не на нас. Они просто очень устали»":"“They’re not looking at us. They’re just very tired”",
+ "«План был — не спрашивать каждые полчаса»":"“The plan was for you not to ask every half hour”",
+ "«План — довезти вас. Дальше придумаем вместе»":"“The plan is to get you across. The rest we figure out together”",
+ "«Посплю четыре часа, если ты разбудишь на сигнал»":"“I’ll sleep four hours if you wake me when they honk”",
+ "«Потерпи ещё десять минут»":"“Hold on another ten minutes”",
+ "«Рыб кормит Наташа. Она обещала, я проверял»":"“Natasha is feeding the fish. She promised, I checked”",
+ "«Тео, помолчи»":"“Teo, be quiet”",
+ "«Тео, я сейчас не про море думаю»":"“Teo, I’m not thinking about the sea right now”",
+ "«Ты была права. Мне было страшно это признать»":"“You were right. I was afraid to admit it”",
+ "«У меня есть наличные. Хватит на неделю, дальше придумаем»":"“I have cash. Enough for a week, then we’ll see”",
+ "«Хочешь — иди и разбирайся сама»":"“Fine — go and deal with it yourself”",
+ "«Это вообще-то моя машина»":"“This is my car, actually”",
+ "«Это единственное, что у меня осталось»":"“It’s the only thing I have left”",
+ "«Я думаю о четверых сразу, извини»":"“I’m thinking about four of us at once, sorry”",
+ "«Я ошибся. Больше не буду называть цифры»":"“I was wrong. I won’t give you numbers any more”",
+ "«Я тебе не пограничник»":"“I’m not the border guard”",
+ "«Я тебе тут не супермаркет»":"“I’m not a supermarket”",
+ "А в Тбилиси есть море? У Даньки есть, он писал.":"Is there a sea in Tbilisi? Danya has one, he wrote to me.",
+ "АГРЕССИЯ В РЯДУ":"TROUBLE IN THE LINE",
+ "АРТЁМ":"ARTYOM",
+ "Артём":"Artyom",
+ "Артём за спиной":"Artyom at your back",
+ "Артём сливает шесть литров и машет рукой, когда ты лезешь за деньгами.":"Artyom siphons off six litres and waves you away when you reach for your wallet.",
+ "БАНК":"BANK",
+ "Бензин тысяча за литр. Совесть — ноль за килограмм":"Petrol a thousand a litre. Conscience — nothing a kilo",
+ "Бензина нет, денег нет, и просить больше не у кого — ты уже просил у всех.":"No fuel, no money, and no one left to ask — you have already asked everyone.",
+ "Больше просить не у кого · развернуться":"There is no one left to ask · turn back",
+ "Бросить машину и ехать дальше":"Abandon the car and ride on",
+ "В МЕНЮ МАШИНЫ: БРОСИТЬ МАШИНУ":"CAR MENU: ABANDON THE CAR",
+ "В зеркале — ряд машин до поворота. Сзади подъезжает ещё одна и встаёт вплотную.":"In the mirror, cars all the way to the bend. Another pulls up behind and stops right against you.",
+ "В машине опускают стекло — на этот раз без демонстрации.":"In the car a window goes down — this time without making a point of it.",
+ "В машине становится очень тихо.":"The car goes very quiet.",
+ "В приёмном покое вас принимают через сорок минут. К утру температура спадает.":"You are seen in A&E after forty minutes. By morning the fever breaks.",
+ "В салоне остаются Трамп и ключи в замке.":"Tramp and the keys in the ignition are all that is left inside.",
+ "В четыре утра на пункте меняется смена.":"At four in the morning the shift changes at the crossing.",
+ "ВОДЫ НЕ ХВАТИТ":"NOT ENOUGH WATER",
+ "ВСЁ":"GAME OVER",
+ "Варёные яйца, кофе и вода в полторашках. Очередь человек семьдесят.":"Boiled eggs, coffee and water in 1.5-litre bottles. About seventy people in the queue.",
+ "Вас не пускают обратно в ряд.":"They won’t let you back into the line.",
+ "Вас растаскивают через полминуты, до настоящего не доходит.":"You are pulled apart within half a minute; it never becomes a real fight.",
+ "Велосипед ты бросаешь сразу за шлагбаумом, у грузинского поста.":"You abandon the bicycle just past the barrier, by the Georgian checkpoint.",
+ "Взять его за руку и отвести за камень":"Take his hand and walk him behind the boulder",
+ "Взять её за руку и ничего не говорить":"Take her hand and say nothing",
+ "Взять на троих (1200 ₽)":"Buy for the three of you (1,200 ₽)",
+ "Включить Тео мультик (батарея −12)":"Put on a cartoon for Teo (battery −12)",
+ "Включить радио в машине":"Turn the car radio on",
+ "Влезть без очереди":"Push in at the front",
+ "Вода и жаропонижающее из аптечки":"Water and paracetamol from the first-aid kit",
+ "Вода кончилась часа два назад.":"The water ran out about two hours ago.",
+ "Вода тёплая и в мятых бутылках, но её сразу три.":"The water is warm and the bottles are dented, but there are three of them.",
+ "Возвращаешься спокойнее. Место сзади уже занято.":"You come back calmer. Your place has already been taken.",
+ "Восемь литров. Стрелка отрывается от нуля.":"Eight litres. The needle lifts off zero.",
+ "Восемьдесят метров ничьей земли вы идёте пешком — так почему-то честнее.":"You walk the eighty metres of no man’s land on foot — somehow it feels more honest that way.",
+ "Впервые за двое суток никто ничего не спрашивает.":"For the first time in two days, nobody is asking you anything.",
+ "Впервые за сутки ты ни за кого не отвечаешь.":"For the first time in a day, you are not responsible for anyone.",
+ "Впервые за сутки ты один.":"For the first time in a day you are alone.",
+ "Впереди говорят — восемь часов до шлагбаума.":"Up ahead they say it’s eight hours to the barrier.",
+ "Впереди не двигаются сорок минут. По ряду идёт слово: «закрыли».":"Nothing has moved up ahead for forty minutes. One word travels down the line: “closed”.",
+ "Впереди четыре часа. Не верьте тем, кто пишет два":"Four hours ahead. Don’t believe anyone who says two",
+ "Встать между ним и машиной":"Stand between him and the car",
+ "Всю дорогу ты решал за всех.":"The whole way you decided for everyone.",
+ "Всё, больше нет. Разобрали.":"That’s it, no more. All taken.",
+ "Вчера тоже говорили восемь.":"Yesterday they also said eight.",
+ "Вы отыгрываете четыреста метров.":"You gain back four hundred metres.",
+ "Вы разворачиваетесь у поста и едете назад в общем потоке тех, кто передумал.":"You turn around at the checkpoint and drive back in the general stream of those who changed their minds.",
+ "Выйти и докурить на улице":"Go outside and finish it there",
+ "Выйти и объяснить им спокойно, что экономишь бензин":"Get out and calmly explain that you are saving fuel",
+ "Выйти и покурить, глядя на реку":"Step out and smoke, looking at the river",
+ "Выйти из машины":"Get out of the car",
+ "Выйти из машины и закурить на воздухе":"Get out and smoke in the open air",
+ "Выключить радио в машине":"Turn the car radio off",
+ "Выкурить сигарету с чаем, не торопясь":"Have a cigarette with the tea, in no hurry",
+ "Выпустить Трампа из переноски":"Let Tramp out of the carrier",
+ "Где мы сегодня будем спать? Только не говори «в машине».":"Where are we sleeping tonight? Don’t say “in the car”.",
+ "Говорит через минуту, уже в спину.":"She says it a minute later, to your back.",
+ "Голос дрожит":"your voice is shaking",
+ "Гостиничный номер нашёлся на третьем этаже старого дома в Тбилиси: две кровати, окно во двор, ключ на деревянной груше.":"A hotel room turned up on the third floor of an old building in Tbilisi: two beds, a window onto the courtyard, a key on a wooden pear.",
+ "Греть машину и не глушить двигатель":"Keep the engine running and the car warm",
+ "Дальше — по обочине, мимо всех, кого ты знал последние сутки.":"From there — along the shoulder, past everyone you have known for the last day.",
+ "Дать воды обоим":"Give them both water",
+ "Двадцать минут вы стоите поперёк дороги.":"For twenty minutes you sit sideways across the road.",
+ "Дверь твоей машины открывается. Марья вытаскивает рюкзак и берёт Тео за руку.":"The door of your car opens. Marya pulls out the rucksack and takes Teo by the hand.",
+ "Двое в форме подходят с обеих сторон, и один берёт тебя под локоть — почти вежливо.":"Two uniforms approach from both sides, and one takes you by the elbow — almost politely.",
+ "Двое отказывают, третий сливает пару литров и сразу уходит.":"Two refuse; a third gives you a couple of litres and leaves immediately.",
+ "Дело было не в очереди. Семья не выдержала не дороги, а того, кем ты стал за эти сутки.":"It was never about the queue. What the family could not bear was not the road, but who you became over those two days.",
+ "Держать позицию любой ценой":"Hold your ground at any cost",
+ "Десять литров. Ты не смотришь по сторонам.":"Ten litres. You don’t look around.",
+ "Деэскалация: отойти и говорить тихо":"De-escalate: step back and speak quietly",
+ "До Владикавказа вас довозит попутка за половину оставшихся денег.":"A passing driver takes you to Vladikavkaz for half of the money you have left.",
+ "До ближайшей больницы — назад через всю пробку.":"The nearest hospital is back through the entire jam.",
+ "До шлагбаума оставалось ":"Distance left to the barrier: ",
+ "Дорога до города занимает три часа. Тео спит с первой минуты.":"The drive to the city takes three hours. Teo is asleep from the first minute.",
+ "Дорога до города занимает три часа. Ты едешь один, Трамп спит на пассажирском.":"The drive to the city takes three hours. You drive alone; Tramp sleeps on the passenger seat.",
+ "Дорога кончилась не на границе, а на сорок втором километре, из-за арифметики.":"The road ended not at the border but at kilometre forty-two, because of arithmetic.",
+ "Достать карту и молча водить по ней пальцем":"Take out the map and trace it with a finger, saying nothing",
+ "Достать пустую бутылку и отвернуться":"Find an empty bottle and turn away",
+ "Драка ничего тебе не дала. Совсем ничего.":"The fight gave you nothing. Nothing at all.",
+ "Еда кончилась. Осталось два печенья и они Тео.":"The food is gone. Two biscuits left, and they’re Teo’s.",
+ "ЖЕНЩИНА":"THE WOMAN",
+ "Ждать · перемотка времени (пробел)":"Wait · fast-forward time (Space)",
+ "Ждать в ряду и объяснить почему":"Wait in the line and explain why",
+ "Ждать до шлагбаума, там врачи":"Wait for the barrier, there are medics there",
+ "Женщина в двух куртках говорит, что стоит третьи сутки и уже знает всех по машинам.":"A woman in two coats says she has been here three days and now knows everyone by their car.",
+ "Женщина с ребёнком":"Woman with a child",
+ "ЗАМ":"DEPUTY",
+ "ЗВОНОК":"CALL",
+ "ЗВОНОК ДОМОЙ":"CALL HOME",
+ "ЗМЕЙКА: ":"SNAKE: ",
+ "За камень":"Behind the boulder",
+ "За камнем ветер и Терек внизу.":"Behind the boulder there is wind and the Terek below.",
+ "Завести двигатель на десять минут и включить печку":"Start the engine for ten minutes and put the heater on",
+ "Закурить":"Have a cigarette",
+ "Закурить в салоне":"Smoke inside the car",
+ "Заплатить за место ближе (15 000 ₽)":"Pay for a place further up (15,000 ₽)",
+ "Затушить и извиниться":"Put it out and apologise",
+ "Затушить и убрать пачку во внутренний карман":"Stub it out and put the pack in your inside pocket",
+ "Здесь пахнет чужим стиральным порошком и работает горячая вода.":"It smells of someone else’s washing powder here, and the hot water works.",
+ "Змейка":"Snake",
+ "Иван Андреевич, совет директоров ждёт вашего решения":"Ivan Andreevich, the board is waiting for your decision",
+ "Иван: — Не знаю.":"Ivan: “I don’t know.”",
+ "Иван: — Стою.":"Ivan: “Standing in line.”",
+ "Идти по ряду и искать врача":"Walk the line looking for a doctor",
+ "Извиняться сейчас нечем":"you have nothing to apologise with right now",
+ "КОСТЁР":"CAMPFIRE",
+ "Канистра оказывается в твоих руках, и ты не помнишь как.":"The jerrycan ends up in your hands and you don’t remember how.",
+ "Канистра тяжелее, чем кажется.":"The jerrycan is heavier than it looks.",
+ "Канистру он приносит из багажника и держит воронку сам.":"He brings the can from his boot and holds the funnel himself.",
+ "Карта не проходит. Совсем. Я пробовала трижды.":"My card is declined. Completely. I tried three times.",
+ "Кивнуть и переставить будильник на телефоне":"Nod and reset the alarm on your phone",
+ "Ключи у меня. Иди уже.":"I’ve got the keys. Just go.",
+ "Когда встаёшь, кто-то суёт тебе в карман вторую сигарету. Просто так.":"When you get up, someone slips a second cigarette into your pocket. For nothing.",
+ "Костёр":"Campfire",
+ "Кто с детьми — говорят, пропускают вперёд. Идите к шлагбауму":"They say families with children get moved up. Go to the barrier",
+ "Кто-то даёт ему яблоко.":"Someone gives him an apple.",
+ "Кто-то подкидывает в огонь обломок ящика, и искры уходят вверх, в темноту ущелья.":"Someone throws a broken crate into the fire and the sparks go up into the darkness of the gorge.",
+ "Кто-то снимает это на телефон.":"Someone is filming it on a phone.",
+ "Купить (":"Buy (",
+ "Купить 10 л (10 000 ₽)":"Buy 10 litres (10,000 ₽)",
+ "Купить 8 л у соседа (":"Buy 8 litres from a neighbour (",
+ "Купить воды: три бутылки по 1,5 л (1500 ₽)":"Buy water: three 1.5-litre bottles (1,500 ₽)",
+ "Купить сигареты (900 ₽)":"Buy cigarettes (900 ₽)",
+ "ЛАРЁК":"KIOSK",
+ "Ларёк: яйца и кофе":"Kiosk: eggs and coffee",
+ "МАМА":"MOTHER",
+ "МАРЬЯ":"MARYA",
+ "МАРЬЯ · ИЗ МАШИНЫ":"MARYA · FROM THE CAR",
+ "МАРЬЯ КИВАЕТ":"MARYA NODS",
+ "МАРЬЯ СОБИРАЕТ РЮКЗАК":"MARYA IS PACKING A RUCKSACK",
+ "МУЖИК":"THE MAN",
+ "МУЖИК С КАНИСТРОЙ":"THE MAN WITH THE JERRYCAN",
+ "Мама звонила. Плакала. Я не знала, что ей ответить.":"My mother called. She was crying. I didn’t know what to say to her.",
+ "Марья видит это и ничего не говорит.":"Marya sees it and says nothing.",
+ "Марья видит это из машины и закрывает Тео глаза ладонью.":"Marya sees it from the car and covers Teo’s eyes with her hand.",
+ "Марья впервые за сутки берёт тебя за руку.":"For the first time in a day, Marya takes your hand.",
+ "Марья и Тео прошли границу пешком раньше тебя и дождались за постом. Вы доехали порознь, но доехали.":"Marya and Teo crossed on foot before you and waited past the checkpoint. You arrived separately, but you arrived.",
+ "Марья молчит и начинает раскладывать еду по порциям.":"Marya says nothing and starts dividing the food into portions.",
+ "Марья не выходит из машины.":"Marya does not get out of the car.",
+ "Марья не спорит, и это хуже спора.":"Marya doesn’t argue, and that is worse than arguing.",
+ "Марья опускает своё стекло до упора и держит руку на кнопке.":"Marya lowers her window all the way and keeps her hand on the button.",
+ "Марья отворачивается к окну.":"Marya turns to the window.",
+ "Марья пишет: «ты где».":"Marya texts: “where are you”.",
+ "Марья просит не будить его хотя бы час.":"Marya asks you not to wake him for at least an hour.",
+ "Марья смотрит на тебя и говорит ровно одну фразу: «Решай».":"Marya looks at you and says exactly one word: “Decide”.",
+ "Марья смотрит на тебя и ждёт решения. Тео уже спрашивал дважды.":"Marya looks at you and waits for a decision. Teo has already asked twice.",
+ "Марья смотрит на тебя из машины через стекло.":"Marya watches you from the car through the glass.",
+ "Марья считает бутылки в багажнике вслух и сбивается на четвёртой.":"Marya counts the water bottles in the boot out loud and loses track at the fourth.",
+ "Марья убирает две под сиденье и одну отдаёт Тео.":"Marya stows two under the seat and gives one to Teo.",
+ "Марья: — Ты правда не знаешь, сколько ещё?":"Marya: “Do you really not know how much longer?”",
+ "Марья: — Хорошо. Спасибо, что не врёшь.":"Marya: “All right. Thank you for not lying.”",
+ "Мать: — Ел?":"Mother: “Have you eaten?”",
+ "Мать: — Ты где?":"Mother: “Where are you?”",
+ "Машина остаётся в ряду с ключами в замке зажигания.":"The car stays in the line with the keys in the ignition.",
+ "Машину он всё-таки впихивает. Шестьдесят метров — небольшая цена.":"He squeezes his car in anyway. Sixty metres is not much of a price.",
+ "Машину сталкивают на обочину втроём, чтобы не держала ряд.":"Three men push the car onto the shoulder so it stops blocking the line.",
+ "Машину только жалко, я на ней десять лет.":"It’s just a shame about the car, I’ve had it ten years.",
+ "Мимо по обочине проходит человек с двумя канистрами и не смотрит по сторонам.":"A man with two jerrycans walks past along the shoulder, looking at no one.",
+ "Мне холодно. И Тео холодно, он просто не говорит.":"I’m cold. And Teo is cold too, he just isn’t saying it.",
+ "Молча переставить переноску ближе к Тео":"Quietly move the carrier closer to Teo",
+ "Молча пересчитать купюры в бардачке":"Count the notes in the glovebox without a word",
+ "Мужик напротив рассказывает, что вёз собаку, а собака сбежала на третьем километре и вернулась сама.":"The man across from you says he was travelling with a dog; the dog ran off at the third kilometre and came back on its own.",
+ "Мужик с канистрой":"Man with a jerrycan",
+ "НАПОИЛ СЕМЬЮ":"YOU GAVE THEM WATER",
+ "НАПОЛОВИНУ":"HALFWAY",
+ "НЕ ПОЛУЧИЛОСЬ":"IT DID NOT WORK",
+ "НУЖНО ВЫБРАТЬ ОТВЕТ — 1, 2 ИЛИ 3":"YOU MUST CHOOSE AN ANSWER — 1, 2 OR 3",
+ "На том конце рассказывают про соседского кота и погоду. Этого достаточно.":"On the other end they tell you about the neighbour’s cat and the weather. It is enough.",
+ "Налить Трампу воды в крышку от термоса":"Pour Tramp some water into the thermos cap",
+ "Не верьте. Никого не пропускают. Стою вторые сутки":"Don’t believe it. Nobody gets moved up. Second day standing here",
+ "Не отвечать и убавить радио":"Say nothing and turn the radio down",
+ "Никто не отвечает.":"Nobody answers.",
+ "Никто не смотрит в глаза, включая тебя.":"Nobody meets anyone’s eyes, including you.",
+ "Никто не спрашивает, куда ты и почему.":"Nobody asks where you are going or why.",
+ "Никто ничего не говорит вслед.":"Nobody says anything after you.",
+ "Ничего не изменилось. Стоим.":"Nothing has changed. We’re standing.",
+ "Ничего, ехать дальше молча":"Nothing. Keep going in silence",
+ "Номер вы находите к ночи, без машины и почти без вещей. Третий этаж, окно во двор, ключ на деревянной груше.":"You find the room by nightfall, without a car and with almost no luggage. Third floor, a window onto the courtyard, a key on a wooden pear.",
+ "ОПЕРАТОР":"CARRIER",
+ "ОТЕЦ":"FATHER",
+ "ОЧЕРЕДЬ ВСТАЛА":"THE LINE HAS STOPPED",
+ "Обратная дорога занимает четыре часа. Марья за всю дорогу не говорит ни слова, Тео спит.":"The drive back takes four hours. Marya does not say a single word the whole way; Teo sleeps.",
+ "Один процент. Гудки. Всё.":"One per cent. Ringing. That’s it.",
+ "Один уже кричит. Марья закрывает Тео ладонью окно.":"One of them is already shouting. Marya covers Teo’s window with her hand.",
+ "Он говорит так, будто это правило.":"He says it as though it were a rule.",
+ "Он громко говорит по телефону: «да нормально всё, мам».":"He is on the phone, loudly: “everything’s fine, mum, really”.",
+ "Он достаёт мятую пачку и даёт две.":"He pulls out a crumpled pack and hands you two.",
+ "Он записывает твой номер на пачке сигарет.":"He writes down your number on a cigarette pack.",
+ "Он идёт вдоль ряда и считает машины вслух.":"He walks along the line counting the cars out loud.",
+ "Он ищет рыжую собаку с синим ошейником. Второй час.":"He is looking for a ginger dog with a blue collar. Going on two hours now.",
+ "Он кивает и стоит рядом молча, пока не докурит.":"He nods and stands beside you in silence until he has finished.",
+ "Он несёт две канистры и делает вид, что они лёгкие.":"He is carrying two jerrycans and pretending they are light.",
+ "Он отступает и уходит, оглядываясь.":"He backs off and walks away, looking over his shoulder.",
+ "Он отходит. Кто-то в ряду хлопает — один раз, неуверенно.":"He backs away. Someone in the line claps — once, uncertainly.",
+ "Он прикуривает от твоей, ладонями от ветра.":"He lights his from yours, hands cupped against the wind.",
+ "Он смотрит секунду и отходит к своей машине.":"He looks at you for a second and walks back to his car.",
+ "Он третий раз проходит мимо и заглядывает в твою машину.":"He passes by for the third time and looks into your car.",
+ "Она возвращается и весь следующий час молчит.":"She comes back and says nothing for the next hour.",
+ "Она говорит это в окно, не поворачиваясь, но говорит.":"She says it to the window, without turning round, but she says it.",
+ "Она говорит это спокойно, при Тео, и целует тебя в висок.":"She says it calmly, in front of Teo, and kisses you on the temple.",
+ "Она кивает так, будто знала ответ заранее.":"She nods as if she already knew the answer.",
+ "Она не говорит спасибо сразу.":"She doesn’t say thank you right away.",
+ "Она не поворачивается. Стекло опускает Тео, сам.":"She doesn’t turn round. Teo lowers the window himself.",
+ "Она оборачивается и машет — значит, договорились, а не ушла.":"She turns and waves — so it is an arrangement, not a departure.",
+ "Она произносит это без злости, тем голосом, которым сообщают решение, а не спорят.":"She says it without anger, in the voice people use to announce a decision, not to argue.",
+ "Она спрашивает про еду, потому что про остальное нельзя.":"She asks about food because everything else is off limits.",
+ "Опустить стекло и сказать, что она права":"Roll down the window and tell her she’s right",
+ "Отдать полтора литра":"Give her a litre and a half",
+ "Отдать свою куртку назад":"Hand your jacket to the back seat",
+ "Отдать свою половину бутерброда, не объявляя об этом":"Give away your half of the sandwich without announcing it",
+ "Отказаться":"Refuse",
+ "Отправить говорить Марью":"Send Marya to talk to them",
+ "ПАРЕНЬ":"THE KID",
+ "ПАЧКА В КАРМАНЕ":"A PACK IN YOUR POCKET",
+ "ПО РЯДУ ИДУТ ДВОЕ":"TWO MEN COMING DOWN THE LINE",
+ "ПОЛУЧИЛОСЬ":"IT WORKED",
+ "ПРОХОЖИЙ":"PASSER-BY",
+ "Пап, а мы вернёмся? У меня там аквариум.":"Dad, are we coming back? My fish tank is there.",
+ "Пап, а почему все дяди на нас так смотрят?":"Dad, why are all those men looking at us like that?",
+ "Пап, я не могу больше терпеть. Правда не могу.":"Dad, I can’t hold it any more. Really, I can’t.",
+ "Парень лет двадцати спрашивает, есть ли у тебя дети. Ты говоришь: сын, девять.":"A kid of about twenty asks if you have children. You say: a son, nine.",
+ "Парень с велосипедом":"Kid with a bicycle",
+ "Первые двадцать минут в машине тихо.":"For the first twenty minutes the car is quiet.",
+ "Перевести телефон в беззвучный и убрать в карман":"Switch the phone to silent and put it away",
+ "Передумать":"Change your mind",
+ "Перешли вместе — формально. Марья не разговаривает с тобой уже шесть часов.":"You crossed together — technically. Marya has not spoken to you for six hours.",
+ "Перешли вместе, но следующие несколько недель об этой дороге дома говорить не будут.":"You crossed together, but for the next few weeks nobody at home will talk about that road.",
+ "Перешли вместе. Тео на той стороне первым делом спрашивает, где тут едят. Лучший исход из возможных.":"You crossed together. On the other side, the first thing Teo asks is where people eat around here. The best outcome available.",
+ "Пешеходов пускают быстрее. Проверено.":"They let pedestrians through faster. Confirmed.",
+ "Поговорить спокойно":"Talk to her calmly",
+ "Пограничник смотрит в паспорт дольше, чем нужно, и отдаёт его.":"The border guard looks at your passport longer than necessary, then hands it back.",
+ "Поднять стекло с его стороны":"Roll up the window on his side",
+ "Позвать Марью и Тео":"Call Marya and Teo over",
+ "Позвонить домой":"Call home",
+ "Позвонить домой и просто послушать":"Call home and just listen",
+ "Пойти вперёд узнать (10 минут пешком)":"Walk ahead to find out (10 minutes on foot)",
+ "Показать на разложенное заднее сиденье":"Point at the folded-down back seat",
+ "Покупка 1000 ₽ отклонена. Недостаточно средств":"Payment of 1,000 ₽ declined. Insufficient funds",
+ "Полезть в папку с документами в четвёртый раз":"Go through the document folder for the fourth time",
+ "Полистать чат «Верхний Ларс»":"Scroll the “Verkhny Lars” chat",
+ "Помогает примерно на двадцать минут.":"It helps for about twenty minutes.",
+ "Помотать головой и снова смотреть вперёд":"Shake your head and look ahead again",
+ "Пообещать показать на карте, когда доедем":"Promise to show him on the map when you get there",
+ "Попить воды":"Drink some water",
+ "Попросить бесплатно у тех, кому давал воду":"Ask for free from the people you gave water to",
+ "Попросить сигарету":"Ask him for a cigarette",
+ "Посигналить в ответ дважды":"Honk back twice",
+ "Посидеть час":"Sit for an hour",
+ "Потерялась собака, рыжая, ошейник синий. 12-й километр":"Lost dog, ginger, blue collar. Kilometre 12",
+ "Поторговаться":"Haggle",
+ "Правильное решение и провалившийся эпизод одновременно. Границу вы не перешли — но и не должны были в ту ночь.":"The right decision and a failed episode at the same time. You did not cross the border — but you were not meant to that night.",
+ "Пройти мимо":"Walk on by",
+ "Просить помощи у соседей":"Ask the neighbours for help",
+ "Просить у незнакомых оказывается труднее, чем ты думал.":"Asking strangers turns out to be harder than you expected.",
+ "Просто послушать":"Just listen",
+ "РАДИО ВКЛ":"RADIO ON",
+ "РАДИО ВЫКЛ":"RADIO OFF",
+ "РУКИ УСПОКОИЛИСЬ":"YOUR HANDS ARE STEADY",
+ "Разбирательство занимает вторую половину ночи. К утру вас отправляют обратно.":"The questioning takes up the second half of the night. By morning you are sent back.",
+ "Развернуться и ехать во Владикавказ, в больницу":"Turn around and drive to the hospital in Vladikavkaz",
+ "Ребята, хватит драть деньги. Мы тут все по одной теме":"People, stop gouging each other. We’re all here for the same reason",
+ "Ребёнок не плачет. Просто смотрит.":"The child isn’t crying. He’s just watching.",
+ "Реклама шин. Реклама шин. Помехи.":"A tyre advert. A tyre advert. Static.",
+ "Роуминг в Грузии: 149 ₽/мин. Интернет 30 ₽/МБ":"Roaming in Georgia: 149 ₽/min. Data 30 ₽/MB",
+ "Ряд стоит уже сорок минут. Двигатель заглушен, чтобы не жечь бензин.":"The line hasn’t moved for forty minutes. The engine is off, to save fuel.",
+ "Ряд трогается и идёт не останавливаясь. Никто не объясняет почему.":"The line starts moving and does not stop. Nobody explains why.",
+ "СЕРГЕЙ":"SERGEY",
+ "СИГАРЕТ ":"CIGARETTES ",
+ "СИГНАЛЯТ СЗАДИ":"HORNS BEHIND YOU",
+ "Связь рвётся на середине слова.":"The line cuts out in the middle of a word.",
+ "Сделать вид, что не слышишь":"Pretend you can’t hear it",
+ "Сзади не сигналят: место освободилось, всем только лучше.":"Nobody honks behind you: a space has opened up, everyone is better off.",
+ "Сзади сигналят долго и зло.":"Behind you the horns go on, long and angry.",
+ "Сзади сигналят. Ты не оборачиваешься.":"They honk behind you. You don’t look back.",
+ "Скажи честно: ты нас вывозишь или себя?":"Tell me honestly: are you getting us out, or yourself?",
+ "Сказать «посмотрим» и глянуть в зеркало":"Say “we’ll see” and glance in the mirror",
+ "Сказать Марье, что тебе страшно":"Tell Marya that you are frightened",
+ "Сказать всё, что думаешь про эту очередь":"Say everything you think about this line",
+ "Сказать им всё, что думаешь":"Tell them exactly what you think",
+ "Сказать, сколько на самом деле стоять":"Tell them how long it really is",
+ "Сказать, что нет":"Tell her you have none",
+ "Сказать, что это грабёж":"Tell him it’s robbery",
+ "Сказать, чтобы отвалил":"Tell him to get lost",
+ "Следующие два часа в машине не разговаривают вообще.":"For the next two hours nobody in the car speaks at all.",
+ "Смотреть вперёд и считать машины до поворота":"Look ahead and count the cars up to the bend",
+ "Соседи сзади сигналят каждый раз, как ты глушишь двигатель.":"The people behind honk every time you switch the engine off.",
+ "Спасибо. Он уснул наконец.":"Thank you. He’s finally asleep.",
+ "Спокойно отдать документы":"Hand over your papers calmly",
+ "Спросить, как там впереди":"Ask how things are up ahead",
+ "Сто метров, потом ещё сто. На заправке в семи километрах отсюда бензин есть.":"A hundred metres, then another hundred. There is fuel at the station seven kilometres from here.",
+ "Столько у тебя нет.":"You don’t have that much.",
+ "Стрелка бензина уходит заметно.":"The fuel needle drops noticeably.",
+ "Схватить канистру":"Grab the jerrycan",
+ "ТЕЛЕФОН РАЗРЯЖЕН":"PHONE IS DEAD",
+ "ТЕО":"TEO",
+ "ТЕО КИВАЕТ":"TEO NODS",
+ "ТЕО НЕ СТАНОВИТСЯ ЛУЧШЕ":"TEO IS NOT GETTING BETTER",
+ "ТЕО СМОТРИТ МУЛЬТИК":"TEO IS WATCHING CARTOONS",
+ "ТРАМП УЖЕ НА КОЛЕНЯХ У ТЕО":"TRAMP IS ALREADY ON TEO’S LAP",
+ "ТЫ ВИДИШЬ ЭТО ИЗДАЛЕКА":"YOU SEE IT FROM A DISTANCE",
+ "Тебе звонили с работы. Четыре раза. Я не брала.":"Your office called. Four times. I didn’t pick up.",
+ "Тебе объясняют, что повестка — это ещё не приказ.":"They explain that a summons is not yet an order.",
+ "Тебе отдают стакан молча.":"They hand you the cup without a word.",
+ "Тебя роняют на щебень при всём ряду.":"You are put down on the gravel in front of the whole line.",
+ "Телефон":"Phone",
+ "Температура держится шестой час. Он перестал спрашивать, скоро ли мы приедем.":"The fever has held for six hours. He has stopped asking whether we’re nearly there.",
+ "Тео видел всё до последней секунды.":"Teo watched every second of it.",
+ "Тео горячий и его тошнит второй раз.":"Teo is burning up and has been sick for the second time.",
+ "Тео греет руки о кружку двумя ладонями.":"Teo warms his hands on the mug with both palms.",
+ "Тео делает вид, что спит, и слушает.":"Teo pretends to be asleep, and listens.",
+ "Тео делает вид, что спит.":"Teo pretends to be asleep.",
+ "Тео ест яйцо так, будто это лучшее, что было в его жизни.":"Teo eats his egg as if it were the best thing that ever happened to him.",
+ "Тео залез с ногами на заднее сиденье и уснул на переноске с Трампом.":"Teo has climbed onto the back seat with his feet up and fallen asleep on Tramp’s carrier.",
+ "Тео кашляет — может, взаправду, может, за компанию.":"Teo coughs — maybe for real, maybe just to join in.",
+ "Тео на заднем сиденье лежит на коленях у Марьи и не жалуется. Это и есть самое страшное.":"Teo lies on Marya’s lap in the back and does not complain. That is the most frightening part.",
+ "Тео смотрит на тебя из заднего окна и не отворачивается.":"Teo watches you from the back window and does not look away.",
+ "Тео спрашивает, будет ли у него в новой школе физкультура.":"Teo asks whether there will be PE at his new school.",
+ "Тео спрашивает, кто это был. Ты говоришь: проверка.":"Teo asks who that was. You say: an inspection.",
+ "Терек внизу шумит так, что перекрывает ряд.":"The Terek below is loud enough to drown out the line.",
+ "Толкаете втроём: ты, Артём и кто-то из «буханки».":"The three of you push: you, Artyom and someone from the loaf van.",
+ "Толкать машину руками до следующего рывка":"Push the car by hand until the next move",
+ "Толкнуть его":"Shove him",
+ "Только сейчас замечаешь, что руки не разжимаются.":"Only now do you notice that your hands will not unclench.",
+ "Трамп выходит недовольный и сразу ложится Тео на колени.":"Tramp comes out displeased and lies down on Teo’s lap at once.",
+ "Трамп не пил с утра. Ты об этом подумал?":"Tramp hasn’t had water since morning. Did you think about that?",
+ "Трамп орёт в переноске второй час подряд.":"Tramp has been yowling in his carrier for two hours straight.",
+ "Трамп орёт в переноске так, что слышно соседям.":"Tramp yowls in his carrier loudly enough for the neighbours to hear.",
+ "Трамп перестаёт орать. Это почему-то хуже всего.":"Tramp stops yowling. Somehow that is the worst part.",
+ "Три процента. Экран гаснет на середине.":"Three per cent. The screen dies halfway through.",
+ "Ты в третий раз проверяешь папку с документами. Всё на месте, как и в прошлые два.":"You check the document folder for the third time. Everything is there, as it was the previous two times.",
+ "Ты возвращаешься с пустыми руками, и это видно по лицу Марьи.":"You come back empty-handed, and it shows on Marya’s face.",
+ "Ты всё равно говоришь до конца.":"You finish the sentence anyway.",
+ "Ты выезжаешь из ряда через обочину и не можешь объяснить зачем.":"You pull out of the line across the shoulder and cannot explain why.",
+ "Ты выкуриваешь сигарету до фильтра и допиваешь чай. Полтора часа проходят как десять минут.":"You smoke the cigarette down to the filter and finish the tea. An hour and a half passes like ten minutes.",
+ "Ты говоришь громче, чем хотел.":"You speak louder than you meant to.",
+ "Ты говоришь слишком громко.":"You are speaking too loudly.",
+ "Ты говоришь: ещё сутки. Может, двое.":"You say: another day. Maybe two.",
+ "Ты закрываешь чат и жалеешь, что открыл.":"You close the chat and wish you hadn’t opened it.",
+ "Ты закрываешь чат чуть спокойнее, чем открывал.":"You close the chat a little calmer than you opened it.",
+ "Ты идёшь обратно и слышишь сигналы задолго до своей машины.":"You walk back and hear the horns long before you reach your car.",
+ "Ты киваешь, куришь и смотришь в огонь. Разговор идёт сам, без тебя.":"You nod, smoke and look into the fire. The conversation carries on without you.",
+ "Ты куришь третий раз за час. Мне этим дышать.":"That’s your third cigarette this hour. I have to breathe this.",
+ "Ты не выдержал первым. Машина, семья и кот вернулись домой на трое суток позже, чем выехали.":"You were the first to break. The car, the family and the cat came home three days later than they left.",
+ "Ты не спал вторые сутки. Я вижу, как ты моргаешь.":"You haven’t slept for two days. I can see it in the way you blink.",
+ "Ты остаёшься в машине с Трампом и ключами в руке.":"You are left in the car with Tramp and the keys in your hand.",
+ "Ты открываешь дверь один: Марья и Тео ждали за постом и уже спят. Трамп сразу лезет под кровать. ":"You open the door alone: Marya and Teo waited past the checkpoint and are already asleep. Tramp goes straight under the bed. ",
+ "Ты получаешь половину того, за чем шёл, и полный набор чужих взглядов.":"You get half of what you came for and the full set of other people’s stares.",
+ "Ты почти ничего не говоришь.":"You barely say anything.",
+ "Ты привык быть тем, кто держит. Держал.":"You are used to being the one who holds it together. You held.",
+ "Ты просто идёшь по обочине минут двадцать и ни на кого не смотришь.":"You simply walk along the shoulder for twenty minutes and look at no one.",
+ "Ты разворачиваешься первым, и это тоже стоит усилия.":"You are the one who turns away first, and that costs something too.",
+ "Ты разворачиваешься через обочину и едешь назад, обгоняя ряд по встречной.":"You turn across the shoulder and drive back, overtaking the line on the wrong side.",
+ "Ты садишься на край кровати и десять минут просто сидишь.":"You sit down on the edge of the bed and simply sit there for ten minutes.",
+ "Ты сам в это не веришь":"you don’t believe it yourself",
+ "Ты сжимаешь руль и считаешь до десяти.":"You grip the wheel and count to ten.",
+ "Ты сидишь ещё полчаса и не можешь вспомнить, о чём думал всё это время.":"You sit another half hour and cannot remember what you were thinking about all that time.",
+ "Ты сидишь на обочине и не сразу понимаешь, что губа разбита.":"You sit on the shoulder and only then realise your lip is split.",
+ "Ты сказал то, что думал, ровно тому, кому этого говорить не стоило.":"You said what you thought to exactly the person you should not have said it to.",
+ "Ты сказал шесть часов. Прошло тридцать.":"You said six hours. It’s been thirty.",
+ "Ты слышишь себя со стороны и не узнаёшь голос.":"You hear yourself from the outside and don’t recognise the voice.",
+ "Ты стоишь ровно столько, сколько горит сигарета.":"You stand there exactly as long as the cigarette burns.",
+ "Ты стоишь у собственного багажника и куришь, как подросток во дворе.":"You stand by your own boot, smoking like a teenager in a courtyard.",
+ "Ты уже не можешь говорить тихо":"you can no longer speak quietly",
+ "У Трампа нет справки от ветеринара. Ты знал?":"Tramp has no vet certificate. Did you know that?",
+ "У тебя вообще есть план? Или мы просто едем.":"Do you actually have a plan? Or are we just driving.",
+ "УСПЕЛ · РЯД ПРОШЁЛ ":"MADE IT · THE LINE MOVED ",
+ "Угостить сигаретой":"Offer him a cigarette",
+ "Успокоить семью":"Calm the family",
+ "Форма, планшет со списками. Останавливаются у каждой третьей машины.":"Uniforms, a clipboard with lists. They stop at every third car.",
+ "Фраза выходит короче и злее, чем задумывалась.":"The sentence comes out shorter and angrier than intended.",
+ "Хочешь хинкали — крути педали! Велосипед 60 000, доставка к очереди":"Want khinkali — start pedalling! Bicycle 60,000, delivered to the line",
+ "Ценник от руки: яйцо 400, вода 500.":"A hand-written price list: egg 400, water 500.",
+ "ЧАТ":"CHAT",
+ "ЧАТ «ВЕРХНИЙ ЛАРС»":"“VERKHNY LARS” CHAT",
+ "Чай в железной кружке.":"Tea in a metal mug.",
+ "Чай отдаёт железом и дымом. Кружку передают по кругу и никто не морщится.":"The tea tastes of iron and smoke. The mug goes round the circle and nobody winces.",
+ "Час прошёл. Стало теплее и почему-то тише.":"An hour has passed. It is warmer and, somehow, quieter.",
+ "Через сорок минут ряд трогается. В этот раз ты угадал.":"Forty minutes later the line moves. This time you guessed right.",
+ "Чёрный седан лезет с обочины прямо перед тобой. Из него выходят двое.":"A black sedan cuts in from the shoulder right in front of you. Two men get out.",
+ "ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ":"SIXTEEN HUNDRED HOURS",
+ "Шлагбаум вы проезжаете уже на рассвете, не веря, что это происходит.":"You pass the barrier at dawn, not quite believing it is happening.",
+ "Шлагбаум поднимается в двадцать минут седьмого.":"The barrier lifts at twenty past six.",
+ "Я говорила — надо было выезжать в среду. Ты сказал «подождём».":"I told you we should have left on Wednesday. You said “let’s wait”.",
+ "ЯБЛОКИ: ":"APPLES: ",
+ "буханка":"loaf van",
+ "в ряду тебя помнят по воде":"the line remembers your water",
+ "ваша машина · ":"your car · ",
+ "военкомат":"the draft officers",
+ "выйди пожалуйста. не при тео":"come outside please. not in front of teo",
+ "если ты ещё раз так на нас посмотришь, мы поедем домой":"if you look at us like that one more time, we’re going home",
+ "злость собранная, не слепая":"anger that is focused, not blind",
+ "канистра":"the jerrycan",
+ "кроссовер":"crossover",
+ "ломка":"withdrawal",
+ "меня развернули. долг по алиментам. стою на обочине":"they turned me back. child support debt. sitting on the shoulder",
+ "микроавтобус":"minibus",
+ "мы с тео пойдём вперёд пешком. ждём тебя за постом. всё в порядке":"teo and i will walk ahead. we’ll wait past the checkpoint. it’s all right",
+ "нива":"niva",
+ "обочина":"the hard shoulder",
+ "очередь за кофе":"the coffee queue",
+ "перекур помог":"the smoke break helped",
+ "позвони когда сможешь. в мессенджеры не пиши":"call when you can. don’t write on messengers",
+ "прохожий":"passer-by",
+ "пункт пропуска встал. подтверждений нет":"the crossing has stopped. no confirmation",
+ "рамный":"body-on-frame",
+ "руки трясутся":"your hands are shaking",
+ "седан":"sedan",
+ "тебя уже запомнили":"they remember you now",
+ "ты доехал? я не сплю":"did you make it? i’m not asleep",
+ "ты тут известный скандалист":"you are the known troublemaker here",
+ "ты уже плохо себя слышишь":"you can barely hear yourself",
+ "универсал":"estate",
+ "хэтчбек":"hatchback",
+ "я больше не понимаю, зачем мы это делаем. поговори со мной":"i don’t understand any more why we’re doing this. talk to me",
+ "— Бери. Всё равно бросаю с понедельника.":"“Take them. I’m quitting on Monday anyway.”",
+ "— Велосипед. До шлагбаума докатишь, дальше пешком.":"“A bicycle. You’ll ride it to the barrier, then walk.”",
+ "— Вон те, зелёные, приехали раньше меня. А вон те уже уехали и вернулись.":"“Those green ones got here before me. And those over there already left and came back.”",
+ "— Далеко ещё? — спрашивает Марья. Ты честно отвечаешь, что не знаешь.":"“Is it much further?” Marya asks. You answer honestly that you don’t know.",
+ "— Десять литров. Тысяча за литр.":"“Ten litres. A thousand a litre.”",
+ "— Ему страшно, — говорит Тео. — Он же не знает, куда мы едем.":"“He’s scared,” says Teo. “He doesn’t know where we’re going.”",
+ "— Если что — я сзади. Зови.":"“If anything happens — I’m right behind you. Just shout.”",
+ "— Значит, довезёте, — говорит он так, будто это правило.":"“Then you’ll get them across,” he says, as if it were a rule.",
+ "— Иди отсюда бесплатно.":"“Go, and it’s free.”",
+ "— Не верь чату. Там половина сидит дома и пишет.":"“Don’t trust the chat. Half of them are sitting at home, typing.”",
+ "— Не нравится — стой без бензина.":"“Don’t like it — stand here with an empty tank.”",
+ "— Ну стой тогда. Цена только что выросла.":"“Then stand here. The price just went up.”",
+ "— Пеших пускают быстрее. Мы пойдём вперёд и подождём тебя за постом.":"“They let pedestrians through faster. We’ll go ahead and wait for you past the checkpoint.”",
+ "— Сам стреляю, брат.":"“I’m bumming them myself, brother.”",
+ "— Семь. И иди отсюда.":"“Seven. Now go.”",
+ "— Сочтёмся на той стороне.":"“We’ll settle up on the other side.”",
+ "— Спасибо.":"“Thank you.”",
+ "— Сутки. Может, полтора. Никто не считает.":"“A day. Maybe a day and a half. Nobody’s counting.”",
+ "— Третья за час. В машине ребёнок и Трамп.":"“Third one this hour. There’s a child in this car, and Tramp.”",
+ "— Ты обещал.":"“You promised.”",
+ "— У шлагбаума пешеходов пускают. Машины — как повезёт.":"“They let pedestrians through at the barrier. Cars — depends on your luck.”",
+ "— Я знаю, — говорит она. — Я думала, ты никогда этого не скажешь.":"“I know,” she says. “I thought you would never say it.”",
+ "— Я не поеду с тобой такой дорогой, — говорит Марья. — И Тео не повезу.":"“I won’t travel this road with you like this,” says Marya. “And I won’t take Teo either.”",
+ "— Я тебе не пепельница на колёсах. Выйди или туши.":"“I’m not an ashtray on wheels. Go outside or put it out.”",
+ "— Я тоже не знаю, — говорит Марья.":"“Neither do I,” says Marya.",
+ "…любое новое число снова окажется враньём":"…any new number would turn out to be a lie again",
+ "…любой план сейчас прозвучит как враньё":"…any plan right now would sound like a lie",
+ "…мысль о работе сейчас разбирает изнутри":"…the thought of work takes you apart from the inside",
+ "…на ещё один такой разговор тебя не хватит":"…you don’t have another conversation like that in you",
+ "…на разговор про Даньку у тебя нет сил":"…you have no strength for a conversation about Danya",
+ "…объяснить это девятилетнему тебе нечем":"…you have nothing to explain this to a nine-year-old with",
+ "…предлагать еду, которой нет, — глупо":"…offering food you don’t have is pointless",
+ "…признать её правоту — язык не поворачивается":"…admitting she is right, and the words won’t come",
+ "…признать, что не тянешь, — страшнее всего":"…admitting you can’t cope is the most frightening thing of all",
+ "…рука уже держит пачку":"…your hand is already holding the pack",
+ "…сказать «хватит» значит соврать про сумму":"…saying “enough” would mean lying about the amount",
+ "…сказать про бензин — значит признать, что просчитался":"…mentioning the fuel would mean admitting you miscalculated",
+ "…соврать ребёнку в этот раз не выходит":"…lying to your child doesn’t work this time",
+ "…спокойно объяснить уже не получится":"…explaining calmly is no longer possible",
+ "…ты и правда не подумал":"…you really hadn’t thought about it",
+ "…ты слишком долго объясняешь, куда идти":"…you take far too long explaining where to go",
+ "…фраза про Трампа выходит слишком жестокой":"…the sentence about Tramp comes out far too cruel",
+ "…честный ответ сейчас звучит как приговор":"…an honest answer right now would sound like a verdict",
+ "…шутить сейчас — единственное, что приходит в голову":"…a joke is the only thing that comes to mind right now"
+});
+Object.assign(TR.en,{
+ " М":" M",
+ " м":" m",
+ " Л":" L",
+ "ЗМЕЙКА: ":"SNAKE: ",
+ "СИГАРЕТ ":"CIGARETTES ",
+ "УСПЕЛ · РЯД ПРОШЁЛ ":"MADE IT · THE LINE MOVED ",
+ "ваша машина · ":"your car · ",
+ " м <b>▶</b>":" m <b>▶</b>",
+ " · ВЕЛОСИПЕД":" · BICYCLE",
+ " · ОДИН":" · ALONE",
+ " · НЕ КУРИТЬ В САЛОНЕ":" · NO SMOKING INSIDE",
+ " · НУЖНО ОТЛИТЬ":" · NEED TO PISS",
+ "Нужно отлить · камень слева, ":"You need to piss · boulder to the left, ",
+ "РЯД СЕЙЧАС ТРОНЕТСЯ · до машины ":"THE LINE IS ABOUT TO MOVE · to your car ",
+ "Бросить кубики · успех ":"Roll the dice · success ",
+ "%, вничью ":"%, draw ",
+ "Сначала закурить и выдохнуть (+1, минус сигарета)":"Have a smoke first and breathe out (+1, costs a cigarette)",
+ "Отступить и вернуться к машине":"Back off and go back to the car",
+ "нужно 8":"need 8",
+ "без модификаторов":"no modifiers",
+ "Купить (":"Buy (",
+ "Купить 8 л у соседа (":"Buy 8 litres from a neighbour (",
+ "ТЕЛЕФОН · ":"PHONE · ",
+ " · ты обещал не курить в салоне":" · you promised not to smoke inside",
+ " · Марья считает: будет третья подряд":" · Marya is counting: this will be the third in a row",
+ " · Марья уже сделала замечание":" · Marya has already said something",
+ "Закурить в салоне":"Smoke inside the car",
+ "ВЫ УСПОКАИВАЛИ ИХ НЕДАВНО · ЭФФЕКТ СЛАБЕЕ":"YOU CALMED THEM RECENTLY · WEAKER EFFECT"
+});
+Object.assign(TR.zh,{
+ " М":" 米",
+ " м":" 米",
+ " Л":" 升",
+ "ЗМЕЙКА: ":"贪吃蛇：",
+ "СИГАРЕТ ":"香烟 ",
+ "УСПЕЛ · РЯД ПРОШЁЛ ":"赶上了 · 车队前进了 ",
+ "ваша машина · ":"你的车 · ",
+ " м <b>▶</b>":" 米 <b>▶</b>",
+ " · ВЕЛОСИПЕД":" · 自行车",
+ " · ОДИН":" · 独自一人",
+ " · НЕ КУРИТЬ В САЛОНЕ":" · 车内禁烟",
+ " · НУЖНО ОТЛИТЬ":" · 需要方便",
+ "Нужно отлить · камень слева, ":"需要方便一下 · 左边的大石头，",
+ "РЯД СЕЙЧАС ТРОНЕТСЯ · до машины ":"车队马上要动了 · 距离你的车 ",
+ "Бросить кубики · успех ":"掷骰子 · 成功率 ",
+ "%, вничью ":"%，平局 ",
+ "Сначала закурить и выдохнуть (+1, минус сигарета)":"先抽支烟平复一下（+1，消耗一支烟）",
+ "Отступить и вернуться к машине":"退开，回到车上",
+ "нужно 8":"需要 8",
+ "без модификаторов":"无修正",
+ "Купить (":"购买（",
+ "Купить 8 л у соседа (":"向邻车买 8 升（",
+ "ТЕЛЕФОН · ":"手机 · ",
+ " · ты обещал не курить в салоне":" · 你答应过不在车里抽烟",
+ " · Марья считает: будет третья подряд":" · 玛丽亚在数：这是连续第三支",
+ " · Марья уже сделала замечание":" · 玛丽亚已经说过一次了",
+ "Закурить в салоне":"在车内抽烟",
+ "ВЫ УСПОКАИВАЛИ ИХ НЕДАВНО · ЭФФЕКТ СЛАБЕЕ":"你刚安抚过他们 · 效果减弱"
+});
+Object.assign(TR.vi,{
+ " М":" m",
+ " м":" m",
+ " Л":" L",
+ "ЗМЕЙКА: ":"RẮN SĂN MỒI: ",
+ "СИГАРЕТ ":"THUỐC LÁ ",
+ "УСПЕЛ · РЯД ПРОШЁЛ ":"KỊP RỒI · HÀNG XE ĐI ĐƯỢC ",
+ "ваша машина · ":"xe của bạn · ",
+ " м <b>▶</b>":" m <b>▶</b>",
+ " · ВЕЛОСИПЕД":" · XE ĐẠP",
+ " · ОДИН":" · MỘT MÌNH",
+ " · НЕ КУРИТЬ В САЛОНЕ":" · KHÔNG HÚT TRONG XE",
+ " · НУЖНО ОТЛИТЬ":" · CẦN ĐI VỆ SINH",
+ "Нужно отлить · камень слева, ":"Cần đi vệ sinh · tảng đá bên trái, ",
+ "РЯД СЕЙЧАС ТРОНЕТСЯ · до машины ":"HÀNG XE SẮP CHUYỂN BÁNH · tới xe của bạn ",
+ "Бросить кубики · успех ":"Tung xúc xắc · thành công ",
+ "%, вничью ":"%, hòa ",
+ "Сначала закурить и выдохнуть (+1, минус сигарета)":"Hút một điếu cho bình tĩnh (+1, mất một điếu)",
+ "Отступить и вернуться к машине":"Lùi lại và quay về xe",
+ "нужно 8":"cần 8",
+ "без модификаторов":"không có điều chỉnh",
+ "Купить (":"Mua (",
+ "Купить 8 л у соседа (":"Mua 8 lít từ người bên cạnh (",
+ "ТЕЛЕФОН · ":"ĐIỆN THOẠI · ",
+ " · ты обещал не курить в салоне":" · bạn đã hứa không hút trong xe",
+ " · Марья считает: будет третья подряд":" · Marya đang đếm: điếu thứ ba liên tiếp",
+ " · Марья уже сделала замечание":" · Marya đã nhắc một lần rồi",
+ "Закурить в салоне":"Hút trong xe",
+ "ВЫ УСПОКАИВАЛИ ИХ НЕДАВНО · ЭФФЕКТ СЛАБЕЕ":"BẠN VỪA TRẤN AN HỌ · HIỆU QUẢ YẾU HƠN"
+});
+Object.assign(TR.en,{
+ "БАТАРЕИ НЕ ХВАТИТ":"NOT ENOUGH BATTERY",
+ "В МАШИНЕ":"IN THE CAR",
+ "МАРЬЯ · СКАНДАЛ":"MARYA · THE ROW",
+ "ТЫ ВЫШЕЛ ИЗ РЯДА":"YOU STEPPED OUT OF THE LINE",
+ "В машине пусто. Трамп спит на пассажирском.":"The car is empty. Tramp is asleep on the passenger seat.",
+ "Воды нет. Ты идёшь просить к соседним машинам и возвращаешься ни с чем.":"There is no water. You go asking at the neighbouring cars and come back with nothing.",
+ "К утру Тео не становится лучше.":"By morning Teo is no better.",
+ "К утру температура спадает.":"By morning the fever breaks.",
+ "Все спят или делают вид.":"Everyone is asleep, or pretending to be.",
+ "Женщина из «буханки» говорит: «у меня двое, я знаю».":"The woman from the loaf van says: “I have two of my own, I know how it is.”",
+ "Через десять минут у машины трое: чай, детский нурофен, чужое одеяло.":"Ten minutes later there are three people at your car: tea, children’s ibuprofen, someone else’s blanket.",
+ "Марья говорит с ними одна, три минуты, спиной к машине.":"Marya talks to them alone, for three minutes, with her back to the car.",
+ "Марья спрашивает: «а мы вчетвером на нём как?» — и сама отвечает: «пешком, рядом».":"Marya asks: “and how do the four of us fit on that?” — and answers herself: “on foot, beside it”.",
+ "Теперь в меню машины (E) есть пункт «бросить машину и ехать дальше».":"The car menu (E) now has the option “abandon the car and ride on”.",
+ "Марья уже собрала аптечку в пакет и держит его на коленях.":"Marya has already packed the first-aid kit into a bag and is holding it on her lap.",
+ "Мужчина на «Ниве» молча пускает тебя перед собой.":"The man in the Niva lets you in front of him without a word.",
+ "Никто не отзывается. Ты возвращаешься к машине через час.":"Nobody responds. You come back to the car an hour later.",
+ "Она делает всё за десять минут и не берёт денег.":"She does everything in ten minutes and refuses to take money.",
+ "Через сорок минут находится женщина-педиатр из шестой машины.":"Forty minutes later a paediatrician turns up, from the sixth car along.",
+ "Печка работает всю ночь. Тео засыпает в тепле.":"The heater runs all night. Teo falls asleep in the warmth.",
+ "Смотрят паспорт дольше, чем нужно. Отдают.":"They look at your passport longer than necessary. They hand it back.",
+ "Фамилию находят в списке.":"They find your surname on the list.",
+ "Тео вжимается в дверь. Трамп орёт в переноске так, что слышно соседям.":"Teo presses himself against the door. Tramp yowls in his carrier loudly enough for the neighbours to hear.",
+ "Ты говоришь тише, чем он. Через минуту он тоже говорит тише.":"You speak more quietly than he does. A minute later he is speaking quietly too.",
+ "Ты говоришь, что до границы недалеко.":"You say the border is not far now.",
+ "Ты говоришь: слухи ходят с первого дня.":"You say the rumours have been going round since day one.",
+ "Ты просто стоишь и не двигаешься. Он объезжает.":"You simply stand there and do not move. He drives around you.",
+ "У шлагбаума говорят: не закрыли, меняется смена.":"At the barrier they say it isn’t closed, the shift is changing."
+});
+Object.assign(TR.en,{"действие":"action","выйти из машины":"get out of the car","закурить":"smoke","идти":"walk","перемотка / дальше":"fast-forward / next","ответ":"answer","закрыть":"close"});
+Object.assign(TR.zh,{"действие":"操作","выйти из машины":"下车","закурить":"抽烟","идти":"行走","перемотка / дальше":"快进 / 继续","ответ":"选择回答","закрыть":"关闭"});
+Object.assign(TR.vi,{"действие":"hành động","выйти из машины":"ra khỏi xe","закурить":"hút thuốc","идти":"đi bộ","перемотка / дальше":"tua nhanh / tiếp","ответ":"trả lời","закрыть":"đóng"});
+Object.assign(TR.en,{"НЕ ДОЕХАЛИ":"DID NOT MAKE IT","ПЕРЕШЛИ ГРАНИЦУ":"BORDER CROSSED"});
+Object.assign(TR.zh,{"НЕ ДОЕХАЛИ":"未能抵达","ПЕРЕШЛИ ГРАНИЦУ":"已过境"});
+Object.assign(TR.vi,{"НЕ ДОЕХАЛИ":"KHÔNG TỚI ĐƯỢC","ПЕРЕШЛИ ГРАНИЦУ":"ĐÃ QUA BIÊN GIỚI"});
+const clamp=(v,a,b)=>v<a?a:v>b?b:v,lerp=(a,b,t)=>a+(b-a)*t,rnd=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const hex=c=>[parseInt(c.slice(1,3),16),parseInt(c.slice(3,5),16),parseInt(c.slice(5,7),16)];
+const mix=(c1,c2,t)=>{const a=hex(c1),b=hex(c2);return 'rgb('+a.map((v,i)=>Math.round(lerp(v,b[i],t))).join(',')+')';};
+const shade=(c,t)=>mix(c,t<0?'#000000':'#ffffff',Math.abs(t));
+function hash(n){const s=Math.sin(n*127.1)*43758.5453;return s-Math.floor(s);}
+/* пиксельная растеризация переднего плана */
+function pxPoly(pts){
+  let minX=1e9,maxX=-1e9;
+  for(const p of pts){if(p[0]<minX)minX=p[0];if(p[0]>maxX)maxX=p[0];}
+  minX=Math.round(minX);maxX=Math.round(maxX);
+  for(let x=minX;x<=maxX;x++){
+    const xc=x+0.5,ys=[];
+    for(let i=0;i<pts.length;i++){
+      const a=pts[i],b=pts[(i+1)%pts.length];
+      if((a[0]<=xc&&b[0]>xc)||(b[0]<=xc&&a[0]>xc))
+        ys.push(a[1]+(xc-a[0])/(b[0]-a[0])*(b[1]-a[1]));
+    }
+    if(ys.length<2)continue;
+    ys.sort((p,q)=>p-q);
+    for(let i=0;i+1<ys.length;i+=2){
+      const y0=Math.round(ys[i]),y1=Math.round(ys[i+1]);
+      if(y1>y0)ctx.fillRect(x,y0,1,y1-y0);
+    }
+  }
+}
+function pxCircle(cx,cy,r){
+  cx=Math.round(cx);cy=Math.round(cy);r=Math.round(r);
+  for(let dy=-r;dy<=r;dy++){
+    const dx=Math.floor(Math.sqrt(Math.max(0,r*r-dy*dy)));
+    ctx.fillRect(cx-dx,cy+dy,dx*2+1,1);
+  }
+}
+function pxEllipse(cx,cy,rx,ry){
+  cx=Math.round(cx);cy=Math.round(cy);
+  for(let dy=-ry;dy<=ry;dy++){
+    const dx=Math.floor(rx*Math.sqrt(Math.max(0,1-(dy*dy)/(ry*ry))));
+    ctx.fillRect(cx-dx,Math.round(cy+dy),dx*2+1,1);
+  }
+}
+
+/* ============ контент ============ */
+const NEWS=[
+ '24.09 · ФТС: на подъезде к «Верхнему Ларсу» более 2300 автомобилей',
+ '24.09 · МВД Северной Осетии рекомендует воздержаться от поездок к границе',
+ '24.09 · Курс ЦБ: доллар 58,10 · евро 56,90',
+ '25.09 · Референдумы в ДНР, ЛНР, Херсонской и Запорожской областях — второй день',
+ '25.09 · Средняя цена АИ-95 по стране — около 40 рублей за литр',
+ '26.09 · Сообщения об утечках на «Северном потоке» в Балтийском море',
+ '26.09 · Зонд NASA DART столкнулся с астероидом Диморф',
+ '27.09 · Погода в горах: ночью около нуля, туман, местами дождь',
+ '28.09 · Ураган «Иан» приближается к побережью Флориды',
+ 'Реклама шин. Реклама шин. Помехи.',
+];
+const CHAT=[
+ 'Хочешь хинкали — крути педали! Велосипед 60 000, доставка к очереди',
+ 'Ребята, хватит драть деньги. Мы тут все по одной теме',
+ 'Впереди четыре часа. Не верьте тем, кто пишет два',
+ 'Кто с детьми — говорят, пропускают вперёд. Идите к шлагбауму',
+ 'Не верьте. Никого не пропускают. Стою вторые сутки',
+ 'Бензин тысяча за литр. Совесть — ноль за килограмм',
+ 'Потерялась собака, рыжая, ошейник синий. 12-й километр',
+];
+const SMSES=[
+ {w:'МАМА',t:'ты доехал? я не сплю'},
+ {w:'ОТЕЦ',t:'позвони когда сможешь. в мессенджеры не пиши'},
+ {w:'СЕРГЕЙ',t:'меня развернули. долг по алиментам. стою на обочине'},
+ {w:'БАНК',t:'Покупка 1000 ₽ отклонена. Недостаточно средств'},
+ {w:'МАРЬЯ · ИЗ МАШИНЫ',t:'выйди пожалуйста. не при тео'},
+ {w:'ЗАМ',t:'Иван Андреевич, совет директоров ждёт вашего решения'},
+ {w:'ОПЕРАТОР',t:'Роуминг в Грузии: 149 ₽/мин. Интернет 30 ₽/МБ'},
+];
+/* случайная стартовая сцена: каждый прогон начинается по-своему */
+const OPENERS=[
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Ряд стоит уже сорок минут. Двигатель заглушен, чтобы не жечь бензин.',
+   'Марья считает бутылки в багажнике вслух и сбивается на четвёртой.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Тео залез с ногами на заднее сиденье и уснул на переноске с Трампом.',
+   'Марья просит не будить его хотя бы час.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Мимо по обочине проходит человек с двумя канистрами и не смотрит по сторонам.',
+   '— Далеко ещё? — спрашивает Марья. Ты честно отвечаешь, что не знаешь.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Ты в третий раз проверяешь папку с документами. Всё на месте, как и в прошлые два.',
+   'Марья видит это и ничего не говорит.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['В зеркале — ряд машин до поворота. Сзади подъезжает ещё одна и встаёт вплотную.',
+   'Тео спрашивает, будет ли у него в новой школе физкультура.']],
+ ['ШЕСТНАДЦАТЬ НОЛЬ-НОЛЬ',['Трамп орёт в переноске второй час подряд.',
+   '— Ему страшно, — говорит Тео. — Он же не знает, куда мы едем.','— Я тоже не знаю, — говорит Марья.']],
+];
+/* у каждой реплики свои живые ответы: примирение, молчание, срыв */
+const TOXIC=[
+ {who:'МАРЬЯ',line:'Я говорила — надо было выезжать в среду. Ты сказал «подождём».',
+  calm:'«Ты была права. Мне было страшно это признать»',
+  quiet:'Смотреть вперёд и считать машины до поворота',
+  snap:'«А сама собиралась две недели»',
+  lock:'…признать её правоту — язык не поворачивается'},
+ {who:'МАРЬЯ',line:'У тебя вообще есть план? Или мы просто едем.',
+  calm:'«План — довезти вас. Дальше придумаем вместе»',
+  quiet:'Достать карту и молча водить по ней пальцем',
+  snap:'«План был — не спрашивать каждые полчаса»',
+  lock:'…любой план сейчас прозвучит как враньё'},
+ {who:'МАРЬЯ',line:'Ты куришь третий раз за час. Мне этим дышать.',
+  calm:'Опустить стекло и сказать, что она права',
+  quiet:'Затушить и убрать пачку во внутренний карман',
+  snap:'«Это единственное, что у меня осталось»',
+  lock:'…рука уже держит пачку'},
+ {who:'МАРЬЯ',line:'Скажи честно: ты нас вывозишь или себя?',
+  calm:'«Вас. И себя. Я не умею это разделять»',
+  quiet:'Не отвечать и убавить радио',
+  snap:'«Хочешь — иди и разбирайся сама»',
+  lock:'…честный ответ сейчас звучит как приговор'},
+ {who:'МАРЬЯ',line:'Мама звонила. Плакала. Я не знала, что ей ответить.',
+  calm:'«Дай номер, я поговорю с ней сам»',
+  quiet:'Взять её за руку и ничего не говорить',
+  snap:'«Ну так не бери трубку»',
+  lock:'…на ещё один такой разговор тебя не хватит'},
+ {who:'ТЕО',line:'Пап, а мы вернёмся? У меня там аквариум.',
+  calm:'«Рыб кормит Наташа. Она обещала, я проверял»',
+  quiet:'Сказать «посмотрим» и глянуть в зеркало',
+  snap:'«Не сейчас, Тео»',
+  lock:'…соврать ребёнку в этот раз не выходит'},
+ {who:'МАРЬЯ',line:'Ты сказал шесть часов. Прошло тридцать.',
+  calm:'«Я ошибся. Больше не буду называть цифры»',
+  quiet:'Кивнуть и переставить будильник на телефоне',
+  snap:'«Я тебе не пограничник»',
+  lock:'…любое новое число снова окажется враньём'},
+ {who:'ТЕО',line:'Пап, а почему все дяди на нас так смотрят?',
+  calm:'«Они не на нас. Они просто очень устали»',
+  quiet:'Поднять стекло с его стороны',
+  snap:'«Тео, помолчи»',
+  lock:'…объяснить это девятилетнему тебе нечем'},
+ {who:'МАРЬЯ',line:'Трамп не пил с утра. Ты об этом подумал?',
+  calm:'Налить Трампу воды в крышку от термоса',
+  quiet:'Молча переставить переноску ближе к Тео',
+  snap:'«Я думаю о четверых сразу, извини»',
+  lock:'…ты и правда не подумал'},
+ {who:'МАРЬЯ',line:'Карта не проходит. Совсем. Я пробовала трижды.',
+  calm:'«У меня есть наличные. Хватит на неделю, дальше придумаем»',
+  quiet:'Молча пересчитать купюры в бардачке',
+  snap:'«И что ты хочешь от меня прямо сейчас?»',
+  lock:'…сказать «хватит» значит соврать про сумму'},
+ {who:'МАРЬЯ',line:'Где мы сегодня будем спать? Только не говори «в машине».',
+  calm:'«В машине. Я откину сиденья и отдам вам оба пледа»',
+  quiet:'Показать на разложенное заднее сиденье',
+  snap:'«В гостинице „Ларс Хилтон“, конечно»',
+  lock:'…шутить сейчас — единственное, что приходит в голову'},
+ {who:'ТЕО',line:'Пап, я не могу больше терпеть. Правда не могу.',
+  calm:'Взять его за руку и отвести за камень',
+  quiet:'Достать пустую бутылку и отвернуться',
+  snap:'«Потерпи ещё десять минут»',
+  lock:'…ты слишком долго объясняешь, куда идти'},
+ {who:'МАРЬЯ',line:'Еда кончилась. Осталось два печенья и они Тео.',
+  calm:'«Дойду до ларька. Возьму хоть что-нибудь горячее»',
+  quiet:'Отдать свою половину бутерброда, не объявляя об этом',
+  snap:'«Я тебе тут не супермаркет»',
+  lock:'…предлагать еду, которой нет, — глупо'},
+ {who:'МАРЬЯ',line:'Тебе звонили с работы. Четыре раза. Я не брала.',
+  calm:'«И правильно. Я туда больше не вернусь»',
+  quiet:'Перевести телефон в беззвучный и убрать в карман',
+  snap:'«Могла бы и ответить, там люди без зарплаты»',
+  lock:'…мысль о работе сейчас разбирает изнутри'},
+ {who:'МАРЬЯ',line:'Ты не спал вторые сутки. Я вижу, как ты моргаешь.',
+  calm:'«Посплю четыре часа, если ты разбудишь на сигнал»',
+  quiet:'Помотать головой и снова смотреть вперёд',
+  snap:'«Кто тогда поедет? Ты без прав»',
+  lock:'…признать, что не тянешь, — страшнее всего'},
+ {who:'ТЕО',line:'А в Тбилиси есть море? У Даньки есть, он писал.',
+  calm:'«Моря нет. Зато есть горы прямо в городе»',
+  quiet:'Пообещать показать на карте, когда доедем',
+  snap:'«Тео, я сейчас не про море думаю»',
+  lock:'…на разговор про Даньку у тебя нет сил'},
+ {who:'МАРЬЯ',line:'Соседи сзади сигналят каждый раз, как ты глушишь двигатель.',
+  calm:'Выйти и объяснить им спокойно, что экономишь бензин',
+  quiet:'Сделать вид, что не слышишь',
+  snap:'Посигналить в ответ дважды',
+  lock:'…спокойно объяснить уже не получится'},
+ {who:'МАРЬЯ',line:'У Трампа нет справки от ветеринара. Ты знал?',
+  calm:'«Знал. Будем решать на месте, людей пропускают и с кошками»',
+  quiet:'Полезть в папку с документами в четвёртый раз',
+  snap:'«Значит, оставим Трампа. Ты этого хочешь услышать?»',
+  lock:'…фраза про Трампа выходит слишком жестокой'},
+ {who:'МАРЬЯ',line:'Мне холодно. И Тео холодно, он просто не говорит.',
+  calm:'Завести двигатель на десять минут и включить печку',
+  quiet:'Отдать свою куртку назад',
+  snap:'«Бензина на печку у нас ровно до утра»',
+  lock:'…сказать про бензин — значит признать, что просчитался'},
+];
+const AFTER=[
+ ['Ты говоришь громче, чем хотел.','Тео делает вид, что спит.'],
+ ['Фраза выходит короче и злее, чем задумывалась.','В машине становится очень тихо.'],
+ ['Ты слышишь себя со стороны и не узнаёшь голос.','Марья отворачивается к окну.'],
+ ['Трамп перестаёт орать. Это почему-то хуже всего.','Никто не отвечает.'],
+];
+const FIRE_TALK=[
+ ['Кто-то подкидывает в огонь обломок ящика, и искры уходят вверх, в темноту ущелья.',
+  'Мужик напротив рассказывает, что вёз собаку, а собака сбежала на третьем километре и вернулась сама.',
+  'Ты выкуриваешь сигарету до фильтра и допиваешь чай. Полтора часа проходят как десять минут.',
+  'Впервые за сутки ты ни за кого не отвечаешь.'],
+ ['Женщина в двух куртках говорит, что стоит третьи сутки и уже знает всех по машинам.',
+  '— Вон те, зелёные, приехали раньше меня. А вон те уже уехали и вернулись.',
+  'Ты киваешь, куришь и смотришь в огонь. Разговор идёт сам, без тебя.',
+  'Когда встаёшь, кто-то суёт тебе в карман вторую сигарету. Просто так.'],
+ ['Чай отдаёт железом и дымом. Кружку передают по кругу и никто не морщится.',
+  'Парень лет двадцати спрашивает, есть ли у тебя дети. Ты говоришь: сын, девять.',
+  '— Значит, довезёте, — говорит он так, будто это правило.',
+  'Ты сидишь ещё полчаса и не можешь вспомнить, о чём думал всё это время.'],
+];
+const PASSER=[
+ 'Он идёт вдоль ряда и считает машины вслух.',
+ 'Он ищет рыжую собаку с синим ошейником. Второй час.',
+ 'Он третий раз проходит мимо и заглядывает в твою машину.',
+ 'Он несёт две канистры и делает вид, что они лёгкие.',
+ 'Он громко говорит по телефону: «да нормально всё, мам».',
+];
+
+/* ============ модели машин ============ */
+const MODELS=[
+ {n:'седан',    len:46,wr:5,  wheels:[9,37],
+  body:[[0,6],[0,13],[8,13],[13,23],[31,23],[36,13],[46,13],[46,6]],
+  glass:[[[10,14],[14,22],[21,22],[21,14]],[[23,14],[23,22],[30,22],[34,14]]]},
+ {n:'универсал',len:54,wr:5,  wheels:[10,44],
+  body:[[0,6],[0,13],[8,13],[12,24],[47,24],[49,13],[54,13],[54,6]],
+  glass:[[[14,14],[14,23],[24,23],[24,14]],[[26,14],[26,23],[34,23],[34,14]],[[36,14],[36,23],[45,23],[47,14]]],
+  rack:[14,45]},
+ {n:'нива',     len:41,wr:5.5,wheels:[9,32],
+  body:[[0,7],[0,15],[6,15],[9,27],[33,27],[35,15],[41,15],[41,7]],
+  glass:[[[10,16],[11,26],[20,26],[20,16]],[[22,16],[22,26],[31,26],[33,16]]],
+  rack:[9,32],spare:true},
+ {n:'буханка',  len:49,wr:5.5,wheels:[10,39],
+  body:[[0,7],[0,30],[3,33],[44,33],[49,29],[49,7]],
+  glass:[[[5,20],[5,31],[15,31],[15,20]],[[18,20],[18,31],[28,31],[28,20]],[[31,20],[31,31],[43,31],[46,22]]],
+  rack:[6,42],ladder:true},
+ {n:'микроавтобус',len:60,wr:5.5,wheels:[12,49],
+  body:[[0,7],[0,31],[45,31],[52,26],[54,17],[60,15],[60,7]],
+  glass:[[[4,20],[4,29],[14,29],[14,20]],[[17,20],[17,29],[27,29],[27,20]],[[30,20],[30,29],[40,29],[40,20]],[[44,19],[45,28],[51,26],[53,19]]]},
+ {n:'кроссовер',len:50,wr:5.5,wheels:[10,40],
+  body:[[0,7],[0,15],[8,15],[14,25],[36,25],[44,15],[50,15],[50,7]],
+  glass:[[[12,16],[16,24],[24,24],[24,16]],[[26,16],[26,24],[34,24],[38,16]]],
+  rack:[13,37]},
+ {n:'хэтчбек',  len:42,wr:5,  wheels:[9,34],
+  body:[[0,6],[0,14],[5,14],[11,22],[31,22],[35,14],[42,14],[42,6]],
+  glass:[[[8,15],[13,21],[20,21],[20,15]],[[22,15],[22,21],[29,21],[32,15]]]},
+ {n:'рамный',   len:53,wr:6,  wheels:[11,43],
+  body:[[0,8],[0,17],[9,17],[12,29],[42,29],[47,17],[53,17],[53,8]],
+  glass:[[[14,18],[14,28],[25,28],[25,18]],[[27,18],[27,28],[38,28],[41,18]]],
+  rack:[13,41],bull:true},
+];
+const CARCOL=['#9c4a47','#41608a','#71784f','#98908a','#334349','#8a6540','#b3ada2','#54486a','#6f8894','#a8946a'];
+
+/* ============ мир ============ */
+const HORIZON=76,ROADTOP=104,GROUND=132,SPACING=72,CAR_X=460;
+const LAMP_TOP=ROADTOP-26;
+const CAR_MID=CAR_X+28,SIT_R=62;   /* центр своей машины и радиус посадки */
+const CARS=[];
+for(let i=-6;i<=9;i++){
+  const m=i===0?1:Math.floor(hash(i*3.3)*MODELS.length);
+  CARS.push({i,x:CAR_X+i*SPACING,m,len:MODELS[m].len,
+    col:i===0?'#43705f':CARCOL[Math.floor(hash(i*7.7)*CARCOL.length)],
+    load:hash(i*11.1)>0.35,puff:0});
+}
+const LAMPS=[CAR_X-4*SPACING-30,CAR_X+SPACING+40,CAR_X+6*SPACING+18];
+const SPOTS=[
+ {key:'artem',i:1, label:'Артём',               x:CAR_X+SPACING+52},
+ {key:'mom',  i:-2,label:'Женщина с ребёнком',  x:CAR_X-2*SPACING+52},
+ {key:'gas',  i:3, label:'Мужик с канистрой',   x:CAR_X+3*SPACING+52},
+ {key:'fire', i:-5,label:'Костёр',              x:CAR_X-5*SPACING+38,kind:'fire'},
+ {key:'bike', i:7, label:'Парень с велосипедом',x:CAR_X+7*SPACING+52},
+ {key:'kiosk',i:5, label:'Ларёк: яйца и кофе',  x:CAR_X+5*SPACING+32,kind:'kiosk'},
+ {key:'rock', i:-6,label:'За камень',           x:CAR_X-6*SPACING-12,kind:'rock'},
+];
+const WANDER=[];
+for(let i=0;i<6;i++)WANDER.push({x:CAR_X+rnd(-6,9)*SPACING,d:Math.random()<.5?-1:1,
+  v:rnd(8,16),col:pick(['#8a6455','#63758a','#767555','#875764','#57634f']),ph:rnd(0,6),line:pick(PASSER)});
+const CLOUDS=[];for(let i=0;i<6;i++)CLOUDS.push({x:rnd(0,W),y:rnd(16,54),w:rnd(34,90),h:rnd(5,11),v:rnd(0.5,1.6)});
+
+/* ============ состояние ============ */
+const EPISODE=360;                             /* шесть минут: спека допускает 5–10 */
+let S;
+function reset(){
+  S={scene:'title',mode:'car',overlay:null,t:0,km:12000,left:EPISODE,
+     fuel:30,water:6,batt:100,money:40000,cigs:14,nic:95,
+     stress:18,bladder:10,sleepDebt:0,
+     fam:{happy:64},lastCalm:-999,warned:0,alone:false,catOut:false,teoSick:0,
+     px:CAR_X+14,face:1,walk:0,
+     bike:false,seen:{},flags:{},evDone:{},fights:0,stalled:0,aheadOk:false,
+     smokeIn:0,lastSmokeIn:-999,promised:false,lastToxic:null,quietUntil:0,
+     nextAdv:24,honk:false,advAnim:0,bgOff:0,roadOff:0,rollLeft:0,ff:false,dryCount:0,lastSoft:-999,dawnHint:0,dawnToast:0,brink:0,steady:0,pendingFight:null,
+     dialog:null,panel:false,dice:null,pendingEnd:null,
+     nextToxic:rnd(45,110),nextSms:rnd(60,140),misses:0,radio:true,bikePrice:38000,
+     snake:null,shake:0};
+}
+reset();
+const hourNow=()=>(16+S.t/60)%24,dayNow=()=>1+Math.floor((16+S.t/60)/24);
+const isNight=()=>{const h=hourNow();return h<6.2||h>19.4;};
+function smooth(t){t=clamp(t,0,1);return t*t*(3-2*t);}   /* мягкая S-кривая */
+function nightAmt(){const h=hourNow();
+  if(h>=20.5||h<4.5)return 1;
+  if(h>=17)return smooth((h-17)/3.5);      /* сумерки тянутся три с половиной часа */
+  if(h<7.5)return 1-smooth((h-4.5)/3);     /* и рассвет — три */
+  return 0;}
+let NB=0;
+const nmix=(day,ngt)=>mix(day,ngt,NB);     /* цвет плавно переходит день→ночь */
+const craving=()=>clamp((38-S.nic)/38,0,1);
+
+/* ============ UI ============ */
+const dlgEl=document.getElementById('dlg'),panelEl=document.getElementById('panel'),
+      diceEl=document.getElementById('dice'),smsEl=document.getElementById('sms'),
+      wlabel=document.getElementById('wlabel');
+let toastT=0;
+function toast(t){const e=document.getElementById('toast');e.textContent=tr(t);e.style.opacity=1;toastT=2.2;}
+function say(who,lines,opts){S.ff=false;S.dialog={who,lines,i:0,opts:opts||null};drawDlg();}
+function trLines(a){return a.map(tr);}
+function closeDlg(){S.dialog=null;dlgEl.style.display='none';S.quietUntil=S.t+70;}
+function optAllowed(o){
+  if(o.max!==undefined&&S.stress>o.max)return false;
+  if(o.min!==undefined&&S.stress<o.min)return false;
+  return true;
+}
+function lockReason(o){
+  if(o.max!==undefined&&S.stress>o.max)
+    return tr('недоступно при стрессе выше ')+o.max+tr(' · сейчас ')+Math.round(S.stress);
+  if(o.min!==undefined&&S.stress<o.min)
+    return tr('нужен стресс от ')+o.min+tr(' · сейчас ')+Math.round(S.stress);
+  return tr('недоступно');
+}
+function optHTML(o,k){
+  const ok=optAllowed(o);
+  if(ok) return '<button class="opt'+(o.rage?' rage':'')+'" data-o="'+k+'"><em>'+(k+1)+
+                '</em><span>'+tr(o.t)+'</span></button>';
+  return '<button class="opt lock" data-o="'+k+'" disabled><em>'+(k+1)+'</em><span>'+tr(o.t)+
+         '<i class="why">'+(o.lockTxt?tr(o.lockTxt)+' · ':'')+lockReason(o)+'</i></span></button>';
+}
+function drawDlg(){
+  const d=S.dialog;if(!d)return;
+  const last=d.i>=d.lines.length-1;
+  let h=d.who?'<div class="who">'+tr(d.who)+'</div>':'';
+  h+='<div class="say">'+tr(d.lines[d.i]||'')+'</div>';
+  h+=(last&&d.opts)?'<div class="opts">'+d.opts.map(optHTML).join('')+'</div>'
+    :'<div class="opts"><button class="opt" data-next="1"><em>␣</em><span>'+tr(last?'Дальше':'…')+'</span></button></div>';
+  dlgEl.innerHTML=h;dlgEl.style.display='block';
+  dlgEl.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>choose(+b.dataset.o));
+  dlgEl.querySelectorAll('[data-next]').forEach(b=>b.onclick=nextLine);
+  if(!d.opts||!last){
+    const c=document.createElement('button');
+    c.className='dlg-esc';c.textContent='ESC';c.onclick=closeDlg;dlgEl.appendChild(c);
+  }
+}
+function nextLine(){const d=S.dialog;if(!d)return;
+  if(d.i<d.lines.length-1){d.i++;drawDlg();}else if(!d.opts)closeDlg();}
+function choose(k){const d=S.dialog;if(!d||!d.opts||!d.opts[k])return;
+  const o=d.opts[k];if(!optAllowed(o))return;closeDlg();o.f();}
+function showPanel(title,opts){
+  S.panel=opts;
+  panelEl.innerHTML='<div class="who">'+tr(title)+
+    ' <em class="tip">'+tr('цифра или клик · ESC закрыть')+'</em></div><div class="opts">'+
+    opts.map(optHTML).join('')+'</div>';
+  panelEl.style.display='block';
+  panelEl.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{
+    const o=S.panel[+b.dataset.o];if(optAllowed(o))o.f();});
+}
+function closePanel(){S.panel=false;panelEl.style.display='none';}
+function sms(who,text){
+  const d=document.createElement('div');d.className='sm';
+  d.innerHTML='<u>'+tr(who)+'</u>'+tr(text);
+  smsEl.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));
+  setTimeout(()=>{d.classList.remove('on');setTimeout(()=>d.remove(),450);},6000);
+}
+function stress(v){S.stress=clamp(S.stress+v,0,100);}
+/* второй аргумент — давление ситуации: часть уходит в твой стресс,
+   часть отражается на настроении семьи. Одна шкала вместо двух. */
+function fam(h,a){
+  a=a||0;
+  if(!S.alone)S.fam.happy=clamp(S.fam.happy+(h||0)-a*0.18,0,100);
+  if(a)stress(a*0.75);
+}
+function calmScale(){const gap=S.t-S.lastCalm;S.lastCalm=S.t;return gap<120?0.35:1;}
+function calmFam(h,a){const k=calmScale();fam(h*k,a*k);if(k<1)toast('ВЫ УСПОКАИВАЛИ ИХ НЕДАВНО · ЭФФЕКТ СЛАБЕЕ');}
+
+/* ============ действия ============ */
+function smoke(inside){
+  if(S.cigs<=0){toast('СИГАРЕТ НЕТ');stress(4);return;}
+  S.cigs--;S.nic=clamp(S.nic+40,0,100);S.t+=7;stress(-9);
+  closePanel();
+  if(!inside||S.alone){toast('ЗАКУРИЛ');return;}
+  if(S.t-S.lastSmokeIn>200)S.smokeIn=0;         /* через три часа забывается */
+  S.lastSmokeIn=S.t;S.smokeIn++;
+  if(S.promised){                                /* ты обещал не курить в салоне */
+    fam(-13,17);S.smokeIn=3;
+    say('МАРЬЯ',['— Ты обещал.','Она не поворачивается. Стекло опускает Тео, сам.']);
+    return;
+  }
+  if(S.smokeIn===1){fam(-3,4);toast('ЗАКУРИЛ В МАШИНЕ');}
+  else if(S.smokeIn===2){fam(-6,8);
+    say('',['Марья опускает своё стекло до упора и держит руку на кнопке.',
+            'Тео кашляет — может, взаправду, может, за компанию.']);}
+  else scandal();
+}
+function smokeMenu(){
+  if(S.cigs<=0){toast('СИГАРЕТ НЕТ');stress(3);return;}
+  const n=(S.t-S.lastSmokeIn>200)?0:S.smokeIn;
+  const warn=S.promised?tr(' · ты обещал не курить в салоне')
+            :n>=2?tr(' · Марья считает: будет третья подряд')
+            :n===1?tr(' · Марья уже сделала замечание'):'';
+  showPanel('ЗАКУРИТЬ',[
+    {t:'Выйти из машины и закурить на воздухе',
+     f(){closePanel();S.mode='foot';S.px=CAR_X+64;smoke(false);}},
+    {t:tr('Закурить в салоне')+warn,f(){smoke(true);}},
+    {t:'Передумать',f(){closePanel();}},
+  ]);
+}
+function scandal(){
+  fam(-8,12);S.shake=0.5;
+  say('МАРЬЯ · СКАНДАЛ',
+   ['— Третья за час. В машине ребёнок и Трамп.',
+    '— Я тебе не пепельница на колёсах. Выйди или туши.'],[
+   {t:'Выйти и докурить на улице',
+    f(){S.mode='foot';S.px=CAR_X+64;S.promised=true;calmFam(4,-10);stress(4);
+      say('',['Ты стоишь у собственного багажника и куришь, как подросток во дворе.',
+              'В машине опускают стекло — на этот раз без демонстрации.']);}},
+   {t:'Затушить и извиниться',max:70,lockTxt:'Извиняться сейчас нечем',
+    f(){S.nic=clamp(S.nic-22,0,100);S.promised=true;calmFam(5,-13);stress(7);
+      say('МАРЬЯ',['— Спасибо.','Она говорит это в окно, не поворачиваясь, но говорит.']);}},
+   {t:'«Это вообще-то моя машина»',min:45,rage:true,
+    f(){fam(-16,24);stress(-8);
+      say('',['Тео вжимается в дверь. Трамп орёт в переноске так, что слышно соседям.',
+              'Следующие два часа в машине не разговаривают вообще.']);}},
+  ]);
+}
+function pee(){S.bladder=0;stress(-6);S.t+=6;
+  say('',['За камнем ветер и Терек внизу.','Впервые за сутки ты один.']);}
+function drink(){if(S.water<0.25){toast('ВОДЫ НЕТ');return;}
+  S.water-=0.25;S.bladder=clamp(S.bladder+22,0,100);stress(-3);S.t+=3;closePanel();toast('ПОПИЛ ВОДЫ');}
+function scroll(){
+  closePanel();
+  if(S.batt<6){say('ТЕЛЕФОН',['Три процента. Экран гаснет на середине.']);return;}
+  S.batt-=6;S.t+=22;
+  const a=pick(CHAT),b=pick(CHAT.filter(x=>x!==a)),good=Math.random()<0.5;
+  stress(good?-5:7);if(!good)fam(0,7);
+  say('ЧАТ «ВЕРХНИЙ ЛАРС»',['— '+a,'— '+b,
+    good?'Ты закрываешь чат чуть спокойнее, чем открывал.':'Ты закрываешь чат и жалеешь, что открыл.']);
+}
+function callHome(){
+  closePanel();
+  if(S.batt<15){say('ТЕЛЕФОН',['Один процент. Гудки. Всё.']);return;}
+  S.batt-=15;stress(-10);fam(4,-7);S.t+=12;
+  say(...pick([
+    ['ЗВОНОК ДОМОЙ',['Мать: — Ты где?','Иван: — Стою.','Мать: — Ел?',
+      'Она спрашивает про еду, потому что про остальное нельзя.']],
+    ['ЗВОНОК ДОМОЙ',['Связь рвётся на середине слова.','Ты всё равно говоришь до конца.']]]));
+}
+function radioToggle(){S.radio=!S.radio;closePanel();toast(S.radio?'РАДИО ВКЛ':'РАДИО ВЫКЛ');}
+function calmMenu(){
+  if(S.alone){closePanel();say('',['В машине пусто. Трамп спит на пассажирском.']);return;}
+  showPanel('МАРЬЯ И ТЕО',[
+    {t:'Поговорить спокойно',max:60,lockTxt:'Голос дрожит',
+     f(){closePanel();S.t+=20;calmFam(6,-15);stress(3);
+       say('В МАШИНЕ',['Марья: — Ты правда не знаешь, сколько ещё?',
+                       'Иван: — Не знаю.',
+                       'Марья: — Хорошо. Спасибо, что не врёшь.']);}},
+    {t:'Включить Тео мультик (батарея −12)',f(){closePanel();
+       if(S.batt<14){toast('БАТАРЕИ НЕ ХВАТИТ');return;}
+       S.batt-=12;S.t+=25;calmFam(9,-9);toast('ТЕО СМОТРИТ МУЛЬТИК');}},
+    {t:'Выпустить Трампа из переноски',f(){closePanel();S.t+=8;
+       if(S.catOut){toast('ТРАМП УЖЕ НА КОЛЕНЯХ У ТЕО');return;}
+       S.catOut=true;fam(8,-10);stress(-5);
+       say('',['Трамп выходит недовольный и сразу ложится Тео на колени.','Первые двадцать минут в машине тихо.']);}},
+    {t:'Сказать, сколько на самом деле стоять',max:75,
+     f(){closePanel();S.t+=10;calmFam(-6,-12);stress(-2);
+       say('',['Ты говоришь: ещё сутки. Может, двое.','Марья молчит и начинает раскладывать еду по порциям.']);}},
+    {t:'Дать воды обоим',f(){closePanel();
+       if(S.water<0.6){toast('ВОДЫ НЕ ХВАТИТ');return;}
+       S.water-=0.6;calmFam(4,-7);toast('НАПОИЛ СЕМЬЮ');}},
+    {t:'Назад',f(){carMenu();}},
+  ]);
+}
+function phoneMenu(){
+  showPanel(tr('ТЕЛЕФОН · ')+Math.round(S.batt)+'%',[
+    {t:'Позвонить домой',f(){callHome();}},
+    {t:'Полистать чат «Верхний Ларс»',f(){scroll();}},
+    {t:'Змейка',f(){closePanel();startSnake();}},
+    {t:S.radio?'Выключить радио в машине':'Включить радио в машине',f(){radioToggle();}},
+    {t:'Назад',f(){carMenu();}},
+  ]);
+}
+function carMenu(){
+  const o=[
+    {t:'Ждать · перемотка времени (пробел)',f(){closePanel();S.ff=true;toast('ПЕРЕМОТКА ВРЕМЕНИ');}},
+    {t:'Успокоить семью',f(){calmMenu();}},
+    {t:'Телефон',f(){phoneMenu();}},
+    {t:'Попить воды',f(){drink();}},
+    {t:'Закурить',f(){smokeMenu();}},
+    {t:'Выйти из машины',f(){S.mode='foot';S.px=CAR_X+64;closePanel();}},
+  ];
+  if(S.bike)o.push({t:'Бросить машину и ехать дальше',f(){finish('bike');}});
+  showPanel('МАШИНА',o);
+}
+
+/* ============ разговоры ============ */
+const TALK={
+  artem(){
+    const n=S.seen.artem||0;S.seen.artem=n+1;
+    const opts=[
+      {t:'Угостить сигаретой',f(){
+        if(S.cigs<=0){toast('СИГАРЕТ НЕТ');return;}
+        S.cigs--;S.flags.artemFriend=true;stress(-5);fam(0,-4);
+        say('АРТЁМ',['Он прикуривает от твоей, ладонями от ветра.','— Если что — я сзади. Зови.']);}},
+      {t:'Просто послушать',f(){stress(-2);closeDlg();}},
+      {t:'Сказать, чтобы отвалил',min:55,rage:true,f(){stress(-6);S.flags.artemFriend=false;
+        say('АРТЁМ',['Он смотрит секунду и отходит к своей машине.']);}},
+    ];
+    if(n===0)say('АРТЁМ',['Впереди говорят — восемь часов до шлагбаума.','Вчера тоже говорили восемь.'],opts);
+    else if(n===1)say('АРТЁМ',['Пешеходов пускают быстрее. Проверено.','Машину только жалко, я на ней десять лет.'],opts);
+    else say('АРТЁМ',['Ничего не изменилось. Стоим.'],opts);
+  },
+  mom(){
+    if(S.flags.gaveWater){say('ЖЕНЩИНА',['Спасибо. Он уснул наконец.']);return;}
+    say('ЖЕНЩИНА',['Вода кончилась часа два назад.','Ребёнок не плачет. Просто смотрит.'],[
+      {t:'Отдать полтора литра',f(){
+        if(S.water<1.6){say('','Столько у тебя нет.');return;}
+        S.water-=1.5;stress(-12);fam(7,-7);S.flags.gaveWater=true;
+        say('ЖЕНЩИНА',['Она не говорит спасибо сразу.','Говорит через минуту, уже в спину.']);}},
+      {t:'Сказать, что нет',f(){stress(7);fam(-4,4);
+        say('',['Она кивает так, будто знала ответ заранее.']);}},
+      {t:'Сказать всё, что думаешь про эту очередь',min:65,rage:true,
+        f(){stress(-4);fam(-8,12);say('',['Ты говоришь слишком громко.','Марья смотрит на тебя из машины через стекло.']);}},
+    ]);
+  },
+  gas(){
+    if(S.seen.gas){say('МУЖИК',['Всё, больше нет. Разобрали.']);return;}
+    say('МУЖИК',['— Десять литров. Тысяча за литр.','— Не нравится — стой без бензина.'],[
+      {t:'Купить 10 л (10 000 ₽)',f(){
+        if(S.money<10000){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=10000;S.fuel+=10;S.seen.gas=1;stress(-4);fam(0,-6);
+        say('МУЖИК',['Канистра тяжелее, чем кажется.']);}},
+      {t:'Поторговаться',max:70,f(){
+        if(Math.random()<0.5&&S.money>=7000){S.money-=7000;S.fuel+=10;S.seen.gas=1;fam(0,-6);
+          say('МУЖИК С КАНИСТРОЙ',['— Семь. И иди отсюда.']);}
+        else{stress(6);say('МУЖИК',['— Иди отсюда бесплатно.']);}}},
+      {t:'Схватить канистру',min:70,rage:true,
+       f(){fight('канистра',{winKm:0,loseKm:120,winAnx:20,loseAnx:34,winFuel:10,
+         winTxt:['Канистра оказывается в твоих руках, и ты не помнишь как.','Десять литров. Ты не смотришь по сторонам.']});}},
+    ]);
+  },
+  kiosk(){
+    say('ЛАРЁК',['Варёные яйца, кофе и вода в полторашках. Очередь человек семьдесят.','Ценник от руки: яйцо 400, вода 500.'],[
+      {t:'Взять на троих (1200 ₽)',f(){
+        if(S.money<1200){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=1200;S.t+=40;fam(11,-11);stress(-7);
+        say('',['Тео ест яйцо так, будто это лучшее, что было в его жизни.']);}},
+      {t:'Купить воды: три бутылки по 1,5 л (1500 ₽)',f(){
+        if(S.money<1500){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=1500;S.water=Math.min(6,S.water+4.5);S.t+=30;calmFam(3,-5);
+        say('',['Вода тёплая и в мятых бутылках, но её сразу три.',
+                'Марья убирает две под сиденье и одну отдаёт Тео.']);}},
+      {t:'Купить сигареты (900 ₽)',f(){
+        if(S.money<900){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=900;S.cigs+=20;S.t+=25;toast('ПАЧКА В КАРМАНЕ');closeDlg();}},
+      {t:'Влезть без очереди',min:55,rage:true,
+       f(){fight('очередь за кофе',{winKm:0,loseKm:0,winAnx:14,loseAnx:26,
+         winTxt:['Тебе отдают стакан молча.','Никто не смотрит в глаза, включая тебя.']});}},
+      {t:'Пройти мимо',f(){closeDlg();}},
+    ]);
+  },
+  fire(){
+    say('КОСТЁР',['Чай в железной кружке.','Никто не спрашивает, куда ты и почему.'],[
+      {t:'Выкурить сигарету с чаем, не торопясь',f(){
+        if(S.cigs<=0){toast('СИГАРЕТ НЕТ');return;}
+        S.cigs--;S.nic=clamp(S.nic+40,0,100);S.t+=95;stress(-28);fam(-3,7);
+        S.nextAdv=Math.max(S.nextAdv,S.t+40);      /* ряд стоит, пока ты сидишь */
+        say('КОСТЁР',pick(FIRE_TALK));}},
+      {t:'Посидеть час',f(){S.t+=60;stress(-16);fam(-2,6);
+        say('',['Час прошёл. Стало теплее и почему-то тише.','Марья пишет: «ты где».']);}},
+      {t:'Позвать Марью и Тео',f(){S.t+=70;stress(-8);calmFam(10,-16);
+        say('',['Тео греет руки о кружку двумя ладонями.','Кто-то даёт ему яблоко.']);}},
+      {t:'Пройти мимо',f(){closeDlg();}},
+    ]);
+  },
+  bike(){
+    if(S.bike){say('ПАРЕНЬ',['Ключи у меня. Иди уже.']);return;}
+    const p=Math.round(S.bikePrice/1000)*1000;
+    say('ПАРЕНЬ',['— Велосипед. До шлагбаума докатишь, дальше пешком.',
+      '— '+p.toLocaleString('ru-RU')+' ₽. Через час будет дороже.'],[
+      {t:tr('Купить (')+p.toLocaleString('ru-RU')+' ₽)',f(){
+        if(S.money<p){toast('ДЕНЕГ НЕ ХВАТАЕТ');return;}
+        S.money-=p;S.bike=true;fam(-5,-10);toast('В МЕНЮ МАШИНЫ: БРОСИТЬ МАШИНУ');
+        say('',['Он записывает твой номер на пачке сигарет.',
+                'Марья спрашивает: «а мы вчетвером на нём как?» — и сама отвечает: «пешком, рядом».',
+                'Теперь в меню машины (E) есть пункт «бросить машину и ехать дальше».']);}},
+      {t:'Сказать, что это грабёж',min:60,rage:true,f(){stress(-3);S.bikePrice*=1.15;
+        say('ПАРЕНЬ',['— Ну стой тогда. Цена только что выросла.']);}},
+      {t:'Отказаться',f(){closeDlg();}},
+    ]);
+  },
+  rock(){pee();},
+};
+function talkPasser(w){
+  say('ПРОХОЖИЙ',[w.line],[
+    {t:'Спросить, как там впереди',f(){stress(-2);S.t+=8;
+      say('ПРОХОЖИЙ',[pick([
+        '— Сутки. Может, полтора. Никто не считает.',
+        '— У шлагбаума пешеходов пускают. Машины — как повезёт.',
+        '— Не верь чату. Там половина сидит дома и пишет.'])]);}},
+    {t:'Попросить сигарету',f(){
+      if(Math.random()<0.5){S.cigs+=2;stress(-4);
+        say('ПРОХОЖИЙ',['Он достаёт мятую пачку и даёт две.','— Бери. Всё равно бросаю с понедельника.']);}
+      else{stress(3);say('ПРОХОЖИЙ',['— Сам стреляю, брат.']);}}},
+    {t:'Угостить сигаретой',f(){
+      if(S.cigs<=0){toast('СИГАРЕТ НЕТ');return;}
+      S.cigs--;stress(-4);fam(0,-2);
+      say('ПРОХОЖИЙ',['Он кивает и стоит рядом молча, пока не докурит.']);}},
+    {t:'Толкнуть его',min:40,rage:true,
+     f(){fight('прохожий',{winKm:0,loseKm:130,winAnx:18,loseAnx:32,
+       winTxt:['Он отступает и уходит, оглядываясь.','Драка ничего тебе не дала. Совсем ничего.'],
+       loseTxt:['Тебя роняют на щебень при всём ряду.','Кто-то снимает это на телефон.']});}},
+  ]);
+}
+
+/* ============ драка на кубиках ============
+   2d6 + модификаторы. 8 и выше — успех, ровно 7 — половинчатый исход,
+   6 и ниже — провал. Модификаторы показываются до броска вместе с шансом. */
+function fightMods(){
+  const list=[];let mod=0;
+  if(S.flags.artemFriend){mod+=2;list.push(['Артём за спиной',2]);}
+  if(S.flags.gaveWater){mod+=1;list.push(['в ряду тебя помнят по воде',1]);}
+  if(S.stress>=45&&S.stress<=72){mod+=1;list.push(['злость собранная, не слепая',1]);}
+  if(S.stress>85){mod-=2;list.push(['руки трясутся',-2]);}
+  else if(S.stress>72){mod-=1;list.push(['ты уже плохо себя слышишь',-1]);}
+  if(craving()>0.6){mod-=1;list.push(['ломка',-1]);}
+  if(S.fights===1){mod-=1;list.push(['тебя уже запомнили',-1]);}
+  else if(S.fights>1){mod-=2;list.push(['ты тут известный скандалист',-2]);}
+  if(S.steady){mod+=1;list.push(['перекур помог',1]);}
+  return {mod,list};
+}
+function diceOdds(mod){
+  let w=0,x=0;
+  for(let a=1;a<=6;a++)for(let b=1;b<=6;b++){
+    const t=a+b+mod;if(t>=8)w++;else if(t===7)x++;}
+  return {win:Math.round(w/36*100),mix:Math.round(x/36*100)};
+}
+function fight(reason,cfg){
+  cfg=cfg||{};S.pendingFight={reason,cfg};
+  fightPrep();
+}
+function fightPrep(){
+  const {mod,list}=fightMods(),o=diceOdds(mod);
+  const sign=v=>(v>0?'+':'')+v;
+  const mtxt=list.length?list.map(m=>tr(m[0])+' '+sign(m[1])).join(' · '):tr('без модификаторов');
+  const opts=[
+    {t:tr('Бросить кубики · успех ')+o.win+tr('%, вничью ')+o.mix+'%',f(){closePanel();rollFight();}},
+  ];
+  if(!S.steady&&S.cigs>0)opts.push({t:tr('Сначала закурить и выдохнуть (+1, минус сигарета)'),
+    f(){closePanel();S.cigs--;S.nic=clamp(S.nic+30,0,100);S.steady=1;S.t+=10;stress(-8);
+      toast('РУКИ УСПОКОИЛИСЬ');fightPrep();}});
+  opts.push({t:tr('Отступить и вернуться к машине'),f(){closePanel();stress(6);fam(-2,0);
+    S.pendingFight=null;S.steady=0;
+    say('',['Ты разворачиваешься первым, и это тоже стоит усилия.','Никто ничего не говорит вслед.']);}});
+  showPanel(tr('2d6 · НУЖНО 8 · ')+mtxt,opts);
+}
+function rollFight(){
+  const {mod,list}=fightMods();
+  const d1=1+Math.floor(Math.random()*6),d2=1+Math.floor(Math.random()*6);
+  const sum=d1+d2+mod;
+  S.dice={d1,d2,mod,mods:list.map(m=>tr(m[0])+' '+(m[1]>0?'+':'')+m[1]),sum,
+          tier:sum>=8?'win':sum===7?'mix':'lose',
+          cfg:S.pendingFight.cfg,reason:S.pendingFight.reason,t:0,phase:'roll'};
+  S.pendingFight=null;S.steady=0;
+  diceEl.style.display='flex';
+  document.getElementById('dice-r').textContent='';
+  document.getElementById('dice-c').textContent='';
+}
+const FACE=['','⚀','⚁','⚂','⚃','⚄','⚅'];
+function diceStep(dt){
+  const D=S.dice;if(!D)return;D.t+=dt;
+  const f=document.getElementById('dice-f');
+  if(D.phase==='roll'){
+    f.textContent=FACE[1+Math.floor(Math.random()*6)]+' '+FACE[1+Math.floor(Math.random()*6)];
+    if(D.t>0.9){
+      D.phase='done';f.textContent=FACE[D.d1]+' '+FACE[D.d2];
+      document.getElementById('dice-c').innerHTML=
+        tr(D.reason).toUpperCase()+'<br>'+D.d1+' + '+D.d2+(D.mod?(D.mod>0?' +':' ')+D.mod:'')+
+        ' = <b>'+D.sum+'</b> · '+tr('нужно 8')+'<br>'+(D.mods.length?D.mods.map(tr).join(' · '):tr('без модификаторов'));
+      const r=document.getElementById('dice-r');
+      r.textContent=D.tier==='win'?'ПОЛУЧИЛОСЬ':D.tier==='mix'?'НАПОЛОВИНУ':'НЕ ПОЛУЧИЛОСЬ';
+      r.className='res '+(D.tier==='win'?'win':D.tier==='mix'?'mix':'lose');
+      applyFight(D);
+    }
+  }else if(D.t>3.0)endDice();
+}
+function applyFight(D){
+  const c=D.cfg;S.shake=1;S.fights++;
+  if(D.tier==='win'){
+    S.km-=(c.winKm!==undefined?c.winKm:160);
+    if(c.winFuel)S.fuel+=c.winFuel;
+    stress(-12);fam(-8,c.winAnx!==undefined?c.winAnx:18);
+  }else if(D.tier==='mix'){
+    S.km-=(c.winKm!==undefined?c.winKm:160)*0.4;
+    if(c.winFuel)S.fuel+=c.winFuel*0.5;
+    stress(4);fam(-6,14);
+  }else{
+    S.km+=(c.loseKm!==undefined?c.loseKm:260);stress(22);
+    fam(-14,c.loseAnx!==undefined?c.loseAnx:38);
+    if(c.lose)D.hardLose=c.lose;
+  }
+}
+function endDice(){
+  const D=S.dice;S.dice=null;diceEl.style.display='none';
+  if(D.hardLose){finish(D.hardLose);return;}
+  const c=D.cfg;
+  if(D.tier==='win')say('',c.winTxt||['Он отходит. Кто-то в ряду хлопает — один раз, неуверенно.',
+                             'Тео смотрит на тебя из заднего окна и не отворачивается.']);
+  else if(D.tier==='mix')say('',c.mixTxt||['Вас растаскивают через полминуты, до настоящего не доходит.',
+                             'Ты получаешь половину того, за чем шёл, и полный набор чужих взглядов.']);
+  else say('',c.loseTxt||['Ты сидишь на обочине и не сразу понимаешь, что губа разбита.',
+                          'Марья не выходит из машины.']);
+}
+
+/* ============ змейка ============ */
+function startSnake(){S.overlay='snake';
+  S.snake={g:[{x:6,y:4}],dir:{x:1,y:0},nd:{x:1,y:0},food:{x:10,y:3},acc:0,score:0,dead:false,cols:14,rows:8};}
+function snakeStep(dt){
+  const s=S.snake;if(!s)return;
+  S.batt=clamp(S.batt-dt*0.55,0,100);
+  if(s.dead){s.acc+=dt;if(s.acc>1.4)stopSnake();return;}
+  s.acc+=dt;if(s.acc<Math.max(0.075,0.16-s.score*0.006))return;s.acc=0;
+  s.dir=s.nd;
+  const h={x:s.g[0].x+s.dir.x,y:s.g[0].y+s.dir.y};
+  if(h.x<0||h.y<0||h.x>=s.cols||h.y>=s.rows||s.g.some(p=>p.x===h.x&&p.y===h.y)){s.dead=true;stress(5);return;}
+  s.g.unshift(h);
+  if(h.x===s.food.x&&h.y===s.food.y){s.score++;stress(s.score%5===0?-5:-3);
+    s.food={x:Math.floor(Math.random()*s.cols),y:Math.floor(Math.random()*s.rows)};}
+  else s.g.pop();
+}
+function stopSnake(){const sc=S.snake?S.snake.score:0;S.snake=null;S.overlay=null;toast(tr('ЗМЕЙКА: ')+sc);}
+
+/* ============ три обязательных события (порядок по спецификации) ============ */
+function ev_closed(){
+  S.evDone.closed=1;
+  sms('ЧАТ','пункт пропуска встал. подтверждений нет');
+  say('ОЧЕРЕДЬ ВСТАЛА',
+   ['Впереди не двигаются сорок минут. По ряду идёт слово: «закрыли».',
+    'Марья смотрит на тебя и ждёт решения. Тео уже спрашивал дважды.'],[
+   {t:'Ждать в ряду и объяснить почему',max:65,
+    f(){calmFam(-3,-13);stress(5);S.t+=30;
+      say('',['Ты говоришь: слухи ходят с первого дня.','Через сорок минут ряд трогается. В этот раз ты угадал.']);}},
+   {t:'Пойти вперёд узнать (10 минут пешком)',
+    f(){S.mode='foot';S.px=CAR_X+120;S.t+=25;stress(6);fam(-4,6);
+      say('',['У шлагбаума говорят: не закрыли, меняется смена.','Ты идёшь обратно и слышишь сигналы задолго до своей машины.']);
+      S.nextAdv=S.t+4;}},
+   {t:'Заплатить за место ближе (15 000 ₽)',
+    f(){if(S.money<15000){toast('ДЕНЕГ НЕ ХВАТАЕТ');stress(8);return;}
+      S.money-=15000;S.km-=700;fam(-6,-8);stress(-4);
+      say('',['Мужчина на «Ниве» молча пускает тебя перед собой.','Сзади сигналят. Ты не оборачиваешься.']);}},
+  ]);
+}
+function ev_health(){
+  S.evDone.health=1;S.evDone.healthAt=S.t;
+  say('ТЕО',['Тео горячий и его тошнит второй раз.','До ближайшей больницы — назад через всю пробку.'],[
+   {t:'Вода и жаропонижающее из аптечки',f(){
+      if(S.water<0.5){toast('ВОДЫ НЕТ');fam(-10,26);S.teoSick=1;
+        say('',['Воды нет. Ты идёшь просить к соседним машинам и возвращаешься ни с чем.',
+                'К утру Тео не становится лучше.']);return;}
+      S.water-=0.5;S.t+=50;calmFam(4,-12);stress(6);
+      say('',['К утру температура спадает.','Марья впервые за сутки берёт тебя за руку.']);}},
+   {t:'Греть машину и не глушить двигатель',f(){
+      S.fuel-=5;S.t+=60;calmFam(2,-8);stress(4);
+      say('',['Печка работает всю ночь. Тео засыпает в тепле.','Стрелка бензина уходит заметно.']);}},
+   {t:'Просить помощи у соседей',f(){
+      if(S.flags.artemFriend||Math.random()<0.6){S.t+=40;calmFam(12,-22);stress(-6);
+        say('',['Через десять минут у машины трое: чай, детский нурофен, чужое одеяло.',
+                'Женщина из «буханки» говорит: «у меня двое, я знаю».']);}
+      else{S.t+=40;fam(-8,20);S.teoSick=1;
+        say('',['Все спят или делают вид.','Ты возвращаешься с пустыми руками, и это видно по лицу Марьи.']);}}},
+  ]);
+}
+function ev_crowd(){
+  S.evDone.crowd=1;S.shake=0.7;
+  say('АГРЕССИЯ В РЯДУ',
+   ['Чёрный седан лезет с обочины прямо перед тобой. Из него выходят двое.',
+    'Один уже кричит. Марья закрывает Тео ладонью окно.'],[
+   {t:'Деэскалация: отойти и говорить тихо',max:75,
+    lockTxt:'Ты уже не можешь говорить тихо',
+    f(){stress(8);calmFam(3,-10);S.km+=60;
+      say('',['Ты говоришь тише, чем он. Через минуту он тоже говорит тише.','Машину он всё-таки впихивает. Шестьдесят метров — небольшая цена.']);}},
+   {t:'Встать между ним и машиной',
+    f(){stress(12);fam(6,10);
+      say('',['Ты просто стоишь и не двигаешься. Он объезжает.','Тео видел всё до последней секунды.']);}},
+   {t:'Держать позицию любой ценой',rage:true,min:35,
+    f(){fight('обочина',{winKm:-240,loseKm:280,winAnx:22,loseAnx:36});}},
+  ]);
+}
+function ev_voenkom(){
+  S.evDone.voenkom=1;
+  say('ПО РЯДУ ИДУТ ДВОЕ',
+   ['Форма, планшет со списками. Останавливаются у каждой третьей машины.'],[
+   {t:'Спокойно отдать документы',max:70,
+    f(){if(Math.random()<0.75){fam(2,12);stress(9);
+        say('',['Смотрят паспорт дольше, чем нужно. Отдают.','Тео спрашивает, кто это был. Ты говоришь: проверка.']);}
+      else{fam(-6,30);stress(18);
+        say('',['Фамилию находят в списке.','Тебе объясняют, что повестка — это ещё не приказ.']);}}},
+   {t:'Отправить говорить Марью',
+    f(){fam(-16,18);stress(6);
+      say('',['Марья говорит с ними одна, три минуты, спиной к машине.','Она возвращается и весь следующий час молчит.']);}},
+  ]);
+}
+function ev_teo_worse(){
+  S.evDone.worse=1;
+  say('ТЕО НЕ СТАНОВИТСЯ ЛУЧШЕ',
+   ['Температура держится шестой час. Он перестал спрашивать, скоро ли мы приедем.',
+    'Марья смотрит на тебя и говорит ровно одну фразу: «Решай».'],[
+   {t:'Развернуться и ехать во Владикавказ, в больницу',
+    f(){finish('hospital');}},
+   {t:'Идти по ряду и искать врача',f(){
+      if(S.flags.gaveWater||S.flags.artemFriend||S.water>=1){S.teoSick=0;S.t+=70;calmFam(8,-10);
+        say('',['Через сорок минут находится женщина-педиатр из шестой машины.',
+                'Она делает всё за десять минут и не берёт денег.']);}
+      else{S.t+=70;fam(-10,22);
+        say('',['Никто не отзывается. Ты возвращаешься к машине через час.',
+                'Марья уже собрала аптечку в пакет и держит его на коленях.']);}}},
+   {t:'Ждать до шлагбаума, там врачи',max:70,lockTxt:'Ты сам в это не веришь',
+    f(){S.t+=40;fam(-6,16);
+      say('',['Ты говоришь, что до границы недалеко.','Марья не спорит, и это хуже спора.']);}},
+  ]);
+}
+function checkEvents(){
+  if(S.dialog||S.panel||S.dice||S.overlay||S.scene!=='play')return;
+  if(S.t<S.quietUntil||S.honk)return;         /* пауза после сцены и во время сигнала */
+  if(S.teoSick&&!S.evDone.worse&&S.evDone.health&&S.t>S.evDone.healthAt+90){ev_teo_worse();return;}
+  if(!S.evDone.closed&&S.km<9600){ev_closed();return;}
+  if(!S.evDone.health&&S.km<7000){ev_health();return;}
+  if(!S.evDone.voenkom&&S.km<5200&&Math.random()<0.5){ev_voenkom();return;}
+  if(!S.evDone.crowd&&S.km<3600){ev_crowd();return;}
+}
+function pickToxic(){
+  let T,n=0;
+  do{T=pick(TOXIC);n++;}while(T===S.lastToxic&&n<8);
+  S.lastToxic=T;return T;
+}
+function toxic(){
+  if(S.alone)return;
+  const T=pickToxic();
+  say(T.who+' · В МАШИНЕ',[T.line],[
+    {t:T.calm,max:58,lockTxt:T.lock,
+     f(){calmFam(6,-12);stress(3);closeDlg();toast(T.who==='ТЕО'?'ТЕО КИВАЕТ':'МАРЬЯ КИВАЕТ');}},
+    {t:T.quiet,f(){fam(-2,5);stress(5);closeDlg();}},
+    {t:T.snap,min:45,rage:true,f(){fam(-9,12);stress(-6);say('',pick(AFTER));}},
+  ]);
+}
+
+/* ============ мягкие последствия вместо game over ============ */
+function softFuel(){
+  S.stalled=1;S.lastSoft=S.t;S.t+=25;
+  const price=4000+S.dryCount*2500;
+  S.dryCount++;
+  const o=[];
+  if(S.money>=price)o.push({t:tr('Купить 8 л у соседа (')+price.toLocaleString('ru-RU')+' ₽)',
+    f(){closePanel();S.money-=price;S.fuel+=8;S.t+=20;fam(-3,6);stress(4);
+      say('',['Канистру он приносит из багажника и держит воронку сам.',
+              'Восемь литров. Стрелка отрывается от нуля.']);}});
+  o.push({t:'Попросить бесплатно у тех, кому давал воду',
+    f(){closePanel();
+      if(S.flags.gaveWater||S.flags.artemFriend){S.fuel+=6;S.t+=35;calmFam(6,-8);stress(-4);
+        say('',['Артём сливает шесть литров и машет рукой, когда ты лезешь за деньгами.',
+                '— Сочтёмся на той стороне.']);}
+      else{S.t+=40;stress(14);fam(-6,12);S.fuel+=2;
+        say('',['Просить у незнакомых оказывается труднее, чем ты думал.',
+                'Двое отказывают, третий сливает пару литров и сразу уходит.']);}}});
+  if(S.dryCount>=3&&S.money<4000&&!S.flags.artemFriend)
+    o.push({t:'Больше просить не у кого · развернуться',f(){closePanel();finish('stranded');}});
+  o.push({t:'Толкать машину руками до следующего рывка',
+    f(){closePanel();S.fuel+=3;S.t+=50;stress(18);fam(-8,14);S.km+=120;
+      say('',['Толкаете втроём: ты, Артём и кто-то из «буханки».',
+              'Сто метров, потом ещё сто. На заправке в семи километрах отсюда бензин есть.']);}});
+  showPanel('СУХОЙ БАК · РЯД УХОДИТ БЕЗ ТЕБЯ',o);
+}
+function softStress(){
+  S.stress=52;S.t+=25;S.km+=120;S.lastSoft=S.t;
+  say('ТЫ ВЫШЕЛ ИЗ РЯДА',
+   ['Ты просто идёшь по обочине минут двадцать и ни на кого не смотришь.',
+    'Возвращаешься спокойнее. Место сзади уже занято.']);
+}
+/* стресс почти на пределе: игра даёт вытащить себя */
+function brinkScene(){
+  S.quietUntil=S.t+90;
+  const o=[
+    {t:'Выйти и покурить, глядя на реку',f(){closePanel();
+      if(S.cigs<=0){toast('СИГАРЕТ НЕТ');stress(4);return;}
+      S.cigs--;S.nic=clamp(S.nic+40,0,100);S.t+=25;stress(-22);
+      say('',['Терек внизу шумит так, что перекрывает ряд.','Ты стоишь ровно столько, сколько горит сигарета.']);}},
+    {t:'Позвонить домой и просто послушать',f(){closePanel();
+      if(S.batt<12){toast('ТЕЛЕФОН РАЗРЯЖЕН');stress(4);return;}
+      S.batt-=12;S.t+=20;stress(-24);fam(3,0);
+      say('ЗВОНОК',['Ты почти ничего не говоришь.','На том конце рассказывают про соседского кота и погоду. Этого достаточно.']);}},
+    {t:'Сказать Марье, что тебе страшно',f(){closePanel();S.t+=20;stress(-26);calmFam(9,0);
+      say('МАРЬЯ',['— Я знаю, — говорит она. — Я думала, ты никогда этого не скажешь.',
+                   'Тео делает вид, что спит, и слушает.']);}},
+    {t:'Ничего, ехать дальше молча',f(){closePanel();stress(6);fam(-4,0);
+      say('',['Ты сжимаешь руль и считаешь до десяти.','Помогает примерно на двадцать минут.']);}},
+  ];
+  showPanel('ТЫ НА ПРЕДЕЛЕ',o);
+}
+function softFamily(){
+  /* если настроение ещё живо — они просто уходят вперёд и ждут на той стороне */
+  if(S.fam.happy>28){
+    S.alone=true;S.aheadOk=true;stress(10);
+    if(S.mode==='car')
+      say('МАРЬЯ СОБИРАЕТ РЮКЗАК',
+       ['— Пеших пускают быстрее. Мы пойдём вперёд и подождём тебя за постом.',
+        'Она говорит это спокойно, при Тео, и целует тебя в висок.',
+        'Ты остаёшься в машине с Трампом и ключами в руке.']);
+    else{
+      sms('МАРЬЯ','мы с тео пойдём вперёд пешком. ждём тебя за постом. всё в порядке');
+      say('ТЫ ВИДИШЬ ЭТО ИЗДАЛЕКА',
+       ['Дверь твоей машины открывается. Марья вытаскивает рюкзак и берёт Тео за руку.',
+        'Она оборачивается и машет — значит, договорились, а не ушла.',
+        'В салоне остаются Трамп и ключи в замке.']);
+    }
+    return;
+  }
+  finish('back_family');
+}/* ============ очередь и тик ============ */
+function advance(){
+  if(S.stalled){S.stalled=0;toast('РЯД УШЁЛ БЕЗ ТЕБЯ');S.nextAdv=S.t+rnd(20,40);return;}
+  if(S.mode==='foot'&&Math.abs(S.px-CAR_MID)>210){
+    S.km+=70;stress(8);fam(-3,7);S.misses++;toast('ТЫ БЫЛ СЛИШКОМ ДАЛЕКО ОТ МАШИНЫ');
+  }else{const d=rnd(120,520);S.km-=d;S.fuel-=0.3;S.rollLeft+=Math.min(46,d*0.09);S.advAnim=1;stress(-3);fam(2,-4);
+    if(S.mode==='foot')toast(tr('УСПЕЛ · РЯД ПРОШЁЛ ')+Math.round(d)+tr(' М'));}
+  S.nextAdv=S.t+rnd(22,58);S.honk=false;
+}
+function step(dt){
+  if(S.scene!=='play')return;
+  const busy=S.dialog||S.panel||S.dice||S.overlay;
+  /* таймер эпизода: во время чтения идёт втрое медленнее */
+  S.left-=busy?0:dt;                    /* пока открыт диалог, время не идёт */
+  if(S.left<=0&&!busy){S.left=0;finish('open');return;}
+  if(S.dice){diceStep(dt);return;}
+  if(S.overlay==='snake'){snakeStep(dt);S.t+=dt*6;return;}
+  const rate=(S.ff&&!busy)?26:5;
+  if(!busy||S.ff)S.t+=dt*rate;
+  const dm=dt*rate,night=isNight(),cr=craving();
+  S.fuel-=dm*(night?0.012:0.007);
+  S.water-=dm*0.0026;
+  S.batt-=dm*(0.010+(S.radio?0.004:0));
+  S.nic-=dm*0.055;                     /* сигареты хватает примерно на треть эпизода */
+  S.bladder+=dm*0.038;
+  stress(dm*(0.007+cr*0.022+(S.bladder>75?0.03:0)+(S.water<=0?0.06:0)+(night?0.005:0)+
+          (S.alone?0.004:(100-S.fam.happy)/7000)+(S.fuel<4?0.012:0)));
+  if(!S.alone){
+    /* семья устаёт сама и заметно быстрее, когда ты на взводе */
+    S.fam.happy=clamp(S.fam.happy-dm*(0.004+(S.stress>70?0.012:0)+(S.stress>88?0.012:0)+(night?0.003:0)),0,100);
+  }
+  S.fuel=Math.max(0,S.fuel);S.water=Math.max(0,S.water);
+  S.batt=clamp(S.batt,0,100);S.nic=clamp(S.nic,0,100);S.bladder=clamp(S.bladder,0,100);
+  S.bikePrice=Math.min(100000,38000+S.t*38);
+  if(S.shake>0)S.shake=Math.max(0,S.shake-dt*1.5);
+  if(!S.alone&&S.warned<1&&S.fam.happy<38){S.warned=1;
+    sms('МАРЬЯ · ИЗ МАШИНЫ','я больше не понимаю, зачем мы это делаем. поговори со мной');
+    toast('СЕМЬЯ НА ПРЕДЕЛЕ');}
+  if(!S.alone&&S.warned<2&&S.fam.happy<18){S.warned=2;
+    sms('МАРЬЯ · ИЗ МАШИНЫ','если ты ещё раз так на нас посмотришь, мы поедем домой');
+    toast('МАРЬЯ ГОТОВА РАЗВЕРНУТЬСЯ');}
+  if(S.warned&&S.fam.happy>48)S.warned=0;
+  if(S.stress>86&&!S.brink&&!busy){S.brink=1;brinkScene();}
+  if(S.stress<62)S.brink=0;
+  if(!S.honk&&S.t>S.nextAdv-26){S.honk=true;S.ff=false;if(S.mode==='foot')toast('СИГНАЛЯТ СЗАДИ');}
+  if(S.t>=S.nextAdv)advance();
+  if(S.advAnim>0)S.advAnim=Math.max(0,S.advAnim-dt*1.6);
+  if(S.rollLeft>0){                     /* ряд катится, а не телепортируется */
+    const st=Math.min(S.rollLeft,dt*34);
+    S.rollLeft-=st;S.roadOff+=st;S.bgOff+=st*0.55;
+  }
+  if(S.t>S.nextSms){S.nextSms=S.t+rnd(260,460);
+    if(S.batt>3&&!S.honk){const m=pick(SMSES);sms(m.w,m.t);stress(2);}}
+  if(S.t>S.nextToxic&&S.t>S.quietUntil&&!S.honk&&S.mode==='car'&&!busy&&!S.alone){S.nextToxic=S.t+rnd(240,420);toxic();}
+  if(S.mode==='foot'){
+    if(keys['ArrowLeft']){S.px-=66*dt;S.face=-1;S.walk+=dt*9;}
+    if(keys['ArrowRight']){S.px+=66*dt;S.face=1;S.walk+=dt*9;}
+    S.px=clamp(S.px,CAR_X-6*SPACING-40,CAR_X+9*SPACING+70);
+  }
+  for(const w of WANDER){w.x+=w.d*w.v*dt;w.ph+=dt*7;
+    if(w.x<CAR_X-6*SPACING||w.x>CAR_X+9*SPACING){w.d*=-1;w.line=pick(PASSER);}}
+  for(const c of CARS){if(Math.random()<0.0015)c.puff=1;if(c.puff>0)c.puff-=dt*0.7;}
+  for(const cl of CLOUDS){cl.x-=cl.v*dt*2;if(cl.x<-cl.w){cl.x=W+cl.w;cl.y=rnd(16,54);}}
+  if(!busy){
+    const softOk=S.t-S.lastSoft>150;      /* не чаще раза в два с половиной часа */
+    if(S.stress>=100){finish('back_self');return;}
+    if(!S.alone&&S.fam.happy<=0){softFamily();return;}
+    if(!S.alone&&S.fam.happy<=12&&S.stress>82&&S.t-S.lastSoft>200){S.lastSoft=S.t;softFamily();return;}
+    if(S.fuel<=0&&!S.stalled&&softOk)softFuel();
+    else checkEvents();
+  }
+  if(S.km<=0&&!busy)finish('border');
+}
+
+/* ============ рефлексия и прибытие ============ */
+/* сцена 1: как именно вы прошли границу */
+const CROSSING={
+ border:['Шлагбаум поднимается в двадцать минут седьмого.',
+         'Восемьдесят метров ничьей земли вы идёте пешком — так почему-то честнее.',
+         'Пограничник смотрит в паспорт дольше, чем нужно, и отдаёт его.'],
+ open:  ['В четыре утра на пункте меняется смена.',
+         'Ряд трогается и идёт не останавливаясь. Никто не объясняет почему.',
+         'Шлагбаум вы проезжаете уже на рассвете, не веря, что это происходит.'],
+ bike:  ['Машина остаётся в ряду с ключами в замке зажигания.',
+         'Дальше — по обочине, мимо всех, кого ты знал последние сутки.',
+         'Велосипед ты бросаешь сразу за шлагбаумом, у грузинского поста.'],
+};
+/* сцена 2: гостиница и рефлексия */
+const REFLECT=[
+ ['Всю дорогу ты решал за всех.','Впервые за двое суток никто ничего не спрашивает.'],
+ ['Ты привык быть тем, кто держит. Держал.','Только сейчас замечаешь, что руки не разжимаются.'],
+ ['Здесь пахнет чужим стиральным порошком и работает горячая вода.','Ты садишься на край кровати и десять минут просто сидишь.'],
+];
+const ARRIVALS={
+ border:{h:'Перешли',t:'Гостиничный номер нашёлся на третьем этаже старого дома в Тбилиси: две кровати, окно во двор, ключ на деревянной груше.'},
+ open:  {h:'Границу открыли',t:'Гостиничный номер нашёлся на третьем этаже старого дома в Тбилиси: две кровати, окно во двор, ключ на деревянной груше.'},
+ bike:  {h:'Налегке',t:'Номер вы находите к ночи, без машины и почти без вещей. Третий этаж, окно во двор, ключ на деревянной груше.'},
+};
+/* провалы: каждый — свой способ не доехать */
+const FAILS={
+ back_self:{h:'Разворот',
+  l:['Ты выезжаешь из ряда через обочину и не можешь объяснить зачем.',
+     'Сзади не сигналят: место освободилось, всем только лучше.',
+     'Обратная дорога занимает четыре часа. Марья за всю дорогу не говорит ни слова, Тео спит.'],
+  t:'Ты не выдержал первым. Машина, семья и кот вернулись домой на трое суток позже, чем выехали.'},
+ back_family:{h:'Они не поехали',
+  l:['— Я не поеду с тобой такой дорогой, — говорит Марья. — И Тео не повезу.',
+     'Она произносит это без злости, тем голосом, которым сообщают решение, а не спорят.',
+     'Вы разворачиваетесь у поста и едете назад в общем потоке тех, кто передумал.'],
+  t:'Дело было не в очереди. Семья не выдержала не дороги, а того, кем ты стал за эти сутки.'},
+ hospital:{h:'Во Владикавказ',
+  l:['Ты разворачиваешься через обочину и едешь назад, обгоняя ряд по встречной.',
+     'Тео на заднем сиденье лежит на коленях у Марьи и не жалуется. Это и есть самое страшное.',
+     'В приёмном покое вас принимают через сорок минут. К утру температура спадает.'],
+  t:'Правильное решение и провалившийся эпизод одновременно. Границу вы не перешли — но и не должны были в ту ночь.'},
+ detained:{h:'Задержали',
+  l:['Двое в форме подходят с обеих сторон, и один берёт тебя под локоть — почти вежливо.',
+     'Марья видит это из машины и закрывает Тео глаза ладонью.',
+     'Разбирательство занимает вторую половину ночи. К утру вас отправляют обратно.'],
+  t:'Ты сказал то, что думал, ровно тому, кому этого говорить не стоило.'},
+ stranded:{h:'Пустой бак',
+  l:['Бензина нет, денег нет, и просить больше не у кого — ты уже просил у всех.',
+     'Машину сталкивают на обочину втроём, чтобы не держала ряд.',
+     'До Владикавказа вас довозит попутка за половину оставшихся денег.'],
+  t:'Дорога кончилась не на границе, а на сорок втором километре, из-за арифметики.'},
+};
+function finish(k){
+  if(S.scene!=='play')return;
+  S.scene='reflect';closePanel();closeDlg();S.ff=false;S.overlay=null;
+  diceEl.style.display='none';wlabel.style.display='none';
+  document.getElementById('carlabel').style.display='none';
+  S.pendingEnd=k;
+  if(FAILS[k]){say('НАЗАД',FAILS[k].l,[{t:'Смотреть в зеркало заднего вида',f(){showFail(k);}}]);return;}
+  say('ГРАНИЦА',CROSSING[k]||CROSSING.open,[{t:'Ехать в Тбилиси',f(){arrive(k);}}]);
+}
+function arrive(k){
+  const lines=['Дорога до города занимает три часа. Тео спит с первой минуты.'];
+  if(S.alone)lines[0]='Дорога до города занимает три часа. Ты едешь один, Трамп спит на пассажирском.';
+  say('ТБИЛИСИ',lines.concat(pick(REFLECT)),[{t:'Закрыть за собой дверь',f(){showEnd(k);}}]);
+}
+function statLine(){
+  const bits=[tr('В очереди: ')+Math.floor(S.t/60)+tr(' ч')];
+  if(S.misses)bits.push(tr('пропущено продвижений: ')+S.misses);
+  if(S.fights)bits.push(tr('драк: ')+S.fights);
+  if(S.dryCount)bits.push(tr('сухой бак: ')+S.dryCount);
+  bits.push(tr('стресс: ')+Math.round(S.stress));
+  bits.push(tr('семья: ')+Math.round(S.fam.happy));
+  bits.push(tr('осталось: ')+Math.round(S.money).toLocaleString('ru-RU')+' ₽');
+  return bits.join(' · ');
+}
+function showFail(k){
+  S.scene='ending';closeDlg();
+  const scr=document.getElementById('end');scr.classList.add('fail');
+  const st=document.getElementById('end-stamp');
+  st.style.display='block';st.textContent=tr('НЕ ДОЕХАЛИ');
+  const e=FAILS[k];
+  document.getElementById('end-h').textContent=tr(e.h);
+  document.getElementById('end-t').textContent=
+    tr('До шлагбаума оставалось ')+(Math.max(0,S.km)/1000).toFixed(1)+tr(' км.');
+  document.getElementById('end-s').textContent=statLine();
+  document.getElementById('end-v').textContent=e.t;
+  document.getElementById('end').style.display='flex';
+}
+function showEnd(k){
+  S.scene='ending';closeDlg();
+  const scr=document.getElementById('end');scr.classList.remove('fail');
+  const st=document.getElementById('end-stamp');
+  st.style.display='block';st.textContent=tr('ПЕРЕШЛИ ГРАНИЦУ');
+  const e=ARRIVALS[k]||ARRIVALS.open;
+  document.getElementById('end-h').textContent=tr(e.h);
+  document.getElementById('end-t').textContent=
+    (S.alone?'Ты открываешь дверь один: Марья и Тео ждали за постом и уже спят. Трамп сразу лезет под кровать. ':'')+e.t;
+  document.getElementById('end-s').textContent=statLine();
+  const f=S.fam;let v;
+  if(S.alone)v='Марья и Тео прошли границу пешком раньше тебя и дождались за постом. Вы доехали порознь, но доехали.';
+  else if(f.happy>62&&S.stress<45)v='Перешли вместе. Тео на той стороне первым делом спрашивает, где тут едят. Лучший исход из возможных.';
+  else if(f.happy>32)v='Перешли вместе, но следующие несколько недель об этой дороге дома говорить не будут.';
+  else v='Перешли вместе — формально. Марья не разговаривает с тобой уже шесть часов.';
+  document.getElementById('end-v').textContent=v;
+  document.getElementById('end').style.display='flex';
+}
+
+/* ============ ФОН (вектор, сглаженный) ============ */
+const SKY=[{h:0,a:'#060a16',b:'#111d33'},{h:5,a:'#1b2547',b:'#775a6a'},
+ {h:7,a:'#5c86b8',b:'#e2bd97'},{h:11,a:'#84bce4',b:'#dcecf4'},
+ {h:17,a:'#7fadd8',b:'#f0dcc0'},{h:19,a:'#3c355f',b:'#e08d5f'},
+ {h:21,a:'#0e1729',b:'#212c47'},{h:24,a:'#060a16',b:'#111d33'}];
+function sky(h){for(let i=0;i<SKY.length-1;i++)if(h>=SKY[i].h&&h<=SKY[i+1].h){
+  const t=(h-SKY[i].h)/(SKY[i+1].h-SKY[i].h);
+  return [mix(SKY[i].a,SKY[i+1].a,t),mix(SKY[i].b,SKY[i+1].b,t)];}
+  return [SKY[0].a,SKY[0].b];}
+function ridge(x,seed,amp){return Math.sin(x*0.0085+seed)*amp+Math.sin(x*0.025+seed*2.3)*amp*0.45
+  +Math.sin(x*0.058+seed*4.1)*amp*0.18;}
+function vRidge(off,base,amp,col,seed){
+  bctx.fillStyle=col;bctx.beginPath();bctx.moveTo(-6,H);
+  let px=-6,py=base-Math.abs(ridge(off-6,seed,amp))-6;bctx.lineTo(px,py);
+  for(let x=4;x<=W+6;x+=4){
+    const y=base-Math.abs(ridge(x+off,seed,amp))-6;
+    bctx.quadraticCurveTo(px,py,(px+x)/2,(py+y)/2);px=x;py=y;}
+  bctx.lineTo(W+6,py);bctx.lineTo(W+6,H);bctx.closePath();bctx.fill();
+}
+function vTrees(off,base,col,seed){
+  /* мягкая кромка леса: округлые кроны, пониженный контраст, лёгкое размытие */
+  bctx.save();
+  if('filter' in bctx)bctx.filter='blur(0.7px)';
+  bctx.globalAlpha=0.8;bctx.fillStyle=col;
+  for(let x=-10;x<W+10;x+=4){
+    const k=hash(Math.round(x+off));
+    if(k<0.3)continue;
+    const y=base-Math.abs(ridge(x+off,seed,10))-5,hh=2.5+k*4.5,w=1.4+k*1.2;
+    bctx.beginPath();
+    bctx.moveTo(x-w,y+1);
+    bctx.quadraticCurveTo(x-w*0.6,y-hh*0.55,x,y-hh);
+    bctx.quadraticCurveTo(x+w*0.6,y-hh*0.55,x+w,y+1);
+    bctx.closePath();bctx.fill();
+  }
+  bctx.restore();
+}
+function renderBG(t){
+  const h=hourNow(),N=nightAmt(),cx=camX();NB=N;
+  const [s1,s2]=sky(h);
+  const g=bctx.createLinearGradient(0,0,0,HORIZON+22);
+  g.addColorStop(0,s1);g.addColorStop(1,s2);
+  bctx.fillStyle=g;bctx.fillRect(0,0,W,H);
+  if(N>0.35)for(let i=0;i<50;i++){
+    const sx=hash(i)*W,sy=hash(i+9)*66,r=0.3+hash(i+4)*0.5;
+    bctx.fillStyle='rgba(255,255,255,'+((0.3+hash(i+2)*0.6)*N)+')';
+    bctx.beginPath();bctx.arc(sx,sy,r,0,6.2832);bctx.fill();}
+  bctx.fillStyle=nmix('#f6f9fa','#38486a');bctx.globalAlpha=0.45;
+  for(const cl of CLOUDS){
+    bctx.beginPath();bctx.ellipse(cl.x,cl.y,cl.w/2,cl.h/2,0,0,6.2832);bctx.fill();
+    bctx.beginPath();bctx.ellipse(cl.x+cl.w*0.22,cl.y+cl.h*0.18,cl.w/3,cl.h/2.6,0,0,6.2832);bctx.fill();}
+  bctx.globalAlpha=1;
+  const off=S.bgOff+cx*0.08;
+  vRidge(off*0.20,HORIZON+2,42,mix('#8fa0ae','#2f4260',NB*0.9+0.1),0.9);
+  vRidge(off*0.34,HORIZON+8,33,mix('#657a8c','#22344c',NB*0.85+0.15),1.7);
+  const hz=bctx.createLinearGradient(0,HORIZON-24,0,HORIZON+24);
+  hz.addColorStop(0,'rgba(180,198,210,0)');
+  hz.addColorStop(1,nmix('#c2d2dc','#1c283c'));
+  bctx.fillStyle=hz;bctx.fillRect(0,HORIZON-24,W,48);
+  vRidge(off*0.58,HORIZON+18,23,mix('#41525f','#182437',NB*0.8+0.2),4.2);
+  vTrees(off*0.58,HORIZON+18,mix('#33443a','#141d28',NB*0.85+0.15),4.2);
+  const fg=bctx.createLinearGradient(0,HORIZON-8,0,ROADTOP+2);
+  fg.addColorStop(0,'rgba(160,180,196,'+(0.03+0.12*N)+')');
+  fg.addColorStop(1,'rgba(96,116,140,'+(0.10+0.30*N)+')');
+  bctx.fillStyle=fg;bctx.fillRect(0,HORIZON-8,W,ROADTOP-HORIZON+10);
+  const slope=bctx.createLinearGradient(0,ROADTOP-20,0,ROADTOP+2);
+  slope.addColorStop(0,nmix('#44522f','#161c14'));slope.addColorStop(1,nmix('#333d20','#101409'));
+  bctx.fillStyle=slope;bctx.fillRect(0,ROADTOP-20,W,22);
+}
+
+/* ============ ПЕРЕДНИЙ ПЛАН (пиксель) ============ */
+function drawCar(x,y,c,famIn){
+  x=Math.round(x);y=Math.round(y)+(S.rollLeft>0?(Math.sin(S.roadOff*0.7+c.i)>0.6?1:0):0);
+  const M=MODELS[c.m],fx=lx=>x+(M.len-lx),base=c.col;
+  ctx.fillStyle='rgba(0,0,0,0.35)';ctx.fillRect(x-2,y,M.len+4,2);
+  ctx.fillStyle='#101216';
+  for(const wx of M.wheels)pxCircle(fx(wx),y-M.wr+1,M.wr);
+  ctx.fillStyle='#5b6068';
+  for(const wx of M.wheels)pxCircle(fx(wx),y-M.wr+1,M.wr*0.42);
+  ctx.fillStyle='#22262c';                       /* спицы: видно, что колесо крутится */
+  for(const wx of M.wheels){
+    const cxx=fx(wx),cy=y-M.wr+1,a=S.roadOff*0.14;
+    for(let q=0;q<4;q++){
+      const an=a+q*1.5708,r=M.wr*0.6;
+      ctx.fillRect(Math.round(cxx+Math.cos(an)*r),Math.round(cy+Math.sin(an)*r),1,1);
+    }
+  }
+  const top=Math.max.apply(null,M.body.map(p=>p[1]));
+  const bg=ctx.createLinearGradient(0,y-top,0,y);
+  bg.addColorStop(0,shade(base,0.34));bg.addColorStop(0.55,base);bg.addColorStop(1,shade(base,-0.42));
+  ctx.fillStyle=bg;pxPoly(M.body.map(p=>[fx(p[0]),y-p[1]]));
+  const gg=ctx.createLinearGradient(0,y-top,0,y-top*0.4);
+  gg.addColorStop(0,nmix('#e3f0f7','#1c2a3e'));gg.addColorStop(1,nmix('#89a7bb','#0a0f18'));
+  ctx.fillStyle=gg;
+  for(const gp of M.glass)pxPoly(gp.map(p=>[fx(p[0]),y-p[1]]));
+  if(famIn){ctx.fillStyle=nmix('#7b6851','#48505f');const g0=M.glass[0];
+    pxCircle(fx(g0[0][0]+4),y-g0[0][1]-5,2);
+    if(!S.alone){pxCircle(fx(g0[0][0]+9),y-g0[0][1]-4,2);
+      if(S.catOut){ctx.fillStyle=nmix('#8a7a63','#3b3f4a');pxCircle(fx(g0[0][0]+13),y-g0[0][1]-2,1);}}}
+  if(M.rack){ctx.fillStyle='#57503f';
+    const rx1=fx(M.rack[1]),rx2=fx(M.rack[0]);
+    ctx.fillRect(rx1,y-top-3,rx2-rx1,2);
+    if(c.load){ctx.fillStyle='#9b9078';ctx.fillRect(rx1+2,y-top-8,(rx2-rx1)-6,5);
+      ctx.fillStyle='#736a58';ctx.fillRect(rx1+5,y-top-10,7,2);}}
+  if(M.spare){ctx.fillStyle='#191c21';pxCircle(x+4,y-Math.round(top*0.55),4);}
+  if(M.ladder){ctx.fillStyle='#5a5343';
+    ctx.fillRect(x+2,y-top+2,1,top-8);ctx.fillRect(x+5,y-top+2,1,top-8);
+    for(let q=0;q<4;q++)ctx.fillRect(x+2,y-9-q*5,4,1);}
+  if(M.bull){ctx.fillStyle='#9a958a';ctx.fillRect(x+M.len+1,y-15,2,11);}
+  if(NB>0.15){ctx.globalAlpha=Math.min(1,NB*1.6);
+    ctx.fillStyle='#fff0c4';ctx.fillRect(x+M.len-2,y-M.wr-6,3,3);
+    ctx.fillStyle='#d1503c';ctx.fillRect(x,y-M.wr-6,2,3);ctx.globalAlpha=1;}
+  if(c.puff>0){ctx.fillStyle='rgba(210,210,210,'+(c.puff*0.45)+')';
+    pxCircle(x-4,y-8-(1-c.puff)*8,Math.round(2+(1-c.puff)*3));}
+}
+function drawPerson(x,y,col,phase,face,k){
+  x=Math.round(x);y=Math.round(y);
+  const s=k||1,h=Math.round(16*s),w=Math.max(3,Math.round(6*s)),st=Math.floor(phase)%2;
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(x-1,y,w+2,1);
+  ctx.fillStyle='#c1996f';ctx.fillRect(x+Math.round(s),y-h,Math.round(4*s),Math.round(4*s));
+  ctx.fillStyle=col;ctx.fillRect(x,y-h+Math.round(4*s),w,Math.round(7*s));
+  ctx.fillStyle=shade(col,-0.25);ctx.fillRect(x,y-h+Math.round(4*s),1,Math.round(7*s));
+  ctx.fillStyle='#242938';
+  const ly=y-Math.round(5*s),lh=Math.round(5*s),lw=Math.max(1,Math.round(2*s));
+  if(st){ctx.fillRect(x,ly,lw,lh);ctx.fillRect(x+w-lw,ly,lw,lh);}
+  else{ctx.fillRect(x+lw-1,ly,lw,lh);ctx.fillRect(x+w-lw-1,ly,lw,lh);}
+  ctx.fillStyle=col;ctx.fillRect(face>0?x+w:x-1,y-h+Math.round(5*s),1,Math.round(5*s));
+}
+function drawFire(x,y,t){
+  x=Math.round(x);y=Math.round(y);
+  ctx.fillStyle='#3a3128';ctx.fillRect(x-6,y-3,13,3);
+  const f=Math.round(Math.sin(t*9)*1.5);
+  ctx.fillStyle='#e0703c';ctx.fillRect(x-2,y-9+f,5,7);
+  ctx.fillStyle='#ffc257';ctx.fillRect(x-1,y-7+f,3,5);
+  ctx.fillStyle='#fff0b8';ctx.fillRect(x,y-5+f,1,3);
+}
+function camX(){
+  if(S.mode==='car')return CAR_X-W/2+26;
+  return clamp(S.px-W/2,CAR_X-6*SPACING-70,CAR_X+9*SPACING-W+130);
+}
+function renderFG(t){
+  ctx.clearRect(0,0,W,H);
+  const N=nightAmt(),cx=camX();NB=N;
+  const road=ctx.createLinearGradient(0,ROADTOP,0,GROUND+10);
+  road.addColorStop(0,nmix('#53555e','#23262e'));road.addColorStop(1,nmix('#33353b','#131519'));
+  ctx.fillStyle=road;ctx.fillRect(0,ROADTOP,W,GROUND-ROADTOP+12);
+  ctx.fillStyle=nmix('#cfcbb4','#3a3d44');
+  for(let x=-((S.roadOff%22)|0);x<W;x+=22)ctx.fillRect(x,GROUND+6,11,1);
+  ctx.fillStyle=nmix('#635840','#221d15');ctx.fillRect(0,GROUND+12,W,H-GROUND-12);
+  ctx.fillStyle=nmix('#736648','#2a2419');ctx.fillRect(0,GROUND+12,W,2);
+  for(let wx=Math.floor((cx+S.roadOff-44)/44)*44;wx<cx+S.roadOff+W+44;wx+=44){
+    const x=Math.round(wx-cx-S.roadOff);
+    ctx.fillStyle=nmix('#7b7c84','#1b2027');ctx.fillRect(x,ROADTOP-9,2,9);}
+  ctx.fillStyle=nmix('#95969d','#252b33');ctx.fillRect(0,ROADTOP-10,W,2);
+  for(const lp of LAMPS){const x=Math.round(((lp-cx-S.roadOff)%720+720)%720-90);if(x<-14||x>W+14)continue;
+    ctx.fillStyle=nmix('#43454a','#1a1d22');
+    ctx.fillRect(x,LAMP_TOP,2,GROUND+8-LAMP_TOP);ctx.fillRect(x,LAMP_TOP-1,10,2);
+    if(N>0.05){ctx.fillStyle='rgba(255,226,168,'+(0.4+0.6*N)+')';ctx.fillRect(x+7,LAMP_TOP+1,5,2);}}
+  const shk=Math.round((S.advAnim>0?Math.sin(t*40)*S.advAnim*1.2:0)+(S.shake>0?rnd(-2,2)*S.shake:0));
+  if(N>0.15){
+    ctx.globalCompositeOperation='lighter';
+    for(const c of CARS){const x=c.x-cx+shk+c.len;if(x<-60||x>W+60)continue;
+      const gg=ctx.createRadialGradient(x+18,GROUND+4,0,x+18,GROUND+4,34);
+      gg.addColorStop(0,'rgba(255,196,120,'+(0.32*N)+')');gg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gg;ctx.fillRect(x-16,GROUND-26,68,34);}
+    ctx.globalCompositeOperation='source-over';
+  }
+  for(const c of CARS){const x=c.x-cx+shk;if(x<-90||x>W+20)continue;
+    if(c.i===0&&S.mode==='foot'){                 /* контур своей машины */
+      const M=MODELS[c.m],pulse=0.35+0.25*Math.sin(t*3);
+      ctx.fillStyle='rgba(150,225,180,'+pulse+')';
+      for(const d of [[-1,0],[1,0],[0,-1],[0,1]])
+        pxPoly(M.body.map(p=>[Math.round(x)+(M.len-p[0])+d[0],GROUND-p[1]+d[1]]));
+    }
+    drawCar(x,GROUND,c,c.i===0&&S.mode==='car');}
+  for(const sp of SPOTS){
+    const x=sp.x-cx+shk;if(x<-40||x>W+40)continue;
+    if(sp.kind==='fire')drawFire(x,GROUND+8,t);
+    else if(sp.kind==='rock'){ctx.fillStyle=nmix('#5f5c4f','#242830');pxEllipse(x,GROUND+3,13,8);
+      ctx.fillStyle=nmix('#736f60','#2e333c');pxEllipse(x-3,GROUND-3,7,6);}
+    else if(sp.kind==='kiosk'){ctx.fillStyle=nmix('#7a684e','#2e2822');ctx.fillRect(Math.round(x)-11,GROUND-26,26,26);
+      ctx.fillStyle=nmix('#a68f60','#53411f');ctx.fillRect(Math.round(x)-8,GROUND-21,20,9);
+      ctx.fillStyle=nmix('#5b4e3a','#1d1a15');ctx.fillRect(Math.round(x)-11,GROUND-28,26,3);
+      for(let q=0;q<4;q++)drawPerson(x+20+q*7,GROUND+5,'#6b6555',q,-1,0.8);}
+    else{
+      drawPerson(x,GROUND+5,['#8d6759','#63758a','#767555','#875764'][Math.abs(sp.i)%4],0,-1,1);
+      if(sp.key==='mom')drawPerson(x+10,GROUND+5,'#a89a72',0,-1,0.62);
+      if(sp.key==='bike'){ctx.fillStyle='#33384a';
+        ctx.fillRect(Math.round(x)+8,GROUND,14,1);ctx.fillRect(Math.round(x)+8,GROUND-4,1,5);
+        ctx.fillRect(Math.round(x)+21,GROUND-4,1,5);ctx.fillRect(Math.round(x)+13,GROUND-6,6,1);}
+    }
+  }
+  for(const w of WANDER){const x=w.x-cx+shk;if(x<-30||x>W+30)continue;
+    drawPerson(x,GROUND+5,w.col,w.ph,w.d,1);}
+  if(S.mode==='foot')drawPerson(S.px-cx+shk,GROUND+5,'#9a7550',S.walk,S.face,1);
+  if(N>0.05){
+    ctx.globalCompositeOperation='lighter';
+    const glow=(x,y,r,c,a)=>{if(x<-r||x>W+r)return;
+      const gg=ctx.createRadialGradient(x,y,0,x,y,r);
+      gg.addColorStop(0,'rgba('+c+','+a+')');gg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=gg;ctx.fillRect(x-r,y-r,r*2,r*2);};
+    for(const c of CARS)glow(c.x-cx+shk+c.len,GROUND-14,34,'255,214,150',0.34*N);
+    for(const lp of LAMPS)glow(((lp-cx-S.roadOff)%720+720)%720-90+9,LAMP_TOP+2,70,'255,200,124',0.34*N);
+    const fs=SPOTS.find(s=>s.key==='fire');
+    glow(fs.x-cx,GROUND+2,42,'255,150,70',0.4+0.06*Math.sin(t*9));
+    ctx.globalCompositeOperation='source-over';
+  }
+  if(N>0.02){
+    const gf=ctx.createLinearGradient(0,GROUND-18,0,H);
+    gf.addColorStop(0,'rgba(0,0,0,0)');gf.addColorStop(1,'rgba(170,188,204,'+(0.14*N)+')');
+    ctx.fillStyle=gf;ctx.fillRect(0,GROUND-18,W,H-GROUND+18);
+  }
+  ctx.fillStyle=nmix('#1b2015','#070a0c');
+  const fx0=Math.round(cx*1.5)%40;
+  for(let x=-fx0-40;x<W+40;x+=40){
+    const k=hash(Math.round(x+fx0));pxEllipse(x+12,H-1,Math.round(15+k*10),Math.round(6+k*4));}
+  if(S.overlay==='snake')drawSnake();
+}
+function drawSnake(){
+  const s=S.snake;if(!s)return;
+  ctx.fillStyle='rgba(4,6,10,0.92)';ctx.fillRect(0,0,W,H);
+  const cell=9,gw=s.cols*cell,gh=s.rows*cell,ox=Math.round((W-gw)/2),oy=Math.round((H-gh)/2);
+  ctx.fillStyle='#0f130d';ctx.fillRect(ox-9,oy-17,gw+18,gh+30);
+  ctx.fillStyle='#1a2416';ctx.fillRect(ox-6,oy-14,gw+12,gh+24);
+  ctx.fillStyle='#22321a';ctx.fillRect(ox,oy,gw,gh);
+  /* счёт: яблоко и палочки, без слов — понятно на любом языке */
+  ctx.fillStyle='#9dc27e';ctx.fillRect(ox,oy-10,5,5);
+  ctx.fillStyle='#4d6b3a';ctx.fillRect(ox+2,oy-12,1,2);
+  for(let i=0;i<Math.min(s.score,12);i++)
+    ctx.fillRect(ox+9+i*4,oy-10,2,5);
+  if(s.score>12){ctx.fillStyle='#9dc27e';ctx.fillRect(ox+9+12*4,oy-8,4,1);}
+  ctx.fillStyle='#9dc27e';ctx.fillRect(ox+s.food.x*cell+2,oy+s.food.y*cell+2,cell-4,cell-4);
+  ctx.fillStyle=s.dead?'#c98a6a':'#e2f0cc';
+  for(const p of s.g)ctx.fillRect(ox+p.x*cell+1,oy+p.y*cell+1,cell-2,cell-2);
+  if(s.dead){                       /* крест вместо надписи */
+    ctx.fillStyle='#d8674a';
+    for(let i=0;i<9;i++){
+      ctx.fillRect(ox+gw/2-4+i,oy+gh/2-4+i,2,2);
+      ctx.fillRect(ox+gw/2+4-i,oy+gh/2-4+i,2,2);
+    }
+  }
+  ctx.fillStyle='#6f7a62';ctx.font='7px ui-monospace,monospace';
+  ctx.fillText('ESC',ox+gw-17,oy-5);
+}
+/* сборка кадра: гладкий фон + пиксельный фронт + грейд */
+function compose(t){
+  const cw=W*kDev,ch=H*kDev;
+  dctx.imageSmoothingEnabled=true;
+  dctx.drawImage(bgc,0,0,bgc.width,bgc.height,0,0,cw,ch);
+  dctx.imageSmoothingEnabled=false;
+  dctx.drawImage(buf,0,0,W,H,0,0,cw,ch);
+  const cr=craving();
+  if(cr>0.02){
+    dctx.globalCompositeOperation='saturation';dctx.globalAlpha=cr*0.85;
+    dctx.fillStyle='hsl(0,0%,50%)';dctx.fillRect(0,0,cw,ch);
+    dctx.globalCompositeOperation='multiply';dctx.globalAlpha=cr*0.4;
+    dctx.fillStyle='#d3bf8b';dctx.fillRect(0,0,cw,ch);
+    dctx.globalCompositeOperation='source-over';dctx.globalAlpha=1;
+    const p=0.6+0.4*Math.sin(t*2.4);
+    const vg=dctx.createRadialGradient(cw/2,ch/2,cw*0.08,cw/2,ch/2,cw*0.68);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(26,17,9,'+(0.55*cr*p)+')');
+    dctx.fillStyle=vg;dctx.fillRect(0,0,cw,ch);
+  }
+  if(S.stress>68){
+    const k=(S.stress-68)/32,p=0.5+0.5*Math.sin(t*3.6);
+    const vg=dctx.createRadialGradient(cw/2,ch/2,cw*0.11,cw/2,ch/2,cw*0.7);
+    vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(120,30,20,'+(0.3*k*p)+')');
+    dctx.fillStyle=vg;dctx.fillRect(0,0,cw,ch);
+  }
+  if(S.honk&&S.mode==='foot'){dctx.fillStyle='rgba(255,170,110,0.10)';dctx.fillRect(0,0,cw,ch);}
+}
+
+/* ============ шкалы ============ */
+const GAUGES=[
+ {id:'fuel',  lb:'БЕНЗ',   max:30, val:()=>S.fuel,       fmt:v=>v.toFixed(0)+tr(' Л')},
+ {id:'water', lb:'ВОДА',   max:6,  val:()=>S.water,      fmt:v=>v.toFixed(1)+tr(' Л')},
+ {id:'batt',  lb:'ТЕЛЕФОН',max:100,val:()=>S.batt,       fmt:v=>Math.round(v)+'%'},
+ {id:'stress',lb:'СТРЕСС', max:100,val:()=>S.stress,     fmt:v=>Math.round(v),inv:true},
+ {id:'nic',   lb:'ТЯГА',   max:100,val:()=>craving()*100,fmt:v=>Math.round(v),inv:true},
+ {id:'happy', lb:'СЕМЬЯ',  max:100,val:()=>S.fam.happy,  fmt:v=>Math.round(v)},
+];
+const gaugeEls={};
+(function(){
+  const box=document.getElementById('gauges');
+  for(const g of GAUGES){
+    const d=document.createElement('div');d.className='g';
+    d.innerHTML='<span class="lb">'+tr(g.lb)+'</span><span class="seg">'+'<i></i>'.repeat(10)+
+      '</span><span class="vl"></span>';
+    box.appendChild(d);
+    gaugeEls[g.id]={root:d,segs:[].slice.call(d.querySelectorAll('i')),vl:d.querySelector('.vl'),n:-1,txt:'',cls:''};
+  }
+})();
+function updateGauges(){
+  for(const g of GAUGES){
+    const e=gaugeEls[g.id],v=g.val(),r=clamp(v/g.max,0,1),n=Math.round(r*10);
+    if(n!==e.n){for(let i=0;i<10;i++)e.segs[i].className=i<n?'on':'';e.n=n;}
+    const txt=String(g.fmt(v));
+    if(txt!==e.txt){e.vl.textContent=txt;e.txt=txt;}
+    let cls='g';
+    if(g.inv)cls+=r>0.8?' bad':r>0.55?' warn':'';
+    else cls+=r<0.2?' bad':r<0.4?' warn':' good';
+    if(cls!==e.cls){e.root.className=cls;e.cls=cls;}
+  }
+  const st=tr('СИГАРЕТ ')+S.cigs+' · '+Math.round(S.money).toLocaleString('ru-RU')+' ₽'+
+           (S.bike?tr(' · ВЕЛОСИПЕД'):'')+(S.alone?tr(' · ОДИН'):'')+
+           (S.promised?tr(' · НЕ КУРИТЬ В САЛОНЕ'):'')+(S.bladder>65?tr(' · НУЖНО ОТЛИТЬ'):'');
+  const se=document.getElementById('stuff');
+  if(se.textContent!==st)se.textContent=st;
+}
+let hudT=0;
+function hud(){
+  const km=(Math.max(0,S.km)/1000).toFixed(1)+' '+tr('КМ'),kel=document.getElementById('km');
+  if(kel.textContent!==km)kel.textContent=km;
+  const hh=Math.floor(hourNow()),mm=Math.floor((hourNow()%1)*60);
+  const cl=tr('ДЕНЬ')+' '+dayNow()+' · '+String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+  const cel=document.getElementById('clock');if(cel.textContent!==cl)cel.textContent=cl;
+  const lm=Math.floor(S.left/60),ls=Math.floor(S.left%60);
+  const lt=lm+':'+String(ls).padStart(2,'0'),lel=document.getElementById('left');
+  if(lel.textContent!==lt)lel.textContent=lt;
+  lel.classList.toggle('hot',S.left<60);
+  updateGauges();
+  const busy=S.dialog||S.panel||S.dice||S.overlay||S.scene!=='play';
+  const sp=(!busy&&S.mode==='foot')?near():null;
+  /* где моя машина: метка над ней или стрелка у края экрана */
+  const carEl=document.getElementById('carlabel');
+  if(!busy&&S.mode==='foot'){
+    const sx=CAR_MID-camX(),d=Math.abs(S.px-CAR_MID),m=Math.round(d*0.09);
+    let txt,px;
+    if(sx>14&&sx<W-14){txt=(d<SIT_R?'<b>[ E ]</b> &nbsp;'+tr('сесть в машину'):tr('ваша машина'));px=sx;}
+    else if(sx<=14){txt='<b>◀</b> '+tr('ваша машина · ')+m+tr(' м');px=26;}
+    else{txt=tr('ваша машина · ')+m+tr(' м <b>▶</b>');px=W-26;}
+    carEl.style.display='block';carEl.innerHTML=txt;
+    carEl.style.left=Math.round(px*kCss)+'px';
+    carEl.style.top=Math.round((GROUND-46)*kCss)+'px';
+  } else carEl.style.display='none';
+  if(sp){
+    const wx=(sp.ref?sp.ref.x:sp.x)-camX();
+    wlabel.style.display='block';
+    wlabel.innerHTML='<b>[ E ]</b> &nbsp;'+tr(sp.label);
+    wlabel.style.left=Math.round(wx*kCss)+'px';
+    wlabel.style.top=Math.round((GROUND-30)*kCss)+'px';
+  } else wlabel.style.display='none';
+  const hint=document.getElementById('hint');let ht='';
+  if(!busy){
+    if(S.mode==='car')ht='Вы в машине · E — меню · C — закурить · F — выйти';
+    else ht=sp?'':(Math.abs(S.px-CAR_MID)<SIT_R?'E — сесть в машину'
+                   :'Вы снаружи · ← → идти · E — подойти и поговорить');
+  }
+  ht=tr(ht);if(hint.textContent!==ht)hint.textContent=ht;
+  const kk=document.getElementById('keys'),kw=busy?'none':'flex';
+  if(kk.style.display!==kw)kk.style.display=kw;
+  const tp=document.getElementById('tip');let tt=busy?'':currentTip();
+  tt=tr(tt);if(tp.textContent!==tt)tp.textContent=tt;
+  if(!busy&&S.ff)tp.textContent='ПЕРЕМОТКА ВРЕМЕНИ · ПРОБЕЛ — остановить';
+  const urg=!busy&&S.honk&&S.mode==='foot';
+  if(tp.classList.contains('urgent')!==urg)tp.classList.toggle('urgent',urg);
+  const tk=document.getElementById('ticker'),want=S.radio?'block':'none';
+  if(tk.style.display!==want)tk.style.display=want;
+}
+/* самая срочная подсказка: игра сама говорит, что можно сделать */
+function currentTip(){
+  const rock=SPOTS.find(x=>x.key==='rock');
+  const dR=Math.round(Math.abs(S.px-rock.x)*0.09);
+  if(S.honk&&S.mode==='foot'){
+    const d=Math.round(Math.abs(S.px-CAR_MID)*0.09);
+    return d>4?tr('РЯД СЕЙЧАС ТРОНЕТСЯ · до машины ')+d+tr(' м')
+              :'РЯД СЕЙЧАС ТРОНЕТСЯ · вы у машины, E — сесть';}
+  if(S.bike)return 'Велосипед куплен · E — меню машины, «бросить машину и ехать дальше»';
+  if(S.bladder>65)
+    return S.mode==='car'?'Нужно отлить · F — выйти, потом идти налево к камню'
+                         :tr('Нужно отлить · камень слева, ')+dR+tr(' м');
+  if(S.stress>82)return S.mode==='car'?'Ты на пределе · E — успокоить семью или позвонить домой'
+                                      :'Ты на пределе · костёр слева, сигарета, разговор';
+  if(!S.alone&&S.fam.happy<32)
+    return S.mode==='car'?'Семья на пределе · E — «Успокоить семью», иначе развернутся'
+                         :'Семья на пределе · вернитесь в машину и поговорите';
+  if(craving()>0.7)return 'Тяга · C — закурить, снаружи это бесплатно';
+  if(S.stress>75)return 'Стресс высокий · костёр слева, сигарета или разговор снимают';
+  if(S.water<1.2)return 'Вода кончается · ларёк справа по ряду';
+  if(S.fuel<6)return 'Бензин кончается · мужик с канистрой справа';
+  if(S.batt<20)return 'Телефон садится · выключите радио в меню машины';
+  return '';
+}
+function near(){
+  if(Math.abs(S.px-CAR_MID)<SIT_R)return null;
+  for(const sp of SPOTS)if(Math.abs(S.px-sp.x)<28)return sp;
+  for(const w of WANDER)if(Math.abs(S.px-w.x)<22)return {kind:'passer',label:'Прохожий',ref:w};
+  return null;
+}
+const tickTxt=document.getElementById('tick-txt');
+function buildTicker(){tickTxt.textContent=NEWS.map(tr).join('   ·   ')+'   ·   ';}
+buildTicker();
+let tickX=600;
+function tickerStep(dt){
+  if(!S.radio)return;
+  tickX-=dt*30;
+  const w=tickTxt.offsetWidth||900;
+  if(tickX<-w)tickX=stage.clientWidth;
+  tickTxt.style.transform='translateX('+Math.round(tickX)+'px)';
+}
+
+/* ============ ввод ============ */
+const keys={};
+addEventListener('keydown',e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space'].includes(e.code))e.preventDefault();
+  keys[e.code]=true;press(e.code);});
+addEventListener('keyup',e=>keys[e.code]=false);
+document.querySelectorAll('#touch button').forEach(b=>{const k=b.dataset.k;
+  b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;press(k);});
+  b.addEventListener('pointerup',e=>{e.preventDefault();keys[k]=false;});
+  b.addEventListener('pointerleave',()=>keys[k]=false);});
+function press(code){
+  if(S.scene!=='play'&&S.scene!=='reflect')return;
+  if(S.dice){if(S.dice.phase==='done')endDice();return;}
+  if(S.overlay==='snake'){
+    const s=S.snake;if(!s)return;
+    if(code==='ArrowLeft'&&s.dir.x===0)s.nd={x:-1,y:0};
+    if(code==='ArrowRight'&&s.dir.x===0)s.nd={x:1,y:0};
+    if(code==='ArrowUp'&&s.dir.y===0)s.nd={x:0,y:-1};
+    if(code==='ArrowDown'&&s.dir.y===0)s.nd={x:0,y:1};
+    if(code==='Escape'||code==='KeyE')stopSnake();
+    return;}
+  if(S.ff&&code!=='Space'&&code!=='ArrowLeft'&&code!=='ArrowRight'){S.ff=false;toast('ПЕРЕМОТКА ОСТАНОВЛЕНА');}
+  if(S.dialog){
+    if(code==='Escape'){closeDlg();return;}   /* ESC закрывает любой диалог */
+    if(code==='Space')nextLine();
+    if(S.dialog&&S.dialog.opts&&/^Digit[1-9]$/.test(code))choose(+code.slice(5)-1);
+    return;}
+  if(S.scene!=='play')return;
+  if(code==='KeyC'){
+    if(S.mode==='car')smokeMenu();          /* в машине всегда спрашиваем, где курить */
+    else smoke(false);
+    return;}
+  if(S.panel){
+    if(/^Digit[1-9]$/.test(code)){const k=+code.slice(5)-1;
+      if(S.panel[k]&&optAllowed(S.panel[k]))S.panel[k].f();}
+    if(code==='KeyF'||code==='Escape')closePanel();
+    return;}
+  if(code==='KeyE'){
+    if(S.mode==='car'){carMenu();return;}
+    const sp=near();
+    if(sp&&sp.kind==='passer')talkPasser(sp.ref);
+    else if(sp)TALK[sp.key]();
+    else if(Math.abs(S.px-CAR_MID)<SIT_R){S.mode='car';toast('ВЫ СЕЛИ В МАШИНУ');}}
+  if(code==='KeyF'&&S.mode==='car'){S.mode='foot';S.px=CAR_X+64;}
+  if(code==='Space'){S.ff=!S.ff;toast(S.ff?'ПЕРЕМОТКА ВРЕМЕНИ':'ПЕРЕМОТКА ОСТАНОВЛЕНА');}
+}
+const KEYHINTS=[['E','действие'],['F','выйти из машины'],['C','закурить'],
+  ['← →','идти'],['␣','перемотка / дальше'],['1–9','ответ'],['ESC','закрыть']];
+function buildKeys(){
+  document.getElementById('keys').innerHTML=
+    KEYHINTS.map(k=>'<span><kbd>'+k[0]+'</kbd>'+tr(k[1])+'</span>').join('');
+}
+buildKeys();
+const mtext=document.getElementById('mtext');
+const MENU_ABOUT={
+ ru:null,
+ en:'<p>24 September 2022, four in the afternoon. For forty-one years Ivan solved other people’s '+
+    'problems — he was good at it, and he was paid for it. The day before yesterday he closed his '+
+    'work laptop for the last time. Today he is standing twelve kilometres from the barrier and for '+
+    'the first time does not know what to tell his family.</p>'+
+    '<p>In the car: Marya, nine-year-old Teo, the cat Tramp in a carrier and a boot packed in six '+
+    'hours. Ahead — thirty kilometres of other people’s cars, a night near freezing, petrol at a '+
+    'thousand roubles a litre and people who yesterday were just neighbours on the road.</p>'+
+    '<p>Reaching the border is not hard. Reaching it together is another matter entirely.</p>'+
+    '<p>This game is not about who is right. It is about water, petrol, other people’s children, '+
+    'and how long a man lasts before he stops being one of us.</p>',
+ zh:'<p>2022年9月24日，下午四点。四十一年来，伊万一直在解决别人的问题——他很擅长，也因此拿到报酬。'+
+    '前天他最后一次合上工作用的笔记本电脑。今天他停在距离关卡十二公里的地方，第一次不知道该对家人说什么。</p>'+
+    '<p>车里坐着玛丽亚、九岁的特奥、装在提篮里的猫特朗普，还有六小时内塞满的后备箱。'+
+    '前方是三十公里的车龙、接近零度的夜晚、一升一千卢布的汽油，以及昨天还只是路上邻居的人们。</p>'+
+    '<p>到达边境并不难。全家一起到达，才是另一回事。</p>'+
+    '<p>这不是一款关于谁对谁错的游戏，而是关于水、汽油、别人的孩子，'+
+    '以及一个人还能撑多久才不再被当成自己人。</p>',
+ vi:'<p>Ngày 24 tháng 9 năm 2022, bốn giờ chiều. Suốt bốn mươi mốt năm, Ivan giải quyết vấn đề của '+
+    'người khác — anh làm việc đó giỏi nhất, và người ta trả tiền cho anh vì điều đó. Hôm kia anh '+
+    'gập chiếc laptop công việc lại lần cuối. Hôm nay anh đứng cách thanh chắn mười hai cây số và '+
+    'lần đầu tiên không biết phải nói gì với gia đình mình.</p>'+
+    '<p>Trong xe có Marya, Teo chín tuổi, con mèo Tramp trong lồng và một cốp xe gói ghém trong sáu '+
+    'tiếng. Phía trước là ba mươi cây số xe của người khác, một đêm gần không độ, xăng một nghìn '+
+    'rúp một lít và những con người mà hôm qua mới chỉ là hàng xóm trên đường.</p>'+
+    '<p>Đến được biên giới thì không khó. Đến được cùng nhau lại là chuyện khác.</p>'+
+    '<p>Trò chơi này không nói về việc ai đúng ai sai. Nó nói về nước, về xăng, về con cái người '+
+    'khác, và về việc một người chịu đựng được bao lâu trước khi thôi là người của mọi người.</p>',
+};
+function applyLang(){
+  document.querySelectorAll('#langs button').forEach(b=>
+    b.classList.toggle('on',b.dataset.l===LANG));
+  document.getElementById('start').innerHTML='<b>›</b>'+tr('Новая игра');
+  document.getElementById('m-ctrl').innerHTML='<b>›</b>'+tr('Управление');
+  document.getElementById('m-about').innerHTML='<b>›</b>'+tr('О чём это');
+  document.getElementById('again').innerHTML='<b>›</b>'+tr('Ещё раз');
+  mtext.style.display='none';
+  for(const g of GAUGES){const e=gaugeEls[g.id];if(e){e.root.querySelector('.lb').textContent=tr(g.lb);e.cls='';}}
+  buildTicker();buildKeys();
+  document.documentElement.lang=LANG;
+  if(S.dialog)drawDlg();
+}
+document.querySelectorAll('#langs button').forEach(b=>b.onclick=()=>{LANG=b.dataset.l;applyLang();});
+document.getElementById('m-ctrl').onclick=()=>{mtext.style.display='block';mtext.innerHTML=
+  '<div class="head">КЛАВИШИ</div>'+
+  '<div class="keys">'+
+   '<span><kbd>←</kbd> <kbd>→</kbd> идти вдоль ряда</span>'+
+   '<span><kbd>E</kbd> действие или разговор</span>'+
+   '<span><kbd>F</kbd> выйти из машины</span>'+
+   '<span><kbd>C</kbd> закурить</span>'+
+   '<span><kbd>ПРОБЕЛ</kbd> перемотка и реплика</span>'+
+   '<span><kbd>1</kbd>…<kbd>9</kbd> выбор ответа</span>'+
+   '<span><kbd>ESC</kbd> закрыть меню</span>'+
+  '</div>'+
+  '<p>Очередь идёт рывками и без предупреждения. Всё интересное — вне машины: '+
+  'люди, костёр, вода, бензин, слухи. Отойдёте далеко — вас объедут. Подойдёте к человеку — '+
+  'над ним появится его имя и клавиша.</p>'+
+  '<div class="head">ЧТО ЗНАЧАТ ШКАЛЫ</div>'+
+  '<div class="leg"><u>БЕНЗ</u>Тридцать литров. Ночью печка съедает вдвое больше движения. '+
+    'На нуле — вынужденная остановка: сосед сольёт пять литров и возьмёт за них четыре тысячи.</div>'+
+  '<div class="leg"><u>ВОДА</u>Шесть литров на четверых, считая Трампа. Ею сбивают температуру, '+
+    'ею же платят за чужую помощь.</div>'+
+  '<div class="leg"><u>ТЕЛЕФОН</u>Единственная связь с домом и единственный источник слухов. '+
+    'Радио, чат и мультики для Тео сажают его одинаково быстро.</div>'+
+  '<div class="leg"><u>СТРЕСС</u>Единственный счётчик состояния. Растёт от ожидания, ночи, ломки, '+
+    'жажды, ссор и от того, как тяжело семье. Чем он выше, тем меньше спокойных реплик и тем '+
+    'быстрее падает настроение семьи. На ста вы разворачиваетесь — это проигрыш.</div>'+
+  '<div class="leg"><u>ТЯГА</u>Никотин. Пока не курите, картинка выцветает и желтеет, '+
+    'а в драке идёт минус к броску. Сигарета — ещё и валюта: угощённый однажды помогает потом. '+
+    'Клавиша C всегда спрашивает, где курить: на воздухе — бесплатно, в салоне — Марья считает, и на третьей подряд будет скандал.</div>'+
+  '<div class="leg"><u>СЕМЬЯ</u>Настроение Марьи и Тео. Падает само по себе от одного стояния — '+
+    'и вдвое быстрее, когда вы на взводе. Ниже тридцати Марья предупредит. На нуле она '+
+    'разворачивается домой, и это провал эпизода.</div>'+
+  '<div class="head">КАК РАБОТАЮТ КУБИКИ</div>'+
+  '<p>Столкновения решаются броском двух кубиков плюс модификаторы. <b>8 и выше — успех</b>, '+
+  'ровно <b>7 — вничью</b> (получаете половину и полный набор чужих взглядов), <b>6 и ниже — провал</b>.</p>'+
+  '<div class="leg"><u>+2</u>Артём за спиной — если вы угостили его сигаретой.</div>'+
+  '<div class="leg"><u>+1</u>В ряду вас помнят по воде — если отдали полтора литра женщине с ребёнком.</div>'+
+  '<div class="leg"><u>+1</u>Злость собранная, не слепая — стресс от 45 до 72.</div>'+
+  '<div class="leg"><u>+1</u>Перекур перед разговором — тратит сигарету, доступен прямо перед броском.</div>'+
+  '<div class="leg"><u>−1</u>Ломка · вы уже плохо себя слышите (стресс выше 72).</div>'+
+  '<div class="leg"><u>−2</u>Руки трясутся (стресс выше 85) · вы тут известный скандалист (третья стычка).</div>'+
+  '<p>Шанс на успех показывается на кнопке <b>до</b> броска, и от столкновения всегда можно отступить.</p>';};
+document.getElementById('m-about').onclick=()=>{mtext.style.display='block';
+  if(MENU_ABOUT[LANG]){mtext.innerHTML=MENU_ABOUT[LANG];return;}
+  mtext.innerHTML=
+  '<p>Двадцать четвёртое сентября две тысячи двадцать второго года, шестнадцать ноль-ноль. '+
+  'Иван сорок один год решал чужие проблемы — у него это выходило лучше всего, '+
+  'и за это ему платили. Позавчера он в последний раз закрыл рабочий ноутбук. Сегодня он стоит '+
+  'в двенадцати километрах от шлагбаума и впервые не знает, что сказать своей семье.</p>'+
+  '<p>В машине Марья, девятилетний Тео, кот Трамп в переноске и багажник, собранный '+
+  'за шесть часов. Впереди — тридцать километров чужих машин, ночь около нуля, бензин по тысяче '+
+  'за литр и люди, которые ещё вчера были просто соседями по дороге.</p>'+
+  '<p>Дойти до границы несложно. Дойти до неё всем вместе — совсем другая задача. '+
+  'Каждый час ожидания что-то отнимает: у него — самообладание, у них — уверенность, '+
+  'что он знает, что делает.</p>'+
+  '<p>Игра не про правые стороны. Она про воду, бензин, чужих детей и про то, сколько человек '+
+  'выдерживает, прежде чем перестаёт быть своим. Это первая из трёх историй.</p>';};
+
+applyLang();
+document.getElementById('start').onclick=()=>{
+  document.getElementById('title').style.display='none';S.scene='play';
+  const op=pick(OPENERS);say(op[0],op[1]);
+  setTimeout(()=>sms('МАРЬЯ · ИЗ МАШИНЫ',pick([
+    'тео спрашивает надолго ли это. что ему сказать',
+    'у меня телефон садится. дай знать если что',
+    'я посчитала воду. на сутки хватит, если экономить'])),9000);};
+document.getElementById('again').onclick=()=>{
+  reset();document.getElementById('end').style.display='none';
+  closeDlg();closePanel();smsEl.innerHTML='';S.scene='play';};
+
+/* ============ цикл ============ */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;
+  step(dt);renderBG(now/1000);renderFG(now/1000);compose(now/1000);tickerStep(dt);
+  hudT-=dt;if(hudT<=0){hud();hudT=0.12;}
+  if(toastT>0){toastT-=dt;if(toastT<=0)document.getElementById('toast').style.opacity=0;}
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

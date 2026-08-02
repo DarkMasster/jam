@@ -211,6 +211,22 @@ MonoBehaviour:
     m_Key: ui.arrival.photo
     m_Metadata:
       m_Items: []
+  - m_Id: 350454767673344
+    m_Key: ui.character.epilogue.locked
+    m_Metadata:
+      m_Items: []
+  - m_Id: 350454847365120
+    m_Key: ui.character.epilogue.unlocked
+    m_Metadata:
+      m_Items: []
+  - m_Id: 350454847365121
+    m_Key: ui.character.status.epilogue_unlocked
+    m_Metadata:
+      m_Items: []
+  - m_Id: 350454847365122
+    m_Key: ui.character.error.no_epilogue
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

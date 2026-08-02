@@ -73,8 +73,17 @@ namespace Jam.Core.Flow
                 result.sceneName,
                 result.checkpointId,
                 result.payloadJson);
-            GameSaveService.LeaveCharacterLine(result.characterId, CharacterSelectScene);
+            var shouldOpenEpilogue = CompleteEligibleStoryLine(result);
+            if (!result.episodeCompleted || result.characterId == CharacterId.Drive)
+            {
+                GameSaveService.LeaveCharacterLine(result.characterId, CharacterSelectScene);
+            }
             GameSaveService.Flush();
+
+            if (shouldOpenEpilogue)
+            {
+                EpilogueService.TryOpen();
+            }
 
             if (!IsSceneInBuild(CharacterSelectScene))
             {
@@ -124,8 +133,17 @@ namespace Jam.Core.Flow
                         result.payloadJson);
                 }
 
-                GameSaveService.LeaveCharacterLine(characterId, CharacterSelectScene);
+                var shouldOpenEpilogue = CompleteEligibleStoryLine(result);
+                if (result == null || !result.episodeCompleted || characterId == CharacterId.Drive)
+                {
+                    GameSaveService.LeaveCharacterLine(characterId, CharacterSelectScene);
+                }
                 GameSaveService.Flush();
+
+                if (shouldOpenEpilogue)
+                {
+                    EpilogueService.TryOpen();
+                }
             }
             else if (GameSaveService.HasSave)
             {
@@ -140,6 +158,21 @@ namespace Jam.Core.Flow
             }
 
             SceneManager.LoadSceneAsync(targetScene, LoadSceneMode.Single);
+        }
+
+        private static bool CompleteEligibleStoryLine(EpisodeResult result)
+        {
+            if (result == null
+                || !result.episodeCompleted
+                || result.characterId == CharacterId.None
+                || result.characterId == CharacterId.Drive)
+            {
+                return false;
+            }
+
+            var wasUnlocked = GameSaveService.EpilogueUnlocked;
+            GameSaveService.CompleteMainStoryLine(result.characterId, CharacterSelectScene);
+            return !wasUnlocked && GameSaveService.EpilogueUnlocked;
         }
 
         /// <summary>Забирает результат один раз: повторная загрузка его не показывает.</summary>

@@ -71,6 +71,15 @@ namespace Jam.Core.Save
         public static bool FinaleUnlocked =>
             (GetCompletedCharacters() & CompletedCharacters.All) == CompletedCharacters.All;
 
+        public static bool EpilogueUnlocked
+        {
+            get
+            {
+                const CompletedCharacters required = CompletedCharacters.Office | CompletedCharacters.Photo;
+                return (GetCompletedCharacters() & required) == required;
+            }
+        }
+
         public static void StartNewGame(string firstSceneName)
         {
             ValidateSceneName(firstSceneName);
