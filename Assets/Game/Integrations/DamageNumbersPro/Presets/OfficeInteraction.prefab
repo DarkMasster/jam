@@ -81,7 +81,7 @@ MonoBehaviour:
     horizontal: 0
     vertical: 0
     characterSpacing: 0
-    size: 0
+    size: -1.2
   digitSettings:
     decimals: 0
     decimalChar: .
@@ -115,7 +115,7 @@ MonoBehaviour:
     horizontal: 0.1
     vertical: -0.05
     characterSpacing: 0
-    size: 0
+    size: -2.1
   enableRightText: 0
   rightText: ' XP'
   rightTextSettings:
@@ -331,7 +331,7 @@ MonoBehaviour:
   maxOrthographicSize: 1.5
   orthographicCamera: {fileID: 0}
   spamGroup: OfficeInteraction
-  enableCombination: 1
+  enableCombination: 0
   combinationSettings:
     method: 0
     maxDistance: 10

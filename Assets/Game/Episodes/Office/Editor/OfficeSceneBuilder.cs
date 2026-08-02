@@ -319,10 +319,12 @@ namespace Jam.Episodes.Office.Editor
                 preset.enableLeftText = textOnly;
                 preset.numberSettings.customColor = true;
                 preset.numberSettings.color = color;
+                preset.numberSettings.size = -1.2f;
                 preset.leftTextSettings.customColor = true;
                 preset.leftTextSettings.color = color;
+                preset.leftTextSettings.size = textOnly ? -2.1f : 0f;
                 preset.enableFollowing = false;
-                preset.enableCombination = true;
+                preset.enableCombination = !textOnly;
                 preset.enableDestruction = false;
                 preset.enableCollision = false;
                 preset.enablePush = false;

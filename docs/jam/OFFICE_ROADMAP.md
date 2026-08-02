@@ -277,6 +277,12 @@ Play Mode. Controlled acceptance-проверка подтвердила все 
 ветки M7; старый presentation-слой сохранил активный HUD, procedural audio, пул из
 шести emitters и camera shake силой `0.85` на попадании по герою.
 
+Быстрые события над одной целью распределяются по четырём вертикальным полосам
+`1.80 / 2.85 / 3.90 / 4.95`, которые сбрасываются после окна `1.1` секунды.
+Текстовые interaction/milestone preset не используют DNP combination, поэтому
+второй pickup не поглощается первым; числовой урон сохраняет combination. Размер
+текстовых уведомлений уменьшен до `-2.1`. Итоговый вид подтверждён пользователем.
+
 ## Зависимости и владельцы
 
 | Решение или ресурс | Владелец | Нужно для |
@@ -362,6 +368,7 @@ visual children существующих project-owned prefab'ов; непрер
 
 | Дата | Ветка / задача | Изменение | Проверка |
 |---|---|---|---|
+| 2026-08-02 | `polish/office-dnp-feedback-runtime` / follow-up M7 | Быстрые popup над героем распределены по четырём вертикальным полосам; текстовые preset уменьшены и больше не объединяют разные pickup, числовой урон сохраняет combination | Controlled burst: lane Y `1.80/2.85/3.90/4.95`, interaction/milestone combination `false`, text size `-2.1`; визуальный результат подтверждён пользователем |
 | 2026-08-02 | `polish/office-dnp-feedback-runtime` / `M7` | M7 переведён в Done: подтверждены popup урона по креслу, боссу и герою, разрушение, три вида подбора, milestone и отсутствие ложных popup; следующий офисный срез — проверочный POLYGON Office art-pass | Controlled Play Mode: `chair weak 0 / strong 1 / repeat 0`, `printer 0/1/0`, `player 1/0`, `boss 0/1/0`, keyboard `1`, первый личный предмет `1`, второй `2`; HUD active, audio playing, `6/6` particle emitters active, shake `0.85`; scene validation — 0 issues; игровых ошибок нет |
 | 2026-08-02 | `polish/office-dnp-feedback-runtime` / `M7` | DNP preset переведены с несовместимого demo-материала на проектный TMP font asset, отключён перенос текста и включён прямой поворот к камере; устранён фиолетовый квадрат при подборе | Rebuild `Prologue_Office`; Console — 0 ошибок/предупреждений; scene validation — 0 issues/missing scripts/broken prefabs; корректный popup подбора подтверждён пользователем в Play Mode |
 | 2026-08-02 | `feature/office-assets-import` | Добавлен read-only vendor-каталог `Assets/PolygonOffice`; зафиксированы структура пака, направление art-pass, таблица замен и безопасный visual-child паттерн. Milestone `M7` и следующий gameplay-срез не изменены | Source/target: 4 850 файлов, `diff -qr` без различий; Unity 6000.5.6f1 распознал 808 prefab'ов, Console — 0 ошибок, 7 служебных предупреждений MCP о смене порта после reload |

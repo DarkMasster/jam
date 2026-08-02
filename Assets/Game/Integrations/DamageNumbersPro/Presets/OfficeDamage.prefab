@@ -81,7 +81,7 @@ MonoBehaviour:
     horizontal: 0
     vertical: 0
     characterSpacing: 0
-    size: 0
+    size: -1.2
   digitSettings:
     decimals: 0
     decimalChar: .
