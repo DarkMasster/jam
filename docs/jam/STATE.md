@@ -38,6 +38,9 @@
 - Проверен финальный Balance-путь Photo без аэропортового снимка: outro запускается,
   Skip возвращает в выбор персонажей, checkpoint `photo.arrival` содержит
   завершённый payload, Unity Console не содержит ошибок и предупреждений.
+- Проверены новая игра и Continue для Photo: новый запуск начинает `RoomSecret` с
+  `20/20`, а `photo.explore`, `photo.camera` и `photo.published` восстанавливают
+  соответственно Комнату, Подъезд и Аэропорт. Тест не изменяет пользовательский save.
 - Photo payload обновлён до schema `3`; v1/v2 мигрируют, а стабильные checkpoint ID
   и общий Core API не изменились.
 - Создана единая спецификация разработки `DEVELOPMENT_SPEC.md` с архитектурой,
