@@ -202,7 +202,14 @@ namespace Jam.Episodes.Office.Editor
             // на 0.99..1.71. Оба объёма сохраняются, поэтому клавиатуры на столах
             // не проваливаются и не висят в воздухе.
             AttachVisual(desk.transform, DeskAsset, new Vector3(0f, 0.49f, 0f), new Vector3(3.4f, 0.98f, 1.6f), UserSideYaw, castShadows);
-            AttachVisual(desk.transform, MonitorAsset, new Vector3(0f, 1.35f, 0.15f), new Vector3(1.25f, 0.72f, 0.34f), UserSideYaw, castShadows);
+            var monitor = desk.transform.Find("Monitor");
+            if (monitor == null)
+            {
+                Debug.LogError($"Office art-pass desk {desk.name} has no Monitor group.");
+                return;
+            }
+
+            AttachVisual(monitor, MonitorAsset, Vector3.zero, new Vector3(1.25f, 0.72f, 0.34f), UserSideYaw, castShadows);
             HideGreybox(desk);
         }
 
@@ -231,8 +238,11 @@ namespace Jam.Episodes.Office.Editor
             var box = cabinet.transform.localScale;
             var center = cabinet.transform.position;
             var half = new Vector3(box.x * 0.5f, box.y, box.z);
-            AttachVisual(artParent, CabinetAsset, center + new Vector3(-box.x * 0.25f, 0f, 0f), half, UserSideYaw);
-            AttachVisual(artParent, CabinetAsset, center + new Vector3(box.x * 0.25f, 0f, 0f), half, UserSideYaw);
+            var left = AttachVisual(artParent, CabinetAsset, center + new Vector3(-box.x * 0.25f, 0f, 0f), half, UserSideYaw);
+            var right = AttachVisual(artParent, CabinetAsset, center + new Vector3(box.x * 0.25f, 0f, 0f), half, UserSideYaw);
+            var breakable = cabinet.GetComponent<OfficeBreakable>();
+            breakable?.RegisterExtraVisual(left);
+            breakable?.RegisterExtraVisual(right);
             HideRenderer(cabinet);
         }
 
@@ -263,13 +273,14 @@ namespace Jam.Episodes.Office.Editor
             for (var i = 0; i < GlassSegments; i++)
             {
                 var offset = (i - ((GlassSegments - 1) * 0.5f)) * segment;
-                AttachVisual(
+                var visual = AttachVisual(
                     artParent,
                     GlassAsset,
                     center + new Vector3(0f, 0f, offset),
                     new Vector3(box.x, box.y, segment),
                     GlassYaw,
                     false);
+                glass.GetComponent<OfficeBreakable>()?.RegisterExtraVisual(visual);
             }
 
             HideRenderer(glass);
@@ -488,6 +499,11 @@ namespace Jam.Episodes.Office.Editor
                     continue;
                 }
 
+                if (IsUnderNamedRoot(renderer.transform, owner.transform, "Broken"))
+                {
+                    continue;
+                }
+
                 if (keepNames != null && System.Array.IndexOf(keepNames, renderer.gameObject.name) >= 0)
                 {
                     continue;
@@ -511,6 +527,19 @@ namespace Jam.Episodes.Office.Editor
             for (var current = candidate; current != null && current != owner.parent; current = current.parent)
             {
                 if (current.name == ArtRootName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsUnderNamedRoot(Transform candidate, Transform owner, string rootName)
+        {
+            for (var current = candidate; current != null && current != owner.parent; current = current.parent)
+            {
+                if (current.name == rootName || current.name.EndsWith($" {rootName}", System.StringComparison.Ordinal))
                 {
                     return true;
                 }

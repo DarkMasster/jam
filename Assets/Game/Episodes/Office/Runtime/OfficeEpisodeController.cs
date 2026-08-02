@@ -154,6 +154,16 @@ namespace Jam.Episodes.Office
             SetStatus(Loc.Get(LocalizationTables.Office, "status.destroyed", "РАЗРУШЕНО: {0} • {1}/{2} • ТЕМП РАСТЁТ", LocalizeRuntimeName(targetName), _breakableDestroyed, _breakableTotal));
         }
 
+        /// <summary>
+        /// Разрушение объекта, который не входит в счётчик целей. Целями остаются
+        /// принтеры и серверные стойки: строка `1/36` читалась бы как невыполнимая
+        /// задача вместо награды за темп.
+        /// </summary>
+        public void ReportBreakableDestroyed(string targetName)
+        {
+            SetStatus(Loc.Get(LocalizationTables.Office, "status.destroyed_extra", "РАЗРУШЕНО: {0} • ТЕМП РАСТЁТ", LocalizeRuntimeName(targetName)));
+        }
+
         public void RegisterChaser()
         {
             _chaserTotal++;
@@ -426,6 +436,12 @@ namespace Jam.Episodes.Office
             {
                 "КЛАВИАТУРА" => Loc.Get(LocalizationTables.Office, "item.keyboard", value),
                 "ПРИНТЕР" => Loc.Get(LocalizationTables.Office, "item.printer", value),
+                "МОНИТОР" => Loc.Get(LocalizationTables.Office, "item.monitor", value),
+                "СЕРВЕРНАЯ СТОЙКА" => Loc.Get(LocalizationTables.Office, "item.server_rack", value),
+                "РАБОЧИЙ СТОЛ" => Loc.Get(LocalizationTables.Office, "item.desk", value),
+                "ШКАФ" => Loc.Get(LocalizationTables.Office, "item.cabinet", value),
+                "СТОЙКА РЕЦЕПЦИИ" => Loc.Get(LocalizationTables.Office, "item.reception_desk", value),
+                "СТЕКЛО ПЕРЕГОВОРНОЙ" => Loc.Get(LocalizationTables.Office, "item.meeting_glass", value),
                 "ОФИСНОЕ КРЕСЛО" => Loc.Get(LocalizationTables.Office, "enemy.chair", value),
                 _ => value
             };

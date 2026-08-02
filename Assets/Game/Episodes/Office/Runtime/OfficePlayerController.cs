@@ -18,6 +18,8 @@ namespace Jam.Episodes.Office
         [SerializeField, Min(0.1f)] private float acceleration = 46f;
         [SerializeField, Min(0.1f)] private float rotationSpeed = 720f;
         [SerializeField, Min(0f)] private float groundPressure = 2f;
+        [SerializeField, Min(0f)] private float ramMomentumMultiplier = 0.4f;
+        [SerializeField, Range(0f, 1f)] private float ramSpeedRetention = 0.9f;
 
         private CharacterController _characterController;
         private InputAction _moveAction;
@@ -26,6 +28,8 @@ namespace Jam.Episodes.Office
         private bool _controlLocked;
 
         public bool IsControlLocked => _controlLocked;
+
+        public float PlanarSpeed => _planarVelocity.magnitude;
 
         private void Awake()
         {
@@ -118,6 +122,29 @@ namespace Jam.Episodes.Office
             if (value)
             {
                 ResetMotion();
+            }
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (_controlLocked || hit.collider == null)
+            {
+                return;
+            }
+
+            var breakable = hit.collider.GetComponentInParent<OfficeBreakable>();
+            if (breakable == null)
+            {
+                return;
+            }
+
+            // Контракт веб-демо: реальная скорость героя усиливается текущим
+            // Momentum. После успешного тарана часть скорости сохраняется.
+            var momentumValue = momentum != null ? momentum.Value : 0f;
+            var ramImpact = PlanarSpeed * (1f + (momentumValue * ramMomentumMultiplier));
+            if (breakable.TryTakeImpact(ramImpact))
+            {
+                _planarVelocity *= ramSpeedRetention;
             }
         }
 

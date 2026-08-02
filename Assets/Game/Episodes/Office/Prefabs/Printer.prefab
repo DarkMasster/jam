@@ -1050,10 +1050,14 @@ MonoBehaviour:
   displayName: "\u041F\u0420\u0418\u041D\u0422\u0415\u0420"
   intactState: {fileID: 3424054798279836285}
   brokenState: {fileID: 4319806086944701657}
+  intactVisualRoot: {fileID: 0}
+  extraIntactVisuals: []
   bodyCollider: {fileID: 1004634854445202523}
   impactFlash: {fileID: 2727878483356626354}
   episodeController: {fileID: 0}
   momentum: {fileID: 0}
-  breakImpactSpeed: 6
+  breakImpactSpeed: 10
+  momentumGain: 0
+  countsAsObjective: 1
   flashIntensity: 7
   flashDuration: 0.45
