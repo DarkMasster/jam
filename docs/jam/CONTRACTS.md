@@ -180,9 +180,13 @@
 - Эпизоды используют согласованные action maps и запрашивают новые actions у
   интегратора вместо создания параллельных assets.
 - Карта `Office` содержит `Move`, `Aim`, `Primary`, `Secondary` и `Interact` для
-  связок «клавиатура + мышь» и геймпада. Офисный эпизод читает `Office/Move` и
-  `Office/Primary`; временные `Player/Move` и `Player/Attack` в офисе больше не
-  используются.
+  связок «клавиатура + мышь» и геймпада. Офисный эпизод читает `Office/Move`,
+  `Office/Aim` и `Office/Primary`; временные `Player/Move` и `Player/Attack` в
+  офисе больше не используются.
+- `Office/Aim` имеет тип `PassThrough`: `<Pointer>/position` передаёт экранную
+  точку, `<Gamepad>/rightStick` — направленный вектор. Runtime обязан различать
+  семантику binding и хранить последнее валидное направление при отпускании стика.
+  `Move` не меняет направление взгляда.
 - Legacy Input Manager, `UnityEngine.Input` и `StandaloneInputModule` запрещены.
 - UI работает через `InputSystemUIInputModule`; gameplay — через `InputAction`,
   `PlayerInput` или общий адаптер ввода.
