@@ -129,6 +129,29 @@
   подписываются на `Loc.LocaleChanged` и пересобирают видимое состояние.
 - Полный процесс и naming находятся в `localization/README.md` и `KEY_NAMING.md`.
 
+## Звук
+
+- Persistent `GameEntryPoint` создаёт ровно один `Jam.Core.Audio.AudioService`;
+  эпизоды не создают собственный глобальный mixer, музыкальный контроллер или
+  параллельный каталог пользовательских громкостей.
+- Общие логические шины: `Master`, `Music`, `Sfx`, `UI`, `Ambience`, `Voice`.
+  Значения `0..1` хранятся в `PlayerPrefs` под `jam.settings.audio.<bus>` отдельно
+  от `jam.save.v1`; новая игра их не сбрасывает.
+- Контент запускается через project-owned `AudioCue`: стабильный ID, варианты
+  клипа, шина, volume/pitch, spatial blend, loop, cooldown, concurrency и priority.
+- Основной runtime API — `IAudioService`/`AudioService`: `Play`, `Stop`,
+  `PlayMusic`, `StopMusic`, `PlayVoice`, `StopVoice`, громкости и mix-context.
+  Эпизодный код не обращается к persistent `AudioSource` напрямую.
+- Контексты имеют фиксированный приоритет `Paused > Cutscene > Default` и
+  регистрируются по владельцу. Каждый владелец обязан очистить свой контекст при
+  завершении/disable; закрытие pause восстанавливает активный cutscene-контекст.
+- `AudioConfiguration` по пути Resources `Audio/AudioConfiguration` опционально
+  связывает логические шины с `AudioMixerGroup` и snapshot. Без ассета действует
+  runtime fallback через громкости источников, поэтому базовый flow не блокируется.
+- Storyboard voice маршрутизируется через `AudioService`; NodeCanvas использует
+  только project tasks `PlayAudioCue`, `SetMusic`, `SetAudioContext` и не хранит
+  аудиосостояние в Blackboard/save.
+
 ## Интеграция
 
 ### NodeCanvas и Damage Numbers Pro

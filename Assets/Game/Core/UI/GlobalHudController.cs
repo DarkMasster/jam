@@ -1,3 +1,4 @@
+using Jam.Core.Audio;
 using Jam.Core.Localization;
 using Jam.Core.Save;
 using TMPro;
@@ -57,6 +58,7 @@ namespace Jam.Core.UI
                 _menuOpen = false;
                 RestoreGameplayState();
             }
+            AudioService.Instance?.ClearContext(this);
         }
 
         private void Update()
@@ -88,6 +90,7 @@ namespace Jam.Core.UI
             _previousCursorLockMode = Cursor.lockState;
             _previousCursorVisible = Cursor.visible;
             Time.timeScale = 0f;
+            AudioService.Instance?.SetContext(this, AudioMixContext.Paused);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             _menuButton.gameObject.SetActive(false);
@@ -105,6 +108,7 @@ namespace Jam.Core.UI
             _menuOpen = false;
             _overlay.SetActive(false);
             _menuButton.gameObject.SetActive(_isGameplayScene);
+            AudioService.Instance?.ClearContext(this);
             RestoreGameplayState();
         }
 

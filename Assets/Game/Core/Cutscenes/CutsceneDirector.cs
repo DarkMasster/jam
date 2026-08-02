@@ -1,4 +1,5 @@
 using System;
+using Jam.Core.Audio;
 using Jam.Core.UI;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -89,6 +90,7 @@ namespace Jam.Core.Cutscenes
             _currentContext = context ?? new CutsceneContext();
             _hud ??= GetComponent<GlobalHudController>();
             _hud?.SetCutsceneActive(true);
+            AudioService.Instance?.SetContext(this, AudioMixContext.Cutscene);
 
             try
             {
@@ -138,6 +140,7 @@ namespace Jam.Core.Cutscenes
             _currentBehaviour = null;
             _currentContext = null;
             _hud?.SetCutsceneActive(false);
+            AudioService.Instance?.ClearContext(this);
             Finished?.Invoke(result);
         }
 

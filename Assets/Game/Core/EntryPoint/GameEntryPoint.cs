@@ -1,3 +1,4 @@
+using Jam.Core.Audio;
 using Jam.Core.Cutscenes;
 using Jam.Core.Localization;
 using Jam.Core.Save;
@@ -41,6 +42,10 @@ namespace Jam.Core.EntryPoint
             if (GetComponent<LocalizationBootstrap>() == null)
             {
                 gameObject.AddComponent<LocalizationBootstrap>();
+            }
+            if (GetComponent<AudioService>() == null)
+            {
+                gameObject.AddComponent<AudioService>();
             }
             if (GetComponent<GlobalHudController>() == null)
             {
