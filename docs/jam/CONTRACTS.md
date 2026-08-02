@@ -147,6 +147,9 @@
   `CutsceneId`: `UiStoryboardPresentation` или `TimelineCutscenePresentation`.
 - `ICutscenePresentation` отвечает только за показ, пропуск и остановку;
   сюжетные условия и gameplay-state остаются в NodeCanvas/контроллере эпизода.
+- `IStoryboardScenePresenter` — опциональный scene-local источник 3D stage/portrait
+  RenderTexture для `UiStoryboardPresentation`; он выбирает авторский кадр по
+  индексу storyboard frame и не меняет сюжетное или save-состояние.
 - `PlayCutsceneTask` запускает катсцену по ID и завершает NodeCanvas action после
   `Completed` или `Skipped`. Следующая task меняет авторитетный state и сохраняет
   checkpoint — Timeline/Storyboard не записывают прогресс самостоятельно.
