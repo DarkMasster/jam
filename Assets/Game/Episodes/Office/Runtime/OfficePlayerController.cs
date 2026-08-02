@@ -10,6 +10,7 @@ namespace Jam.Episodes.Office
         [SerializeField] private InputActionAsset inputActions;
         [SerializeField] private string actionMapName = "Player";
         [SerializeField] private string moveActionName = "Move";
+        [SerializeField] private string aimActionName = "Aim";
 
         [Header("Movement")]
         [SerializeField] private Camera movementCamera;
@@ -21,20 +22,39 @@ namespace Jam.Episodes.Office
         [SerializeField, Min(0f)] private float ramMomentumMultiplier = 0.4f;
         [SerializeField, Range(0f, 1f)] private float ramSpeedRetention = 0.9f;
 
+        [Header("Aim")]
+        [SerializeField, Range(0f, 1f)] private float directionalAimDeadzone = 0.2f;
+
         private CharacterController _characterController;
         private InputAction _moveAction;
+        private InputAction _aimAction;
         private Vector3 _planarVelocity;
+        private Vector3 _aimDirection;
+        private Vector2 _pointerPosition;
+        private Vector2 _directionalAim;
+        private AimSource _aimSource;
         private bool _ownsMoveActionEnable;
+        private bool _ownsAimActionEnable;
         private bool _controlLocked;
+
+        private enum AimSource
+        {
+            None,
+            Pointer,
+            Direction
+        }
 
         public bool IsControlLocked => _controlLocked;
 
         public float PlanarSpeed => _planarVelocity.magnitude;
 
+        public Vector3 AimDirection => _aimDirection;
+
         private void Awake()
         {
             _characterController = GetComponent<CharacterController>();
             movementCamera ??= Camera.main;
+            ResetAimDirection();
         }
 
         private void OnEnable()
@@ -44,19 +64,30 @@ namespace Jam.Episodes.Office
 
         private void OnDisable()
         {
+            if (_aimAction != null)
+            {
+                _aimAction.performed -= OnAimPerformed;
+            }
+
             if (_ownsMoveActionEnable && _moveAction != null)
             {
                 _moveAction.Disable();
             }
 
+            if (_ownsAimActionEnable && _aimAction != null)
+            {
+                _aimAction.Disable();
+            }
+
             _ownsMoveActionEnable = false;
+            _ownsAimActionEnable = false;
         }
 
         private void Update()
         {
             // Быстрый restart на кадр выключает CharacterController, чтобы перенести
             // героя; двигать его в этот момент нельзя.
-            if (_moveAction == null || !_characterController.enabled)
+            if (!_characterController.enabled)
             {
                 return;
             }
@@ -67,7 +98,9 @@ namespace Jam.Episodes.Office
                 return;
             }
 
-            var input = Vector2.ClampMagnitude(_moveAction.ReadValue<Vector2>(), 1f);
+            var input = _moveAction != null
+                ? Vector2.ClampMagnitude(_moveAction.ReadValue<Vector2>(), 1f)
+                : Vector2.zero;
             var desiredDirection = GetCameraRelativeDirection(input);
             var speed = momentum != null ? moveSpeed * momentum.SpeedMultiplier : moveSpeed;
             var desiredVelocity = desiredDirection * speed;
@@ -84,9 +117,10 @@ namespace Jam.Episodes.Office
             motion.y = -groundPressure;
             _characterController.Move(motion * Time.deltaTime);
 
-            if (desiredDirection.sqrMagnitude > 0.001f)
+            UpdateAimDirection();
+            if (_aimDirection.sqrMagnitude > 0.001f)
             {
-                var targetRotation = Quaternion.LookRotation(desiredDirection, Vector3.up);
+                var targetRotation = Quaternion.LookRotation(_aimDirection, Vector3.up);
                 transform.rotation = Quaternion.RotateTowards(
                     transform.rotation,
                     targetRotation,
@@ -98,13 +132,15 @@ namespace Jam.Episodes.Office
             InputActionAsset actions,
             Camera camera,
             string mapName,
-            string actionName,
+            string moveName,
+            string aimName,
             OfficeMomentum momentumScale = null)
         {
             inputActions = actions;
             movementCamera = camera;
             actionMapName = mapName;
-            moveActionName = actionName;
+            moveActionName = moveName;
+            aimActionName = aimName;
             momentum = momentumScale;
         }
 
@@ -113,6 +149,7 @@ namespace Jam.Episodes.Office
         {
             _planarVelocity = Vector3.zero;
             momentum?.ReportPlanarSpeed(0f);
+            ResetAimDirection();
         }
 
         /// <summary>Короткая постановка блокирует движение, не отключая input map.</summary>
@@ -167,13 +204,117 @@ namespace Jam.Episodes.Office
             if (_moveAction == null)
             {
                 Debug.LogError($"Input action '{actionMapName}/{moveActionName}' was not found for the office player.", this);
-                return;
             }
-
-            if (!_moveAction.enabled)
+            else if (!_moveAction.enabled)
             {
                 _moveAction.Enable();
                 _ownsMoveActionEnable = true;
+            }
+
+            _aimAction = actionMap.FindAction(aimActionName, false);
+            if (_aimAction == null)
+            {
+                Debug.LogError($"Input action '{actionMapName}/{aimActionName}' was not found for the office player.", this);
+                return;
+            }
+
+            _aimAction.performed -= OnAimPerformed;
+            _aimAction.performed += OnAimPerformed;
+            if (!_aimAction.enabled)
+            {
+                _aimAction.Enable();
+                _ownsAimActionEnable = true;
+            }
+        }
+
+        private void OnAimPerformed(InputAction.CallbackContext context)
+        {
+            var value = context.ReadValue<Vector2>();
+            if (IsDirectionalAimBinding(context.control))
+            {
+                if (value.sqrMagnitude < directionalAimDeadzone * directionalAimDeadzone)
+                {
+                    return;
+                }
+
+                _directionalAim = Vector2.ClampMagnitude(value, 1f);
+                _aimSource = AimSource.Direction;
+                return;
+            }
+
+            _pointerPosition = value;
+            _aimSource = AimSource.Pointer;
+        }
+
+        private bool IsDirectionalAimBinding(InputControl control)
+        {
+            if (_aimAction == null || control == null)
+            {
+                return false;
+            }
+
+            var bindingIndex = _aimAction.GetBindingIndexForControl(control);
+            if (bindingIndex < 0 || bindingIndex >= _aimAction.bindings.Count)
+            {
+                return false;
+            }
+
+            var groups = _aimAction.bindings[bindingIndex].groups;
+            return !string.IsNullOrEmpty(groups) && groups.Contains("Gamepad");
+        }
+
+        private void UpdateAimDirection()
+        {
+            Vector3 direction;
+            switch (_aimSource)
+            {
+                case AimSource.Pointer:
+                    if (!TryGetPointerDirection(out direction))
+                    {
+                        return;
+                    }
+
+                    break;
+                case AimSource.Direction:
+                    direction = GetCameraRelativeDirection(_directionalAim);
+                    break;
+                default:
+                    return;
+            }
+
+            direction.y = 0f;
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                _aimDirection = direction.normalized;
+            }
+        }
+
+        private bool TryGetPointerDirection(out Vector3 direction)
+        {
+            direction = Vector3.zero;
+            if (movementCamera == null)
+            {
+                return false;
+            }
+
+            var ray = movementCamera.ScreenPointToRay(_pointerPosition);
+            var aimPlane = new Plane(Vector3.up, transform.position);
+            if (!aimPlane.Raycast(ray, out var distance))
+            {
+                return false;
+            }
+
+            direction = ray.GetPoint(distance) - transform.position;
+            direction.y = 0f;
+            return direction.sqrMagnitude > 0.001f;
+        }
+
+        private void ResetAimDirection()
+        {
+            _aimDirection = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            if (_aimDirection.sqrMagnitude <= 0.001f)
+            {
+                _aimDirection = Vector3.forward;
             }
         }
 

@@ -98,7 +98,7 @@ namespace Jam.Episodes.Office.Editor
             var camera = CreateCamera(player.transform, lightingRoot);
             var inputActions = AssetDatabase.LoadAssetAtPath<InputActionAsset>("Assets/InputSystem_Actions.inputactions");
             var playerController = player.GetComponent<OfficePlayerController>();
-            playerController.Configure(inputActions, camera, "Office", "Move", momentum);
+            playerController.Configure(inputActions, camera, "Office", "Move", "Aim", momentum);
 
             var handAnchor = player.transform.Find("Hand Anchor");
             var carryController = player.GetComponent<OfficeCarryController>();
