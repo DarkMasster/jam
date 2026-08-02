@@ -4,7 +4,8 @@
 - Статус: активен
 - Последнее обновление: 2026-08-02
 - Владелец актуальности: исполнитель текущей офисной задачи
-- Текущая контрольная точка: `POLYGON Office art-pass`
+- Текущая контрольная точка: `POLYGON Office art-pass`, шаг 1 проверочного среза
+  выполнен
 
 Документ переводит утверждённый офисный эпизод в последовательность небольших
 проверяемых срезов. Он не заменяет `DEVELOPMENT_SPEC.md`, `STORY.md`,
@@ -86,7 +87,8 @@ Setup: герой засыпает в машине у границы
 | `M3` Финальный босс | Done | 12 стоек собираются у ложного `EXIT`, принимают три броска, замыкают физическое кольцо и завершают забег неизбежным сюжетным ударом | Сохранить episode-local финал как основу `M4` |
 | `M4` Сюжет и общий flow | Done | Setup сна, пробуждение, checkpoint `office.setup/run/arrival`, `EpisodeResult` и переход в `HotelArrival` через общий flow | Сохранить как стабильную основу эпизода |
 | `M6` Polish | Done | Процедурные SFX, частицы, дрожь камеры и свет по Momentum с сохранённой читаемостью пола | Сохранить существующий feedback без изменения правил боя |
-| `M7` Damage Numbers Pro | Done | Урон, разрушение, подбор и milestone используют три project-owned DNP preset; слабые и повторные события не создают popup | Сохранить как presentation-слой без влияния на gameplay-state |
+| `M7` Damage Numbers Pro | Done, есть открытый дефект | Урон, разрушение, подбор и milestone используют три project-owned DNP preset; слабые и повторные события не создают popup. Popup зависают при уничтожении цели и над героем — см. «Открытый дефект `M7`» | Починить зависание popup до финального билда |
+| `A1` POLYGON Office art-pass | Doing | Проверочный срез: стартовый кабинет, пара столов `z = -15`, левая секция стекла и две стойки `z = 9.5` заменены visual children; коллайдеры, маршрут и vendor-каталог не изменились | Распространить `OfficeArtPass` на остальные зоны маршрута |
 
 ## Milestones и критерии приёмки
 
@@ -283,6 +285,42 @@ Play Mode. Controlled acceptance-проверка подтвердила все 
 второй pickup не поглощается первым; числовой урон сохраняет combination. Размер
 текстовых уведомлений уменьшен до `-2.1`. Итоговый вид подтверждён пользователем.
 
+### Открытый дефект `M7`: popup зависают — Todo / P1
+
+Симптом: цифры `−1` зависают в воздухе при уничтожении противника и над героем —
+вместо того чтобы доиграть подъём и погаснуть, они остаются висеть до конца
+lifetime.
+
+Причина найдена в связке project-кода и vendor-жизненного цикла, подтверждена по
+исходникам `Assets/DamageNumbersPro/Scripts/Internal/DamageNumber.cs`:
+
+- `DamageNumbersFeedbackAdapter` передаёт `target` в `Spawn(...)` во всех ветках, а
+  этот overload вызывает `SetFollowedTarget`, который принудительно ставит
+  `enableFollowing = true` на конкретном экземпляре (строка `879`).
+- Сброс pooled-экземпляра восстанавливает из prefab `followedTarget`, `spamGroup`,
+  `permanent` и тексты, но **не восстанавливает `enableFollowing`** (около строки
+  `1704`). Все три офисных preset авторятся с `enableFollowing = false`, однако
+  после первого spawn с целью экземпляр остаётся «следящим» навсегда.
+- `HandleFollowing` при `followedTarget == null` сбрасывает `followingInitialized` и
+  выходит, не двигая popup (строка `2348`). Уничтоженный противник и pooled-повтор
+  с обнулённым `followedTarget` дают ровно этот случай.
+- `_targetBursts` в адаптере не чистится: записи по `EntityId` уничтоженных целей
+  живут до конца сцены, поэтому после restart полосы для пересозданного противника
+  начинаются со старого значения.
+
+Направление исправления: по roadmap `M7` world-popup урона **должен оставаться в
+точке цели**, а следовать за героем — только уведомление о подборе. Значит для
+урона и разрушения нужно использовать overload без `Transform`, сохранив расчёт
+вертикальной полосы, а там, где следование действительно нужно, явно сбрасывать
+`enableFollowing` и `followedTarget` при возврате экземпляра в пул. Дополнительно
+удалять записи `_targetBursts` по окну `targetBurstWindow`.
+
+Ограничение прежнее: `Assets/DamageNumbersPro/**` не редактируется, исправление
+живёт в `Assets/Game/Integrations/DamageNumbersPro/**`. Проверка — controlled Play
+Mode: попадание по креслу с последующим списанием, попадание по боссу, урон герою и
+серия быстрых подборов; ни один popup не должен остаться на экране после
+завершения своей анимации.
+
 ## Зависимости и владельцы
 
 | Решение или ресурс | Владелец | Нужно для |
@@ -315,11 +353,20 @@ placeholder и оставляет точную инструкцию интегр
 
 ## Следующий офисный срез
 
-Начать проверочный срез POLYGON Office art-pass: заменить только visual children
-стартового кабинета, одной пары столов, одной секции стекла и двух серверных стоек,
-не меняя gameplay-геометрию, коллайдеры, маршрут или vendor-каталог.
+Слайс `A2` из плана визуального прохода: перевести на `OfficeArtPass` оставшиеся
+четыре стола и четыре кресла open space (`z = -20.5` и `z = -9.5`), двенадцать
+фоновых столов и двенадцать колонн `BackgroundScale`. Правила и критерии закрытия
+слайса — в разделе «Оставшийся объём art-pass».
 
-## План визуального прохода POLYGON Office — Planned / P1
+Параллельно art-pass идёт отдельный фикс `M7`: popup урона зависают при
+уничтожении цели и над героем — разбор причины и направление исправления в разделе
+«Открытый дефект `M7`». Ветка отдельная, art-pass его не ждёт.
+
+Отдельно, до слайса `A3`, решить судьбу `Reflection Panel`: рядом с реальными
+переплётами модуля пака он читается как отдельный светящийся щит, а не как
+отражение в стекле. Логику `OfficeReflectionBeat` при этом не менять.
+
+## План визуального прохода POLYGON Office — Doing / P1
 
 Визуальное направление: относительно нормальный тёплый кабинет увольнения
 переходит в повторяющийся холодный open space, стеклянную переговорную, плотную
@@ -333,32 +380,114 @@ visual children существующих project-owned prefab'ов; непрер
 
 | Текущий объект | Visual из POLYGON Office | Ограничение |
 |---|---|---|
-| `Desk` | `SM_Prop_Desk_03` или `SM_Prop_Desk_04`, `SM_Prop_Computer_Setup_01` | Сохранить footprint и collider |
-| `Chair` | `SM_Prop_Chair_05` или `SM_Prop_Chair_06` | Сохранить ориентацию спинки от стола |
+| `Desk` | `SM_Prop_Desk_03` + `SM_Prop_Computer_Monitor_02` | Проверено. `SM_Prop_Computer_Setup_01` не подходит: он содержит собственную клавиатуру и дублировал бы carryable |
+| `Chair` | `SM_Prop_Chair_06` | Проверено. Спинка ставится от стола, footprint сиденья сохраняется |
 | `HostileChair` | `SM_Prop_Chair_08` или `SM_Prop_Chair_09` | Не менять `OfficeChaser`, trigger и hitbox |
 | `Meeting Table` | `SM_Prop_Table_Conference_02` | Не сужать центральный проход |
-| `ServerRack` и стойки босса | варианты `SM_Prop_Server_Cabinet_01/02/03_Full` | Один gameplay-prefab, несколько visual-вариантов; босс собирается из знакомого окружения |
+| `ServerRack` и стойки босса | `SM_Prop_Server_Cabinet_01_Full` и `_02_Full` | Проверено на двух стойках. Панель с индикаторами смотрит по локальному -X, поэтому нужен yaw `-90`; `_03_Full` — низкая тумба, для стойки не годится |
 | `Printer` | `SM_Prop_Printer_01` | Только intact visual; broken-state остаётся project-owned |
 | `Keyboard` | `SM_Prop_Computer_Keyboard_01` | Сохранить carryable root, Rigidbody и pickup lockout |
 | `Laptop Pickup` | `SM_Prop_Laptop_02` | Сохранить collectible root, marker и collider |
 | `Mug Pickup` | `SM_Prop_Cup_Red_01` | Красный силуэт остаётся уникальной сюжетной целью |
-| Стартовые шкафы и лампа | `SM_Prop_Cabinets_02`, `SM_Prop_DeskLamp_06` | Существующий тёплый Point Light сохраняется |
-| Переговорная | `SM_Bld_Wall_Glass_Large_01`, `SM_Bld_Wall_Glass_Large_Door_01` | Reflection-логику и ширину дверей не менять |
+| Стартовые шкафы и лампа | по две `SM_Prop_Cabinets_01` на шкаф, `SM_Prop_DeskLamp_06` | Проверено. Одна модель на весь куб 1.2 × 2.0 × 1.2 выглядит неправдоподобно широкой; тёплый Point Light сохраняется |
+| Переговорная | `SM_Bld_Wall_Glass_Large_01`, `SM_Bld_Wall_Glass_Large_Door_01` | Проверено на левой секции: модуль пака 5.0 × 3.0 с pivot у края, стена набирается тремя сегментами; Reflection-логику и ширину дверей не менять |
 | Пол | `Floor_Carpet_01` → `Floor_Panel_01` → `Floor_Tiles_01` | Carpet: старт/open space; Panel: серверная; Tiles: рецепция |
 | Стены и потолок | `Wall_Blank_01`, `Wall_Trim_01`, `Ceiling_Panel_Light_01/02` | Только visual-модули поверх greybox |
 | `Exit Door` и метка | `Door_Large_01_L/R`, `SM_Prop_Sign_Exit_01` | Gameplay-blocker и локализованный TMP label сохраняются |
 | Reception desks | композиция из двух `SM_Prop_Desk_06` | В паке нет отдельного reception desk |
 | `Turnstile` | project-owned модель остаётся | Прямого аналога в паке нет |
 
+### Оставшийся объём art-pass
+
+Опись снята с собранной сцены на 2026-08-02: после среза `A1` greybox-визуал
+сохраняют 127 объектов. Ниже — весь оставшийся перенос, разбитый на слайсы.
+Слайсы идут по порядку: каждый следующий берётся только после того, как предыдущий
+проверен и записан в историю изменений. Внутри слайса меняются только рендереры —
+маршрут, коллайдеры, триггеры и компоненты остаются прежними.
+
+| Слайс | Статус | Объекты сцены | Visual из пака |
+|---|---|---|---|
+| `A1` Проверочный срез | Done | `Start Desk`, `Start Chair`, `Start Cabinet L/R`, `Warm Desk Lamp`, `Open Desk L/R -15`, `Open Chair L/R -15`, `Meeting Glass Left`, `Server Rack ±3.6 9.5` | см. таблицу замен выше |
+| `A2` Open space | Todo | `Open Desk L/R -20.5`, `Open Desk L/R -9.5` (4), `Open Chair L/R -20.5`, `Open Chair L/R -9.5` (4), `Distant Desk ±1 0..5` (12), `Distant Column ±1 0..5` (12) | `SM_Prop_Desk_03` + `SM_Prop_Computer_Monitor_02`, `SM_Prop_Chair_06`, `SM_Bld_Pillar_Interior_01` |
+| `A3` Переговорная | Todo | `Meeting Glass Right` (3 модуля), `Meeting Entry Left/Right`, `Meeting Exit Left/Right`, `Meeting Table` + `Meeting Table Base`, `Meeting Chair N1/N2/S1/S2` (4) | `SM_Bld_Wall_Glass_Large_01`, `SM_Bld_Wall_Glass_Large_Door_01`, `SM_Prop_Table_Conference_02`, `SM_Prop_Chair_06` |
+| `A4` Серверная | Todo | `Server Rack ±6 9.5`, `±8.4 9.5`, `±3.6 19.5`, `±6 19.5`, `±8.4 19.5` (10 стоек) | `SM_Prop_Server_Cabinet_01_Full` и `_02_Full` вперемешку, yaw `-90` |
+| `A5` Рецепция и EXIT | Todo | `Reception Desk L/R` (2), `Reception Threshold Left/Right`, `Exit Door`, `Exit Wall Left/Right`, `Exit Pillar Left/Right`, `Exit Lintel` | по две `SM_Prop_Desk_06` на стойку, `SM_Bld_Door_Large_01_L/R`, `SM_Prop_Sign_Exit_01` |
+| `A6` Оболочка этажа | Todo | `Playable Floor`, `Start Wall Left/Right`, `Start Rear Wall`, `Start Threshold Left/Right`, `Hall Wall Left/Right`; потолок добавляется как новый visual-слой | `SM_Bld_Floor_Carpet_01` → `Floor_Panel_01` → `Floor_Tiles_01` по зонам, `SM_Bld_Wall_Blank_01`, `SM_Bld_Ceiling_Panel_Light_01/02` |
+| `A7` Интерактив, враги и босс | Todo | `Keyboard ×8`, `Printer ×4`, `Laptop Pickup`, `Mug Pickup`, `Hostile Chair ×4` (только группа `Intact`), `Boss Rack 01..12` | `SM_Prop_Computer_Keyboard_01`, `SM_Prop_Printer_01`, `SM_Prop_Laptop_02`, `SM_Prop_Cup_Red_01`, `SM_Prop_Chair_08/09`, варианты `SM_Prop_Server_Cabinet_*_Full` |
+
+`A6` — единственный слайс, который добавляет объекты, а не только подменяет
+рендереры: потолка в greybox нет. Потолок ставится над игровой зоной и не должен
+перекрывать top-down камеру — либо панели идут выше `farClipPlane` камеры, либо
+слайс отменяется целиком.
+
+`A7` идёт последним и требует повторной проверки полного `run → restart → boss`
+flow: там vendor-модели попадают внутрь prefab'ов с состояниями
+(`Intact/Broken/Wrecked`), pickup lockout и физикой броска.
+
+### Объекты, которые art-pass не трогает
+
+Ни один слайс не заменяет и не гасит эти рендереры — они несут gameplay-смысл, а
+не декор:
+
+- навигационная полоса `Navigation Strip` и подложка `Void Floor`;
+- красные телеграфы: `Telegraph` внутри `HostileChair`, `Boss Line Telegraph`,
+  `Synchronized Strike Telegraph`;
+- напольные маркеры `Laptop Marker`, `Mug Marker` и `Boss Arena Marker`;
+- блокеры и их надписи: `Access Hold Barrier/Label`, `Arena Seal Barrier/Label`,
+  `Closed Ring Links`, `Exit Indicator`;
+- локализованные TMP-надписи `Start Label`, `Meeting Label`, `Exit Label`,
+  `Boss Hologram`;
+- `Player` и `Delayed Reflection`: силуэт героя и его эхо остаются project-owned;
+- разрушенные состояния `Broken` принтера и `Wrecked` кресла;
+- `Turnstile` — прямого аналога в паке нет;
+- `Reflection Panel` — до отдельного решения (см. следующий офисный срез).
+
 Порядок внедрения:
 
-1. Проверочный срез: стартовый кабинет, одна пара столов, одна секция стекла и две
-   серверные стойки.
-2. Проверить масштаб сверху, проходы, line of sight, броски, материалы URP и
+1. ✅ Проверочный срез `A1`.
+2. ✅ Проверить масштаб сверху, проходы, line of sight, броски, материалы URP и
    отсутствие новых предупреждений.
-3. Распространить адаптеры на open space, переговорную, серверную и рецепцию.
-4. Последним заменить визуалы интерактивных предметов, врагов и стоек босса,
-   повторно проверить полный run/restart/boss flow.
+3. `A2` → `A3` → `A4` → `A5` → `A6`: окружение маршрута по зонам.
+4. `A7` последним: интерактивные предметы, враги и стойки босса, затем повторная
+   проверка полного run/restart/boss flow.
+
+Слайс считается закрытым, когда по сохранённой сцене подтверждены: число и границы
+коллайдеров не изменились, включённых vendor-коллайдеров `0`, нетонированных
+vendor-материалов `0`, `Assets/PolygonOffice` без изменений, scene validation
+`0 issues` и Console без игровых ошибок.
+
+### Проверенные правила `OfficeArtPass`
+
+Весь art-pass живёт в editor-слое `OfficeArtPass`, который вызывается из
+`OfficeSceneBuilder` после сборки архитектуры и мебели. Правила подтверждены на
+проверочном срезе и обязательны для остальных зон:
+
+- Vendor-модель добавляется как child контейнера `Synty Visual` внутри
+  project-owned объекта. Корневой prefab, компоненты и коллайдеры не трогаются.
+- Каждая модель подгоняется под **явно указанный greybox-объём**, а не под
+  собственный масштаб пака. Мебель пака заметно мельче greybox, поэтому подгонка —
+  единственный способ сохранить footprint под коллайдером и высоту рабочей
+  поверхности, под которую расставлены клавиатуры.
+- Коэффициенты считаются вдоль осей владельца, а `localScale` работает вдоль осей
+  модели, поэтому для повёрнутых модулей их переносят через inverse rotation. Все
+  повороты кратны 90°, иначе подгонка перестаёт быть точной.
+- Все коллайдеры vendor-модели выключаются: столкновения остаются за greybox.
+- Greybox-рендереры гасятся, но именованные акценты можно оставить. Красные
+  `Status LED` серверных стоек сохранены: они держат цветовой акцент серверной.
+- `Builder` передаёт art-pass прямые ссылки на объекты среза; поиск greybox по
+  именам запрещён, иначе переименование объекта молча отключит замену.
+
+### Палитра vendor-материалов
+
+Альбедо POLYGON Office заметно светлее офисной палитры: без коррекции две стойки
+среди двенадцати greybox читались как белые маяки и перебивали красные телеграфы.
+Материалы пака не редактируются: `OfficeArtPass` создаёт project-owned material
+variants `Assets/Game/Episodes/Office/Art/Materials/M_Synty_*.mat`, которые
+наследуют материал пака и переопределяют только `_BaseColor`, умножая его на
+приглушающий холодный множитель `0.42 / 0.44 / 0.50`.
+
+`MaterialPropertyBlock` для этого не годится: он не сериализуется вместе со сценой
+и теряется при сохранении.
 
 Не входят в этот проход: персонажи пака, изменение маршрута, новая механика дверей,
 физика vendor-prefab'ов, замена красных gameplay-телеграфов и редактирование
@@ -368,6 +497,10 @@ visual children существующих project-owned prefab'ов; непрер
 
 | Дата | Ветка / задача | Изменение | Проверка |
 |---|---|---|---|
+| 2026-08-02 | `polish/office-synty-art-pass` / `M7` | Зафиксирован открытый дефект `M7`: popup урона зависают при уничтожении противника и над героем. Причина разобрана по исходникам DNP, записаны направление исправления и критерий проверки; `M7` переведён из `Done` в `Done, есть открытый дефект`, задача заведена в `BACKLOG.md` на ветку `fix/office-dnp-popup-follow`. Runtime не изменялся | Сверено с `Assets/DamageNumbersPro/Scripts/Internal/DamageNumber.cs`: `SetFollowedTarget` ставит `enableFollowing = true` (строка `879`), сброс pooled-экземпляра восстанавливает `followedTarget`, `spamGroup`, `permanent` и тексты, но не `enableFollowing` (около `1704`), `HandleFollowing` при пустой цели выходит не двигая popup (`2348`). Подтверждено, что все три офисных preset авторятся с `enableFollowing = false`, а `DamageNumbersFeedbackAdapter` передаёт `Transform` во все ветки `Spawn` |
+| 2026-08-02 | `polish/office-synty-art-pass` | Исправлен `LiberationSans SDF - Fallback.asset`: в `main` был закоммичен выросший в Play Mode динамический атлас, и мировые TMP-надписи офиса падали с `UnassignedReferenceException`. Динамические данные сброшены, осиротевшие sub-asset текстуры удалены; правило хранения записано в `DECISIONS.md` и `CONTRACTS.md` | До: 16 записей `m_AtlasTextures` при 13 текстурах, 4 пустых слота. После: 1 запись, 1 текстура, 0 пустых, 0 глифов, `Clear Dynamic Data on Build = true`. Проверка сломанного места: сцена переоткрыта, 14 мировых TMP пересобраны принудительно, полный цикл Play Mode — все 11 активных надписей отрисовали глифы, Console — 0 ошибок. Прочие 34 `TMP_FontAsset` проекта проверены: пустых слотов нет |
+| 2026-08-02 | `polish/office-synty-art-pass` / `A2`–`A7` | В план визуального прохода добавлена опись оставшегося переноса: 127 объектов сцены разбиты на слайсы `A2` open space, `A3` переговорная, `A4` серверная, `A5` рецепция и EXIT, `A6` оболочка этажа, `A7` интерактив/враги/босс — с точными объектами, количествами и целевыми моделями пака. Отдельно зафиксирован список объектов, которые art-pass не трогает, и критерий закрытия слайса | Опись снята с собранной сцены перебором рендереров: исключены объекты под `Synty Visual` и уже переведённые владельцы; счётчики сверены с builder (4 стола и 4 кресла open space, 12 фоновых столов, 12 колонн, 10 оставшихся стоек, 12 стоек босса, 8 клавиатур, 4 принтера, 4 кресла-противника, 4 кресла переговорной, 4 турникета) |
+| 2026-08-02 | `polish/office-synty-art-pass` / `A1` | Выполнен шаг 1 проверочного среза POLYGON Office art-pass. Добавлен editor-слой `OfficeArtPass`: visual children, подгонка под greybox-объём, выключение vendor-коллайдеров и project-owned material variants офисной палитры. Заменены стартовый кабинет, пара столов и кресел `z = -15`, левая секция стекла и две стойки `x = ±3.6, z = 9.5`. Уточнены таблица замен и порядок внедрения; зафиксированы два найденных дефекта и один открытый вопрос по `Reflection Panel` | Rebuild `Jam/Office/Rebuild Prologue Office`; scene validation — 0 issues/missing scripts/broken prefabs; Console — 0 ошибок и 0 игровых предупреждений. По сохранённой сцене: 10 контейнеров `Synty Visual`, 19 vendor-инстансов, vendor-коллайдеров включено `0`, нетонированных vendor-материалов `0`, `Assets/PolygonOffice` — 0 изменённых файлов. Габариты visual против greybox: стол `3.40 × 1.71 × 1.60` против `3.40 × 1.70 × 1.60`, стойка `1.40 × 2.60 × 1.49` совпала с соседней greybox, стекло `0.18 × 2.50 × 13.00` @ `(-8.05, 1.25, 0.50)` — точное совпадение с коллайдером; коллайдеры и их число не изменились (стол `6`, кресло `3`, стойка `1`). Play Mode: `OverlapBox` по капсуле игрока даёт `0` в коридоре у art-pass пода — как у соседнего greybox пода, `0` у стекла и `0` в проходе серверной; HUD, 8 carryables, 4 breakables, 4 chasers и boss на месте. Визуал подтверждён captures `office-artpass-start-top/-detail`, `office-artpass-glass-server-top`, `office-artpass-glass-wall`, `office-artpass-server-racks` |
 | 2026-08-02 | `polish/office-dnp-feedback-runtime` / follow-up M7 | Быстрые popup над героем распределены по четырём вертикальным полосам; текстовые preset уменьшены и больше не объединяют разные pickup, числовой урон сохраняет combination | Controlled burst: lane Y `1.80/2.85/3.90/4.95`, interaction/milestone combination `false`, text size `-2.1`; визуальный результат подтверждён пользователем |
 | 2026-08-02 | `polish/office-dnp-feedback-runtime` / `M7` | M7 переведён в Done: подтверждены popup урона по креслу, боссу и герою, разрушение, три вида подбора, milestone и отсутствие ложных popup; следующий офисный срез — проверочный POLYGON Office art-pass | Controlled Play Mode: `chair weak 0 / strong 1 / repeat 0`, `printer 0/1/0`, `player 1/0`, `boss 0/1/0`, keyboard `1`, первый личный предмет `1`, второй `2`; HUD active, audio playing, `6/6` particle emitters active, shake `0.85`; scene validation — 0 issues; игровых ошибок нет |
 | 2026-08-02 | `polish/office-dnp-feedback-runtime` / `M7` | DNP preset переведены с несовместимого demo-материала на проектный TMP font asset, отключён перенос текста и включён прямой поворот к камере; устранён фиолетовый квадрат при подборе | Rebuild `Prologue_Office`; Console — 0 ошибок/предупреждений; scene validation — 0 issues/missing scripts/broken prefabs; корректный popup подбора подтверждён пользователем в Play Mode |

@@ -57,10 +57,17 @@ namespace Jam.Episodes.Office.Editor
             var gameplayRoot = CreateGroup("Gameplay", sceneRoot);
             var lightingRoot = CreateGroup("Lighting", sceneRoot);
 
+            var artTargets = new OfficeArtPassTargets
+            {
+                ArchitectureRoot = architectureRoot,
+                FurnitureRoot = furnitureRoot
+            };
+
             var keyLight = ConfigureEnvironment(palette, lightingRoot);
-            BuildArchitecture(palette, architectureRoot);
-            BuildFurniture(palette, furnitureRoot);
+            BuildArchitecture(palette, architectureRoot, artTargets);
+            BuildFurniture(palette, furnitureRoot, artTargets);
             BuildBackgroundScale(palette, backgroundRoot);
+            OfficeArtPass.ApplyVerificationSlice(artTargets);
 
             var episodeObject = new GameObject("OfficeEpisodeController", typeof(OfficeEpisodeController), typeof(OfficeMomentum), typeof(OfficeRunController));
             episodeObject.transform.SetParent(gameplayRoot, false);
@@ -431,7 +438,7 @@ namespace Jam.Episodes.Office.Editor
             return keyLight;
         }
 
-        private static void BuildArchitecture(Palette p, Transform root)
+        private static void BuildArchitecture(Palette p, Transform root, OfficeArtPassTargets art)
         {
             CreateCube("Void Floor", new Vector3(0f, -0.28f, 4f), new Vector3(42f, 0.2f, 76f), p.shadow, root, false);
             CreateCube("Playable Floor", new Vector3(0f, -0.1f, 4f), new Vector3(24f, 0.2f, 76f), p.floor, root);
@@ -445,7 +452,7 @@ namespace Jam.Episodes.Office.Editor
             CreateCube("Hall Wall Left", new Vector3(-12.15f, 1.4f, 9f), new Vector3(0.3f, 2.8f, 66f), p.wall, root);
             CreateCube("Hall Wall Right", new Vector3(12.15f, 1.4f, 9f), new Vector3(0.3f, 2.8f, 66f), p.wall, root);
 
-            CreateCube("Meeting Glass Left", new Vector3(-8.05f, 1.25f, 0.5f), new Vector3(0.18f, 2.5f, 13f), p.glass, root);
+            art.MeetingGlassLeft = CreateCube("Meeting Glass Left", new Vector3(-8.05f, 1.25f, 0.5f), new Vector3(0.18f, 2.5f, 13f), p.glass, root);
             CreateCube("Meeting Glass Right", new Vector3(8.05f, 1.25f, 0.5f), new Vector3(0.18f, 2.5f, 13f), p.glass, root);
             CreateSplitWall("Meeting Entry", -6f, 16f, 3.8f, 2.5f, p.glass, root);
             CreateSplitWall("Meeting Exit", 7f, 16f, 3.8f, 2.5f, p.glass, root);
@@ -464,21 +471,34 @@ namespace Jam.Episodes.Office.Editor
             CreateWorldLabel("Exit Label", "EXIT", new Vector3(0f, 3.25f, 41.15f), 0.12f, Hex("EDE9DF"), root);
         }
 
-        private static void BuildFurniture(Palette p, Transform root)
+        private static void BuildFurniture(Palette p, Transform root, OfficeArtPassTargets art)
         {
-            CreateDesk("Start Desk", new Vector3(1.6f, 0f, -29f), p, root, true);
-            CreateChair("Start Chair", new Vector3(1.6f, 0f, -31f), 180f, p, root);
-            CreateCube("Start Cabinet L", new Vector3(-4.8f, 1f, -31.6f), new Vector3(1.2f, 2f, 1.2f), p.panel, root);
-            CreateCube("Start Cabinet R", new Vector3(-4.8f, 1f, -27.8f), new Vector3(1.2f, 2f, 1.2f), p.panel, root);
-            CreateCube("Warm Desk Lamp", new Vector3(2.6f, 1.25f, -29f), new Vector3(0.25f, 0.55f, 0.25f), p.warm, root, false);
+            art.StartDesk = CreateDesk("Start Desk", new Vector3(1.6f, 0f, -29f), p, root, true);
+            art.StartChair = CreateChair("Start Chair", new Vector3(1.6f, 0f, -31f), 180f, p, root);
+            art.StartCabinetLeft = CreateCube("Start Cabinet L", new Vector3(-4.8f, 1f, -31.6f), new Vector3(1.2f, 2f, 1.2f), p.panel, root);
+            art.StartCabinetRight = CreateCube("Start Cabinet R", new Vector3(-4.8f, 1f, -27.8f), new Vector3(1.2f, 2f, 1.2f), p.panel, root);
+            art.StartLamp = CreateCube("Warm Desk Lamp", new Vector3(2.6f, 1.25f, -29f), new Vector3(0.25f, 0.55f, 0.25f), p.warm, root, false);
 
-            var podZ = new[] { -20.5f, -15f, -9.5f };
+            // Проверочный срез art-pass берёт один под open space, чтобы соседние
+            // greybox-поды остались прямым эталоном для сравнения масштаба.
+            const float artPassPodZ = -15f;
+            var podZ = new[] { -20.5f, artPassPodZ, -9.5f };
             foreach (var z in podZ)
             {
-                CreateDesk($"Open Desk L {z}", new Vector3(-7.4f, 0f, z), p, root, true);
-                CreateDesk($"Open Desk R {z}", new Vector3(7.4f, 0f, z), p, root, true);
-                CreateChair($"Open Chair L {z}", new Vector3(-7.4f, 0f, z - 1.5f), 180f, p, root);
-                CreateChair($"Open Chair R {z}", new Vector3(7.4f, 0f, z - 1.5f), 180f, p, root);
+                var deskLeft = CreateDesk($"Open Desk L {z}", new Vector3(-7.4f, 0f, z), p, root, true);
+                var deskRight = CreateDesk($"Open Desk R {z}", new Vector3(7.4f, 0f, z), p, root, true);
+                var chairLeft = CreateChair($"Open Chair L {z}", new Vector3(-7.4f, 0f, z - 1.5f), 180f, p, root);
+                var chairRight = CreateChair($"Open Chair R {z}", new Vector3(7.4f, 0f, z - 1.5f), 180f, p, root);
+
+                if (!Mathf.Approximately(z, artPassPodZ))
+                {
+                    continue;
+                }
+
+                art.OpenDeskLeft = deskLeft;
+                art.OpenDeskRight = deskRight;
+                art.OpenChairLeft = chairLeft;
+                art.OpenChairRight = chairRight;
             }
 
             CreateCube("Meeting Table", new Vector3(0f, 0.7f, 0.5f), new Vector3(5.6f, 0.18f, 1.6f), p.panel, root);
@@ -489,12 +509,28 @@ namespace Jam.Episodes.Office.Editor
             CreateChair("Meeting Chair S2", new Vector3(1.8f, 0f, -1f), 180f, p, root);
             CreateCube("Reflection Panel", new Vector3(-7.84f, 1.35f, 0.5f), new Vector3(0.08f, 1.6f, 4.6f), p.playerRim, root, false);
 
+            // Пара стоек у самого прохода: они ближе всего к маршруту и лучше всего
+            // показывают масштаб vendor-модели сверху.
+            const float artPassRackZ = 9.5f;
             var rackX = new[] { -8.4f, -6f, -3.6f, 3.6f, 6f, 8.4f };
             foreach (var z in new[] { 9.5f, 19.5f })
             {
                 foreach (var x in rackX)
                 {
-                    CreateServerRack($"Server Rack {x} {z}", new Vector3(x, 0f, z), p, root);
+                    var rack = CreateServerRack($"Server Rack {x} {z}", new Vector3(x, 0f, z), p, root);
+                    if (!Mathf.Approximately(z, artPassRackZ))
+                    {
+                        continue;
+                    }
+
+                    if (Mathf.Approximately(x, -3.6f))
+                    {
+                        art.ServerRackLeft = rack;
+                    }
+                    else if (Mathf.Approximately(x, 3.6f))
+                    {
+                        art.ServerRackRight = rack;
+                    }
                 }
             }
 
@@ -1179,10 +1215,10 @@ namespace Jam.Episodes.Office.Editor
             return root;
         }
 
-        private static void CreateDesk(string name, Vector3 position, Palette p, Transform parent, bool colliders)
+        private static GameObject CreateDesk(string name, Vector3 position, Palette p, Transform parent, bool colliders)
         {
             var prefab = GetOrCreatePrefab(colliders ? "Desk" : "Desk_Background", () => BuildDeskTemplate(p, colliders));
-            InstantiatePrefab(prefab, name, position, parent);
+            return InstantiatePrefab(prefab, name, position, parent);
         }
 
         private static GameObject BuildDeskTemplate(Palette p, bool colliders)
@@ -1204,10 +1240,10 @@ namespace Jam.Episodes.Office.Editor
             return root;
         }
 
-        private static void CreateChair(string name, Vector3 position, float yRotation, Palette p, Transform parent)
+        private static GameObject CreateChair(string name, Vector3 position, float yRotation, Palette p, Transform parent)
         {
             var prefab = GetOrCreatePrefab("Chair", () => BuildChairTemplate(p));
-            InstantiatePrefab(prefab, name, position, parent, Quaternion.Euler(0f, yRotation, 0f));
+            return InstantiatePrefab(prefab, name, position, parent, Quaternion.Euler(0f, yRotation, 0f));
         }
 
         private static GameObject BuildChairTemplate(Palette p)
@@ -1220,10 +1256,10 @@ namespace Jam.Episodes.Office.Editor
             return root;
         }
 
-        private static void CreateServerRack(string name, Vector3 position, Palette p, Transform parent)
+        private static GameObject CreateServerRack(string name, Vector3 position, Palette p, Transform parent)
         {
             var prefab = GetOrCreatePrefab("ServerRack", () => BuildServerRackTemplate(p));
-            InstantiatePrefab(prefab, name, position, parent);
+            return InstantiatePrefab(prefab, name, position, parent);
         }
 
         private static GameObject BuildServerRackTemplate(Palette p)
