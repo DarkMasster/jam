@@ -23,6 +23,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Game/Scenes/HotelArrival.unity
     guid: b2c86279f7591407987c4122da5c0d3e
+  - enabled: 1
+    path: Assets/Game/Scenes/Prologue_Drive.unity
+    guid: 79c639c724a828145b29654c32475d58
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 5bed5bd175dbbc44bae47eb4b68214a2, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

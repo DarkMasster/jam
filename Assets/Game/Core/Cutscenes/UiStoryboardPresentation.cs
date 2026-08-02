@@ -12,6 +12,7 @@ namespace Jam.Core.Cutscenes
     {
         [SerializeField] private string cutsceneId = "cutscene.storyboard";
         [SerializeField] private StoryboardCutsceneAsset sequence;
+        [SerializeField] private MonoBehaviour scenePresenter;
 
         private static readonly Color FallbackBackground = new(0.035f, 0.045f, 0.065f, 1f);
         private static readonly Color DialoguePanel = new(0.055f, 0.065f, 0.09f, 0.96f);
@@ -23,10 +24,19 @@ namespace Jam.Core.Cutscenes
         public bool IsPlaying => _onFinished != null;
         public bool CanSkip => sequence != null && sequence.Skippable;
 
+        public void Configure(string id, StoryboardCutsceneAsset storyboard, MonoBehaviour presenter = null)
+        {
+            cutsceneId = id;
+            sequence = storyboard;
+            scenePresenter = presenter;
+        }
+
         private Action<CutsceneEndReason> _onFinished;
         private GameObject _root;
         private Image _background;
         private Image _portrait;
+        private RawImage _renderedBackground;
+        private RawImage _renderedPortrait;
         private TMP_Text _speaker;
         private TMP_Text _body;
         private TMP_Text _progress;
@@ -132,10 +142,16 @@ namespace Jam.Core.Cutscenes
         {
             var frame = sequence.Frames[_frameIndex];
             _frameElapsed = 0f;
+            var rendered = scenePresenter as IStoryboardScenePresenter;
+            rendered?.ShowFrame(_frameIndex);
+            _renderedBackground.texture = rendered?.StageTexture;
+            _renderedBackground.gameObject.SetActive(_renderedBackground.texture != null);
+            _renderedPortrait.texture = rendered?.PortraitTexture;
+            _renderedPortrait.gameObject.SetActive(_renderedPortrait.texture != null);
             _background.sprite = frame.background;
             _background.color = frame.background == null ? FallbackBackground : Color.white;
             _portrait.sprite = frame.portrait;
-            _portrait.gameObject.SetActive(frame.portrait != null);
+            _portrait.gameObject.SetActive(rendered == null && frame.portrait != null);
             RefreshLocalizedFrame();
 
             AudioService.Instance?.PlayVoice(frame.voice);
@@ -171,6 +187,7 @@ namespace Jam.Core.Cutscenes
             var callback = _onFinished;
             _onFinished = null;
             AudioService.Instance?.StopVoice();
+            (scenePresenter as IStoryboardScenePresenter)?.Hide();
             _root.SetActive(false);
             callback?.Invoke(reason);
         }
@@ -197,6 +214,9 @@ namespace Jam.Core.Cutscenes
             _background = CreateImage("Background", canvasRect, FallbackBackground);
             Stretch(_background.rectTransform);
 
+            _renderedBackground = CreateRawImage("RenderedBackground", _background.rectTransform);
+            Stretch(_renderedBackground.rectTransform);
+
             _portrait = CreateImage("Portrait", _background.rectTransform, Color.white);
             SetAnchoredRect(
                 _portrait.rectTransform,
@@ -205,6 +225,9 @@ namespace Jam.Core.Cutscenes
                 Vector2.zero,
                 Vector2.zero);
             _portrait.preserveAspect = true;
+
+            _renderedPortrait = CreateRawImage("RenderedPortrait", _background.rectTransform);
+            SetAnchoredRect(_renderedPortrait.rectTransform, new Vector2(0.06f, 0.05f), new Vector2(0.25f, 0.32f), Vector2.zero, Vector2.zero);
 
             var panel = CreateImage("DialoguePanel", _background.rectTransform, DialoguePanel);
             SetAnchoredRect(
@@ -287,6 +310,16 @@ namespace Jam.Core.Cutscenes
             imageObject.transform.SetParent(parent, false);
             var image = imageObject.GetComponent<Image>();
             image.color = color;
+            return image;
+        }
+
+        private static RawImage CreateRawImage(string name, RectTransform parent)
+        {
+            var imageObject = new GameObject(name, typeof(RectTransform), typeof(RawImage));
+            imageObject.transform.SetParent(parent, false);
+            var image = imageObject.GetComponent<RawImage>();
+            image.color = Color.white;
+            image.raycastTarget = false;
             return image;
         }
 

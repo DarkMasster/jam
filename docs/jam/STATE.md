@@ -74,6 +74,14 @@
   при этом episode-owned UI офиса не изменялся.
 - Реализована сцена `CharacterSelect` со свободным выбором трёх линий, отдельными
   checkpoint персонажей и индикатором прогресса `0/3`.
+- Создана запускаемая `Prologue_Drive`: четырёхкадровая московская экспозиция
+  использует PolygonOffice-диораму, отдельные Cinemachine-планы и RenderTexture-
+  портрет героя. Завершение или skip сохраняет `drive.departure` и возвращает в
+  `CharacterSelect`; дорожный gameplay будет подключён после этой границы.
+- Все существующие storyboard-катсцены героев 2 и 3 используют scene-local 3D
+  presentation: Office Setup/Awakening получили отдельные диорамы и портрет
+  разработчика, Photo Intro/Outro переиспользуют комнату, аэропорт и портретный
+  риг героини. Стабильные cutscene ID и save-flow не изменены.
 - В `web-demos/office/` существует независимый Three.js-прототип `Offboarding`,
   проверяющий core loop офисного эпизода до переноса выбранных механик в Unity.
 - В `DEVELOPMENT_SPEC.md` зафиксирована рабочая палитра офисного эпизода с HEX/RGB,

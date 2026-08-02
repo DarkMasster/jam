@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace Jam.Core.Cutscenes
 {
@@ -41,5 +42,13 @@ namespace Jam.Core.Cutscenes
         void Play(CutsceneContext context, Action<CutsceneEndReason> onFinished);
         void Skip();
         void Stop(CutsceneEndReason reason);
+    }
+
+    public interface IStoryboardScenePresenter
+    {
+        Texture StageTexture { get; }
+        Texture PortraitTexture { get; }
+        void ShowFrame(int frameIndex);
+        void Hide();
     }
 }
