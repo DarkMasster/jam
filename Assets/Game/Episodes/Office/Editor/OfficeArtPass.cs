@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -6,7 +7,7 @@ using UnityEngine.Rendering;
 namespace Jam.Episodes.Office.Editor
 {
     /// <summary>
-    /// Проверочный срез art-pass POLYGON Office.
+    /// Art-pass POLYGON Office: слайсы `A1` и `A2`.
     ///
     /// Модели пака подключаются только как visual children существующих
     /// project-owned объектов. Gameplay-геометрия, коллайдеры, маршрут, триггеры и
@@ -28,6 +29,9 @@ namespace Jam.Episodes.Office.Editor
         private const string GlassAsset = VendorPath + "/Buildings/SM_Bld_Wall_Glass_Large_01.prefab";
         private const string ServerRackAssetA = VendorPath + "/Props/Misc/SM_Prop_Server_Cabinet_01_Full.prefab";
         private const string ServerRackAssetB = VendorPath + "/Props/Misc/SM_Prop_Server_Cabinet_02_Full.prefab";
+        private const string PillarAsset = VendorPath + "/Buildings/SM_Bld_Pillar_Interior_01.prefab";
+        private const string ConferenceTableAsset = VendorPath + "/Props/Furniture/SM_Prop_Table_Conference_02.prefab";
+        private const string ReceptionDeskAsset = VendorPath + "/Props/Kitchen Props/SM_Prop_Kitchen_Counter_01.prefab";
 
         private const string ArtRootName = "Synty Visual";
         private const string TintFolder = "Assets/Game/Episodes/Office/Art/Materials";
@@ -73,7 +77,121 @@ namespace Jam.Episodes.Office.Editor
             ApplyServerRack(targets.ServerRackRight, ServerRackAssetB);
         }
 
-        private static void ApplyDesk(GameObject desk)
+        /// <summary>
+        /// Слайс `A2`: оставшиеся два пода open space и фоновый ряд столов и колонн
+        /// за стенами зала. Набор моделей и подгонка те же, что в `A1`.
+        /// </summary>
+        internal static void ApplyOpenSpaceSlice(OfficeArtPassTargets targets)
+        {
+            foreach (var desk in targets.OpenSpaceDesks)
+            {
+                ApplyDesk(desk);
+            }
+
+            foreach (var chair in targets.OpenSpaceChairs)
+            {
+                ApplyChair(chair);
+            }
+
+            // Фоновый ряд стоит за стенами зала, поэтому его тени физически не
+            // попадают на игровой пол: отключение caster'ов не меняет картинку.
+            foreach (var desk in targets.DistantDesks)
+            {
+                ApplyDesk(desk, false);
+            }
+
+            foreach (var column in targets.DistantColumns)
+            {
+                ApplyDistantColumn(column, targets.BackgroundRoot);
+            }
+        }
+
+        /// <summary>
+        /// Слайс `A4+`: вся оставшаяся статичная мебель — десять серверных стоек
+        /// серверной, двенадцать стоек босса, стол и кресла переговорной и две
+        /// стойки рецепции. Интерактивные предметы и противники сюда не входят.
+        /// </summary>
+        internal static void ApplyRemainingFurnitureSlice(OfficeArtPassTargets targets)
+        {
+            // Стойки чередуют два корпуса пака, чтобы ряд не выглядел клоном
+            // одной модели; порядок стабилен, потому что идёт по индексу.
+            for (var i = 0; i < targets.ServerRacks.Count; i++)
+            {
+                ApplyServerRack(targets.ServerRacks[i], i % 2 == 0 ? ServerRackAssetA : ServerRackAssetB);
+            }
+
+            // Стойки босса — те же prefab-инстансы `ServerRack`. Visual остаётся их
+            // child, поэтому сборка, кольцо и попадания работают без изменений.
+            for (var i = 0; i < targets.BossRacks.Count; i++)
+            {
+                ApplyServerRack(targets.BossRacks[i], i % 2 == 0 ? ServerRackAssetA : ServerRackAssetB);
+            }
+
+            ApplyMeetingTable(targets.MeetingTable, targets.MeetingTableBase, targets.FurnitureRoot);
+
+            foreach (var chair in targets.MeetingChairs)
+            {
+                ApplyChair(chair);
+            }
+
+            foreach (var desk in targets.ReceptionDesks)
+            {
+                ApplyReceptionDesk(desk);
+            }
+        }
+
+        private static void ApplyMeetingTable(GameObject top, GameObject stand, Transform artParent)
+        {
+            if (!IsUsable(top, nameof(ApplyMeetingTable)) || !IsUsable(stand, nameof(ApplyMeetingTable)) || artParent == null)
+            {
+                return;
+            }
+
+            // Greybox переговорной — две отдельные масштабированные плиты:
+            // столешница 5.6 x 1.6 на 0.61..0.79 и опора 0.5 x 1.1 на 0..0.7.
+            // Модель пака несёт собственные ноги, поэтому обе закрываются одним
+            // объёмом от пола до верха столешницы.
+            var box = top.transform.localScale;
+            var center = top.transform.position;
+            var height = center.y + (box.y * 0.5f);
+            AttachVisual(
+                artParent,
+                ConferenceTableAsset,
+                new Vector3(center.x, height * 0.5f, center.z),
+                new Vector3(box.x, height, box.z),
+                UserSideYaw);
+
+            HideRenderer(top);
+            HideRenderer(stand);
+        }
+
+        private static void ApplyReceptionDesk(GameObject desk)
+        {
+            if (!IsUsable(desk, nameof(ApplyReceptionDesk)))
+            {
+                return;
+            }
+
+            // В паке нет отдельного reception desk. Два `SM_Prop_Desk_06` не
+            // подошли: это угловые столы, и рядом друг с другом их срезы читаются
+            // как случайный излом. Стойка 5.0 x 1.3 x 1.4 набирается двумя прямыми
+            // модулями-тумбами, которые стыкуются без шва. Красная полоса `Light`
+            // остаётся greybox — она держит акцент рецепции как `Status LED`.
+            const float halfWidth = 2.5f;
+            foreach (var x in new[] { -halfWidth * 0.5f, halfWidth * 0.5f })
+            {
+                AttachVisual(
+                    desk.transform,
+                    ReceptionDeskAsset,
+                    new Vector3(x, 0.65f, 0f),
+                    new Vector3(halfWidth, 1.3f, 1.4f),
+                    UserSideYaw);
+            }
+
+            HideGreybox(desk, "Light");
+        }
+
+        private static void ApplyDesk(GameObject desk, bool castShadows = true)
         {
             if (!IsUsable(desk, nameof(ApplyDesk)))
             {
@@ -83,8 +201,8 @@ namespace Jam.Episodes.Office.Editor
             // Greybox: столешница `Top` 3.4 x 1.6 с поверхностью на 0.98 и монитор
             // на 0.99..1.71. Оба объёма сохраняются, поэтому клавиатуры на столах
             // не проваливаются и не висят в воздухе.
-            AttachVisual(desk.transform, DeskAsset, new Vector3(0f, 0.49f, 0f), new Vector3(3.4f, 0.98f, 1.6f), UserSideYaw);
-            AttachVisual(desk.transform, MonitorAsset, new Vector3(0f, 1.35f, 0.15f), new Vector3(1.25f, 0.72f, 0.34f), UserSideYaw);
+            AttachVisual(desk.transform, DeskAsset, new Vector3(0f, 0.49f, 0f), new Vector3(3.4f, 0.98f, 1.6f), UserSideYaw, castShadows);
+            AttachVisual(desk.transform, MonitorAsset, new Vector3(0f, 1.35f, 0.15f), new Vector3(1.25f, 0.72f, 0.34f), UserSideYaw, castShadows);
             HideGreybox(desk);
         }
 
@@ -157,6 +275,25 @@ namespace Jam.Episodes.Office.Editor
             HideRenderer(glass);
         }
 
+        private static void ApplyDistantColumn(GameObject column, Transform artParent)
+        {
+            if (!IsUsable(column, nameof(ApplyDistantColumn)) || artParent == null)
+            {
+                return;
+            }
+
+            // Колонна — масштабированный примитив, поэтому visual вешается на общий
+            // фоновый корень: как child куба модель унаследовала бы его масштаб.
+            AttachVisual(
+                artParent,
+                PillarAsset,
+                column.transform.position,
+                column.transform.localScale,
+                0f,
+                false);
+            HideRenderer(column);
+        }
+
         private static void ApplyServerRack(GameObject rack, string vendorAssetPath)
         {
             if (!IsUsable(rack, nameof(ApplyServerRack)))
@@ -218,10 +355,14 @@ namespace Jam.Episodes.Office.Editor
             visual.localScale = new Vector3(Mathf.Abs(local.x), Mathf.Abs(local.y), Mathf.Abs(local.z));
             visual.localPosition = boxCenter - Vector3.Scale(bounds.center, fit);
 
+            // Столкновения остаются за greybox: vendor-меши только presentation.
+            // Коллайдеры именно удаляются, а не выключаются. Выключенный коллайдер
+            // остаётся в иерархии владельца, и любой `GetComponentsInChildren<Collider>`
+            // подхватит его как свой: так `OfficeBossEncounter.SetRackColliders(true)`
+            // включил бы vendor-коллайдер стойки прямо во время боя.
             foreach (var collider in instance.GetComponentsInChildren<Collider>(true))
             {
-                // Столкновения остаются за greybox: vendor-меши только presentation.
-                collider.enabled = false;
+                Object.DestroyImmediate(collider);
             }
 
             ApplyOfficePalette(instance);
@@ -396,13 +537,14 @@ namespace Jam.Episodes.Office.Editor
     }
 
     /// <summary>
-    /// Объекты сцены, которые входят в проверочный срез art-pass. Builder заполняет
-    /// их во время сборки, чтобы art-pass не искал greybox по именам.
+    /// Объекты сцены, которые входят в выполненные слайсы art-pass. Builder
+    /// заполняет их во время сборки, чтобы art-pass не искал greybox по именам.
     /// </summary>
     internal sealed class OfficeArtPassTargets
     {
         internal Transform ArchitectureRoot;
         internal Transform FurnitureRoot;
+        internal Transform BackgroundRoot;
         internal GameObject StartDesk;
         internal GameObject StartChair;
         internal GameObject StartCabinetLeft;
@@ -415,6 +557,18 @@ namespace Jam.Episodes.Office.Editor
         internal GameObject MeetingGlassLeft;
         internal GameObject ServerRackLeft;
         internal GameObject ServerRackRight;
+
+        internal GameObject MeetingTable;
+        internal GameObject MeetingTableBase;
+
+        internal readonly List<GameObject> OpenSpaceDesks = new List<GameObject>();
+        internal readonly List<GameObject> OpenSpaceChairs = new List<GameObject>();
+        internal readonly List<GameObject> DistantDesks = new List<GameObject>();
+        internal readonly List<GameObject> DistantColumns = new List<GameObject>();
+        internal readonly List<GameObject> ServerRacks = new List<GameObject>();
+        internal readonly List<GameObject> BossRacks = new List<GameObject>();
+        internal readonly List<GameObject> MeetingChairs = new List<GameObject>();
+        internal readonly List<GameObject> ReceptionDesks = new List<GameObject>();
     }
 }
 #endif
