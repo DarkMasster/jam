@@ -60,14 +60,16 @@ namespace Jam.Episodes.Office.Editor
             var artTargets = new OfficeArtPassTargets
             {
                 ArchitectureRoot = architectureRoot,
-                FurnitureRoot = furnitureRoot
+                FurnitureRoot = furnitureRoot,
+                BackgroundRoot = backgroundRoot
             };
 
             var keyLight = ConfigureEnvironment(palette, lightingRoot);
             BuildArchitecture(palette, architectureRoot, artTargets);
             BuildFurniture(palette, furnitureRoot, artTargets);
-            BuildBackgroundScale(palette, backgroundRoot);
+            BuildBackgroundScale(palette, backgroundRoot, artTargets);
             OfficeArtPass.ApplyVerificationSlice(artTargets);
+            OfficeArtPass.ApplyOpenSpaceSlice(artTargets);
 
             var episodeObject = new GameObject("OfficeEpisodeController", typeof(OfficeEpisodeController), typeof(OfficeMomentum), typeof(OfficeRunController));
             episodeObject.transform.SetParent(gameplayRoot, false);
@@ -114,7 +116,12 @@ namespace Jam.Episodes.Office.Editor
                 carryController,
                 runController,
                 episodeController,
-                momentum);
+                momentum,
+                artTargets);
+
+            // Стойки босса создаются позже архитектуры и мебели, поэтому оставшаяся
+            // статичная мебель переводится на модели пака уже после них.
+            OfficeArtPass.ApplyRemainingFurnitureSlice(artTargets);
 
             var hudPrefab = CreateOrUpdatePrefab("OfficeHud", BuildHudTemplate);
             var hudInstance = (GameObject)PrefabUtility.InstantiatePrefab(hudPrefab, sceneRoot);
@@ -440,7 +447,12 @@ namespace Jam.Episodes.Office.Editor
 
         private static void BuildArchitecture(Palette p, Transform root, OfficeArtPassTargets art)
         {
-            CreateCube("Void Floor", new Vector3(0f, -0.28f, 4f), new Vector3(42f, 0.2f, 76f), p.shadow, root, false);
+            // Подложка уходит далеко за офис, чтобы горизонт не обрывался краем
+            // этажа: линейный туман гасит её в цвет фона задолго до края, и пол
+            // читается бесконечным. Коллайдера у подложки нет, поэтому граница
+            // игровой зоны по-прежнему задаётся `Playable Floor` и стенами, а
+            // упавший предмет возвращается по высоте, а не по этой геометрии.
+            CreateCube("Void Floor", new Vector3(0f, -0.28f, 4f), new Vector3(400f, 0.2f, 400f), p.shadow, root, false);
             CreateCube("Playable Floor", new Vector3(0f, -0.1f, 4f), new Vector3(24f, 0.2f, 76f), p.floor, root);
             CreateCube("Navigation Strip", new Vector3(0f, 0.015f, 4f), new Vector3(4f, 0.025f, 74f), p.path, root, false);
 
@@ -479,8 +491,8 @@ namespace Jam.Episodes.Office.Editor
             art.StartCabinetRight = CreateCube("Start Cabinet R", new Vector3(-4.8f, 1f, -27.8f), new Vector3(1.2f, 2f, 1.2f), p.panel, root);
             art.StartLamp = CreateCube("Warm Desk Lamp", new Vector3(2.6f, 1.25f, -29f), new Vector3(0.25f, 0.55f, 0.25f), p.warm, root, false);
 
-            // Проверочный срез art-pass берёт один под open space, чтобы соседние
-            // greybox-поды остались прямым эталоном для сравнения масштаба.
+            // Под на `z = -15` пришёл из проверочного среза `A1`, два остальных
+            // переводит слайс `A2`: набор моделей и подгонка у них одинаковые.
             const float artPassPodZ = -15f;
             var podZ = new[] { -20.5f, artPassPodZ, -9.5f };
             foreach (var z in podZ)
@@ -492,6 +504,10 @@ namespace Jam.Episodes.Office.Editor
 
                 if (!Mathf.Approximately(z, artPassPodZ))
                 {
+                    art.OpenSpaceDesks.Add(deskLeft);
+                    art.OpenSpaceDesks.Add(deskRight);
+                    art.OpenSpaceChairs.Add(chairLeft);
+                    art.OpenSpaceChairs.Add(chairRight);
                     continue;
                 }
 
@@ -501,12 +517,12 @@ namespace Jam.Episodes.Office.Editor
                 art.OpenChairRight = chairRight;
             }
 
-            CreateCube("Meeting Table", new Vector3(0f, 0.7f, 0.5f), new Vector3(5.6f, 0.18f, 1.6f), p.panel, root);
-            CreateCube("Meeting Table Base", new Vector3(0f, 0.35f, 0.5f), new Vector3(0.5f, 0.7f, 1.1f), p.metal, root);
-            CreateChair("Meeting Chair N1", new Vector3(-1.8f, 0f, 2f), 0f, p, root);
-            CreateChair("Meeting Chair N2", new Vector3(1.8f, 0f, 2f), 0f, p, root);
-            CreateChair("Meeting Chair S1", new Vector3(-1.8f, 0f, -1f), 180f, p, root);
-            CreateChair("Meeting Chair S2", new Vector3(1.8f, 0f, -1f), 180f, p, root);
+            art.MeetingTable = CreateCube("Meeting Table", new Vector3(0f, 0.7f, 0.5f), new Vector3(5.6f, 0.18f, 1.6f), p.panel, root);
+            art.MeetingTableBase = CreateCube("Meeting Table Base", new Vector3(0f, 0.35f, 0.5f), new Vector3(0.5f, 0.7f, 1.1f), p.metal, root);
+            art.MeetingChairs.Add(CreateChair("Meeting Chair N1", new Vector3(-1.8f, 0f, 2f), 0f, p, root));
+            art.MeetingChairs.Add(CreateChair("Meeting Chair N2", new Vector3(1.8f, 0f, 2f), 0f, p, root));
+            art.MeetingChairs.Add(CreateChair("Meeting Chair S1", new Vector3(-1.8f, 0f, -1f), 180f, p, root));
+            art.MeetingChairs.Add(CreateChair("Meeting Chair S2", new Vector3(1.8f, 0f, -1f), 180f, p, root));
             CreateCube("Reflection Panel", new Vector3(-7.84f, 1.35f, 0.5f), new Vector3(0.08f, 1.6f, 4.6f), p.playerRim, root, false);
 
             // Пара стоек у самого прохода: они ближе всего к маршруту и лучше всего
@@ -518,43 +534,46 @@ namespace Jam.Episodes.Office.Editor
                 foreach (var x in rackX)
                 {
                     var rack = CreateServerRack($"Server Rack {x} {z}", new Vector3(x, 0f, z), p, root);
-                    if (!Mathf.Approximately(z, artPassRackZ))
-                    {
-                        continue;
-                    }
-
-                    if (Mathf.Approximately(x, -3.6f))
+                    if (Mathf.Approximately(z, artPassRackZ) && Mathf.Approximately(x, -3.6f))
                     {
                         art.ServerRackLeft = rack;
                     }
-                    else if (Mathf.Approximately(x, 3.6f))
+                    else if (Mathf.Approximately(z, artPassRackZ) && Mathf.Approximately(x, 3.6f))
                     {
                         art.ServerRackRight = rack;
+                    }
+                    else
+                    {
+                        art.ServerRacks.Add(rack);
                     }
                 }
             }
 
-            CreateReceptionDesk("Reception Desk L", new Vector3(-4f, 0f, 26.5f), p, root);
-            CreateReceptionDesk("Reception Desk R", new Vector3(4f, 0f, 26.5f), p, root);
+            art.ReceptionDesks.Add(CreateReceptionDesk("Reception Desk L", new Vector3(-4f, 0f, 26.5f), p, root));
+            art.ReceptionDesks.Add(CreateReceptionDesk("Reception Desk R", new Vector3(4f, 0f, 26.5f), p, root));
 
             foreach (var x in new[] { -4.5f, -1.5f, 1.5f, 4.5f })
             {
                 CreateTurnstile($"Turnstile {x}", new Vector3(x, 0f, 32.5f), p, root);
             }
 
-            var ring = CreateCylinder("Boss Arena Marker", new Vector3(0f, 0.03f, 37f), new Vector3(8f, 0.025f, 8f), p.redDim, root, false);
-            CreateCylinder("Boss Arena Inner", new Vector3(0f, 0.045f, 37f), new Vector3(7.35f, 0.03f, 7.35f), p.floor, ring.transform, false);
+            // Напольного кольца арены больше нет: красный круг радиуса 8 читался
+            // как отдельный объект на полу и спорил с телеграфами боя. Границу
+            // арены держат сами стойки, `Boss Arena Seal` и общий телеграф кольца,
+            // поэтому маркер был чистым декором и ни на что не ссылался.
         }
 
-        private static void BuildBackgroundScale(Palette p, Transform root)
+        private static void BuildBackgroundScale(Palette p, Transform root, OfficeArtPassTargets art)
         {
             for (var side = -1; side <= 1; side += 2)
             {
                 for (var i = 0; i < 6; i++)
                 {
                     var z = -25f + (i * 12f);
-                    CreateDesk($"Distant Desk {side} {i}", new Vector3(side * 15.5f, 0f, z), p, root, false);
-                    CreateCube($"Distant Column {side} {i}", new Vector3(side * 19f, 1.8f, z + 4f), new Vector3(0.7f, 3.6f, 0.7f), p.wall, root, false);
+                    art.DistantDesks.Add(
+                        CreateDesk($"Distant Desk {side} {i}", new Vector3(side * 15.5f, 0f, z), p, root, false));
+                    art.DistantColumns.Add(
+                        CreateCube($"Distant Column {side} {i}", new Vector3(side * 19f, 1.8f, z + 4f), new Vector3(0.7f, 3.6f, 0.7f), p.wall, root, false));
                 }
             }
         }
@@ -775,7 +794,8 @@ namespace Jam.Episodes.Office.Editor
             OfficeCarryController carry,
             OfficeRunController runController,
             OfficeEpisodeController episodeController,
-            OfficeMomentum momentum)
+            OfficeMomentum momentum,
+            OfficeArtPassTargets art)
         {
             const int rackCount = 12;
             var bossObject = new GameObject("Server Boss Encounter", typeof(AudioSource), typeof(OfficeBossEncounter));
@@ -799,6 +819,7 @@ namespace Jam.Episodes.Office.Editor
                 var source = new Vector3(side * 10.25f, 0f, 28.6f + (row * 2.25f));
                 var rack = InstantiatePrefab(rackPrefab, $"Boss Rack {i + 1:00}", source, rackRoot);
                 racks[i] = rack.transform;
+                art.BossRacks.Add(rack);
 
                 var warningObject = new GameObject($"Rack Warning {i + 1:00}", typeof(Light));
                 warningObject.transform.SetParent(rack.transform, false);
@@ -1276,10 +1297,10 @@ namespace Jam.Episodes.Office.Editor
             return root;
         }
 
-        private static void CreateReceptionDesk(string name, Vector3 position, Palette p, Transform parent)
+        private static GameObject CreateReceptionDesk(string name, Vector3 position, Palette p, Transform parent)
         {
             var prefab = GetOrCreatePrefab("ReceptionDesk", () => BuildReceptionDeskTemplate(p));
-            InstantiatePrefab(prefab, name, position, parent);
+            return InstantiatePrefab(prefab, name, position, parent);
         }
 
         private static GameObject BuildReceptionDeskTemplate(Palette p)

@@ -48,6 +48,13 @@
   не коммитится и не откатывается `git checkout` при открытом редакторе; сброс
   выполняется через `Clear Dynamic Data` TMP. Подробности и причина — в
   `DECISIONS.md` за 2026-08-02.
+- Офисные `Assets/Game/Episodes/Office/Art/Materials/M_*.mat` (кроме `M_Synty_*`)
+  хранятся в закоммиченном виде. `AssetDatabase.SaveAssets()` после reimport
+  переписывает их нормализованным выводом URP: округляется legacy `_Color`,
+  `M_Glass` получает `_SrcBlend: 1` вместо `5`, а `_EMISSION` уходит из
+  `m_ValidKeywords`. Это не меняет рендер — URP нормализует те же значения при
+  импорте, и в памяти обе версии дают `_EMISSION=False` и `srcBlend=1`. Такой diff
+  откатывается `git checkout`, а не коммитится: иначе шум попадает в чужие срезы.
 
 ## Старт приложения и сохранение
 

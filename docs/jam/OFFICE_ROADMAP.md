@@ -4,8 +4,8 @@
 - Статус: активен
 - Последнее обновление: 2026-08-02
 - Владелец актуальности: исполнитель текущей офисной задачи
-- Текущая контрольная точка: `POLYGON Office art-pass`, шаг 1 проверочного среза
-  выполнен
+- Текущая контрольная точка: `POLYGON Office art-pass`, вся статичная мебель
+  маршрута перенесена; осталась оболочка этажа и интерактив
 
 Документ переводит утверждённый офисный эпизод в последовательность небольших
 проверяемых срезов. Он не заменяет `DEVELOPMENT_SPEC.md`, `STORY.md`,
@@ -88,7 +88,7 @@ Setup: герой засыпает в машине у границы
 | `M4` Сюжет и общий flow | Done | Setup сна, пробуждение, checkpoint `office.setup/run/arrival`, `EpisodeResult` и переход в `HotelArrival` через общий flow | Сохранить как стабильную основу эпизода |
 | `M6` Polish | Done | Процедурные SFX, частицы, дрожь камеры и свет по Momentum с сохранённой читаемостью пола | Сохранить существующий feedback без изменения правил боя |
 | `M7` Damage Numbers Pro | Done, есть открытый дефект | Урон, разрушение, подбор и milestone используют три project-owned DNP preset; слабые и повторные события не создают popup. Popup зависают при уничтожении цели и над героем — см. «Открытый дефект `M7`» | Починить зависание popup до финального билда |
-| `A1` POLYGON Office art-pass | Doing | Проверочный срез: стартовый кабинет, пара столов `z = -15`, левая секция стекла и две стойки `z = 9.5` заменены visual children; коллайдеры, маршрут и vendor-каталог не изменились | Распространить `OfficeArtPass` на остальные зоны маршрута |
+| `A1`–`A4` POLYGON Office art-pass | Doing | Вся статичная мебель маршрута переведена на модели пака: стартовый кабинет, все столы и кресла open space, фоновый ряд, 12 серверных стоек, 12 стоек босса, стол и кресла переговорной, стойки рецепции. Greybox-коллайдеры `171/171` без изменений, vendor-коллайдеров `0`, vendor-каталог не изменён | Закрыть оболочку (`A3` стекло, `A5` EXIT, `A6` пол и стены), затем интерактив и врагов из `A7` |
 
 ## Milestones и критерии приёмки
 
@@ -353,16 +353,24 @@ placeholder и оставляет точную инструкцию интегр
 
 ## Следующий офисный срез
 
-Слайс `A2` из плана визуального прохода: перевести на `OfficeArtPass` оставшиеся
-четыре стола и четыре кресла open space (`z = -20.5` и `z = -9.5`), двенадцать
-фоновых столов и двенадцать колонн `BackgroundScale`. Правила и критерии закрытия
-слайса — в разделе «Оставшийся объём art-pass».
+Вся статичная мебель маршрута переведена. Осталась оболочка и интерактив, в таком
+порядке:
+
+1. Остаток `A3` и `A5`: стекло переговорной (`Meeting Glass Right` и четыре
+   дверные секции), порог рецепции, `Exit Door`, пилоны и притолока.
+2. `A6` оболочка этажа: пол по зонам, стены, потолок как новый visual-слой.
+3. Остаток `A7`: клавиатуры, принтеры, ноутбук, кружка и кресла-противники —
+   единственная группа, которой нужна повторная проверка полного
+   `run → restart → boss` flow, потому что там vendor-модели попадают внутрь
+   prefab'ов с состояниями, pickup lockout и физикой броска.
+
+Правила и критерии закрытия слайса — в разделе «Оставшийся объём art-pass».
 
 Параллельно art-pass идёт отдельный фикс `M7`: popup урона зависают при
 уничтожении цели и над героем — разбор причины и направление исправления в разделе
 «Открытый дефект `M7`». Ветка отдельная, art-pass его не ждёт.
 
-Отдельно, до слайса `A3`, решить судьбу `Reflection Panel`: рядом с реальными
+Вместе с остатком `A3` решить судьбу `Reflection Panel`: рядом с реальными
 переплётами модуля пака он читается как отдельный светящийся щит, а не как
 отражение в стекле. Логику `OfficeReflectionBeat` при этом не менять.
 
@@ -394,13 +402,16 @@ visual children существующих project-owned prefab'ов; непрер
 | Пол | `Floor_Carpet_01` → `Floor_Panel_01` → `Floor_Tiles_01` | Carpet: старт/open space; Panel: серверная; Tiles: рецепция |
 | Стены и потолок | `Wall_Blank_01`, `Wall_Trim_01`, `Ceiling_Panel_Light_01/02` | Только visual-модули поверх greybox |
 | `Exit Door` и метка | `Door_Large_01_L/R`, `SM_Prop_Sign_Exit_01` | Gameplay-blocker и локализованный TMP label сохраняются |
-| Reception desks | композиция из двух `SM_Prop_Desk_06` | В паке нет отдельного reception desk |
+| Reception desks | композиция из двух `SM_Prop_Kitchen_Counter_01` | Проверено. В паке нет отдельного reception desk. `SM_Prop_Desk_06` не подошёл: это угловой стол, и две такие модели рядом читаются как случайный излом, а не как стойка |
+| `Meeting Table` + `Meeting Table Base` | один `SM_Prop_Table_Conference_02` | Проверено. Модель несёт собственные ноги, поэтому обе greybox-плиты закрываются одним объёмом от пола до верха столешницы |
+| `Boss Rack 01..12` | варианты `SM_Prop_Server_Cabinet_*_Full` | Проверено. Visual остаётся child стойки, поэтому сборка, кольцо и попадания не меняются. Обязательное условие — удалённые vendor-коллайдеры |
 | `Turnstile` | project-owned модель остаётся | Прямого аналога в паке нет |
 
 ### Оставшийся объём art-pass
 
 Опись снята с собранной сцены на 2026-08-02: после среза `A1` greybox-визуал
-сохраняют 127 объектов. Ниже — весь оставшийся перенос, разбитый на слайсы.
+сохраняли 127 объектов, после `A2` — 95, после переноса оставшейся статичной
+мебели — 65. Ниже — весь оставшийся перенос, разбитый на слайсы.
 Слайсы идут по порядку: каждый следующий берётся только после того, как предыдущий
 проверен и записан в историю изменений. Внутри слайса меняются только рендереры —
 маршрут, коллайдеры, триггеры и компоненты остаются прежними.
@@ -408,31 +419,38 @@ visual children существующих project-owned prefab'ов; непрер
 | Слайс | Статус | Объекты сцены | Visual из пака |
 |---|---|---|---|
 | `A1` Проверочный срез | Done | `Start Desk`, `Start Chair`, `Start Cabinet L/R`, `Warm Desk Lamp`, `Open Desk L/R -15`, `Open Chair L/R -15`, `Meeting Glass Left`, `Server Rack ±3.6 9.5` | см. таблицу замен выше |
-| `A2` Open space | Todo | `Open Desk L/R -20.5`, `Open Desk L/R -9.5` (4), `Open Chair L/R -20.5`, `Open Chair L/R -9.5` (4), `Distant Desk ±1 0..5` (12), `Distant Column ±1 0..5` (12) | `SM_Prop_Desk_03` + `SM_Prop_Computer_Monitor_02`, `SM_Prop_Chair_06`, `SM_Bld_Pillar_Interior_01` |
-| `A3` Переговорная | Todo | `Meeting Glass Right` (3 модуля), `Meeting Entry Left/Right`, `Meeting Exit Left/Right`, `Meeting Table` + `Meeting Table Base`, `Meeting Chair N1/N2/S1/S2` (4) | `SM_Bld_Wall_Glass_Large_01`, `SM_Bld_Wall_Glass_Large_Door_01`, `SM_Prop_Table_Conference_02`, `SM_Prop_Chair_06` |
-| `A4` Серверная | Todo | `Server Rack ±6 9.5`, `±8.4 9.5`, `±3.6 19.5`, `±6 19.5`, `±8.4 19.5` (10 стоек) | `SM_Prop_Server_Cabinet_01_Full` и `_02_Full` вперемешку, yaw `-90` |
-| `A5` Рецепция и EXIT | Todo | `Reception Desk L/R` (2), `Reception Threshold Left/Right`, `Exit Door`, `Exit Wall Left/Right`, `Exit Pillar Left/Right`, `Exit Lintel` | по две `SM_Prop_Desk_06` на стойку, `SM_Bld_Door_Large_01_L/R`, `SM_Prop_Sign_Exit_01` |
+| `A2` Open space | Done | `Open Desk L/R -20.5`, `Open Desk L/R -9.5` (4), `Open Chair L/R -20.5`, `Open Chair L/R -9.5` (4), `Distant Desk ±1 0..5` (12), `Distant Column ±1 0..5` (12) | `SM_Prop_Desk_03` + `SM_Prop_Computer_Monitor_02`, `SM_Prop_Chair_06`, `SM_Bld_Pillar_Interior_01` |
+| `A3` Переговорная | Doing | Готово: `Meeting Table` + `Meeting Table Base`, `Meeting Chair N1/N2/S1/S2` (4). Осталось: `Meeting Glass Right` (3 модуля), `Meeting Entry Left/Right`, `Meeting Exit Left/Right` | `SM_Prop_Table_Conference_02`, `SM_Prop_Chair_06`; для стекла — `SM_Bld_Wall_Glass_Large_01`, `SM_Bld_Wall_Glass_Large_Door_01` |
+| `A4` Серверная | Done | `Server Rack ±6 9.5`, `±8.4 9.5`, `±3.6 19.5`, `±6 19.5`, `±8.4 19.5` (10 стоек) | `SM_Prop_Server_Cabinet_01_Full` и `_02_Full` вперемешку, yaw `-90` |
+| `A5` Рецепция и EXIT | Doing | Готово: `Reception Desk L/R` (2). Осталось: `Reception Threshold Left/Right`, `Exit Door`, `Exit Wall Left/Right`, `Exit Pillar Left/Right`, `Exit Lintel` | по два `SM_Prop_Kitchen_Counter_01` на стойку, `SM_Bld_Door_Large_01_L/R`, `SM_Prop_Sign_Exit_01` |
 | `A6` Оболочка этажа | Todo | `Playable Floor`, `Start Wall Left/Right`, `Start Rear Wall`, `Start Threshold Left/Right`, `Hall Wall Left/Right`; потолок добавляется как новый visual-слой | `SM_Bld_Floor_Carpet_01` → `Floor_Panel_01` → `Floor_Tiles_01` по зонам, `SM_Bld_Wall_Blank_01`, `SM_Bld_Ceiling_Panel_Light_01/02` |
-| `A7` Интерактив, враги и босс | Todo | `Keyboard ×8`, `Printer ×4`, `Laptop Pickup`, `Mug Pickup`, `Hostile Chair ×4` (только группа `Intact`), `Boss Rack 01..12` | `SM_Prop_Computer_Keyboard_01`, `SM_Prop_Printer_01`, `SM_Prop_Laptop_02`, `SM_Prop_Cup_Red_01`, `SM_Prop_Chair_08/09`, варианты `SM_Prop_Server_Cabinet_*_Full` |
+| `A7` Интерактив, враги и босс | Doing | Готово: `Boss Rack 01..12` (статичная мебель, состояний не имеет). Осталось: `Keyboard ×8`, `Printer ×4`, `Laptop Pickup`, `Mug Pickup`, `Hostile Chair ×4` (только группа `Intact`) | варианты `SM_Prop_Server_Cabinet_*_Full`; далее `SM_Prop_Computer_Keyboard_01`, `SM_Prop_Printer_01`, `SM_Prop_Laptop_02`, `SM_Prop_Cup_Red_01`, `SM_Prop_Chair_08/09` |
 
 `A6` — единственный слайс, который добавляет объекты, а не только подменяет
 рендереры: потолка в greybox нет. Потолок ставится над игровой зоной и не должен
 перекрывать top-down камеру — либо панели идут выше `farClipPlane` камеры, либо
 слайс отменяется целиком.
 
-`A7` идёт последним и требует повторной проверки полного `run → restart → boss`
-flow: там vendor-модели попадают внутрь prefab'ов с состояниями
-(`Intact/Broken/Wrecked`), pickup lockout и физикой броска.
+Остаток `A7` идёт последним и требует повторной проверки полного
+`run → restart → boss` flow: там vendor-модели попадают внутрь prefab'ов с
+состояниями (`Intact/Broken/Wrecked`), pickup lockout и физикой броска. Стойки
+босса из этого правила выведены: у них нет групп состояний, они только
+переставляются, и после удаления vendor-коллайдеров их набор коллайдеров совпадает
+с greybox один в один.
 
 ### Объекты, которые art-pass не трогает
 
 Ни один слайс не заменяет и не гасит эти рендереры — они несут gameplay-смысл, а
 не декор:
 
-- навигационная полоса `Navigation Strip` и подложка `Void Floor`;
+- навигационная полоса `Navigation Strip` и подложка `Void Floor` — vendor-модели
+  им не подключаются. Размер `Void Floor` при этом увеличен до `400 × 400`, чтобы
+  горизонт не обрывался краем этажа: коллайдера у неё нет, границу игровой зоны
+  по-прежнему держат `Playable Floor` и стены, а упавший предмет возвращается по
+  высоте `fallResetHeight`, а не по этой геометрии;
 - красные телеграфы: `Telegraph` внутри `HostileChair`, `Boss Line Telegraph`,
   `Synchronized Strike Telegraph`;
-- напольные маркеры `Laptop Marker`, `Mug Marker` и `Boss Arena Marker`;
+- напольные маркеры `Laptop Marker` и `Mug Marker`;
 - блокеры и их надписи: `Access Hold Barrier/Label`, `Arena Seal Barrier/Label`,
   `Closed Ring Links`, `Exit Indicator`;
 - локализованные TMP-надписи `Start Label`, `Meeting Label`, `Exit Label`,
@@ -447,14 +465,18 @@ flow: там vendor-модели попадают внутрь prefab'ов с с
 1. ✅ Проверочный срез `A1`.
 2. ✅ Проверить масштаб сверху, проходы, line of sight, броски, материалы URP и
    отсутствие новых предупреждений.
-3. `A2` → `A3` → `A4` → `A5` → `A6`: окружение маршрута по зонам.
-4. `A7` последним: интерактивные предметы, враги и стойки босса, затем повторная
+3. ✅ `A2` open space: оставшиеся поды маршрута и фоновый ряд за стенами зала.
+4. ✅ `A4` и мебельная часть `A3`/`A5`/`A7`: десять серверных стоек, двенадцать
+   стоек босса, стол и кресла переговорной, две стойки рецепции.
+5. Остаток `A3`/`A5`, затем `A6`: стекло, EXIT и оболочка этажа.
+6. Остаток `A7` последним: интерактивные предметы и враги, затем повторная
    проверка полного run/restart/boss flow.
 
 Слайс считается закрытым, когда по сохранённой сцене подтверждены: число и границы
-коллайдеров не изменились, включённых vendor-коллайдеров `0`, нетонированных
-vendor-материалов `0`, `Assets/PolygonOffice` без изменений, scene validation
-`0 issues` и Console без игровых ошибок.
+greybox-коллайдеров не изменились (базовая линия — `171` из `171` включённых),
+vendor-коллайдеров в сцене `0`, нетонированных vendor-материалов `0`,
+`Assets/PolygonOffice` без изменений, scene validation `0 issues` и Console без
+игровых ошибок.
 
 ### Проверенные правила `OfficeArtPass`
 
@@ -471,11 +493,24 @@ vendor-материалов `0`, `Assets/PolygonOffice` без изменени�
 - Коэффициенты считаются вдоль осей владельца, а `localScale` работает вдоль осей
   модели, поэтому для повёрнутых модулей их переносят через inverse rotation. Все
   повороты кратны 90°, иначе подгонка перестаёт быть точной.
-- Все коллайдеры vendor-модели выключаются: столкновения остаются за greybox.
+- Все коллайдеры vendor-модели **удаляются**, а не выключаются: столкновения
+  остаются за greybox. Выключенный коллайдер продолжает висеть в иерархии
+  владельца, и любой `GetComponentsInChildren<Collider>` считает его своим —
+  `OfficeBossEncounter.SetRackColliders(true)` именно так включил бы vendor-коллайдер
+  стойки прямо во время боя. Критерий закрытия слайса поэтому строже: vendor-коллайдеров
+  в сцене `0`, а не «0 включённых».
 - Greybox-рендереры гасятся, но именованные акценты можно оставить. Красные
   `Status LED` серверных стоек сохранены: они держат цветовой акцент серверной.
 - `Builder` передаёт art-pass прямые ссылки на объекты среза; поиск greybox по
   именам запрещён, иначе переименование объекта молча отключит замену.
+- Если greybox — масштабированный примитив (`CreateCube`, `CreateCylinder`), visual
+  вешается не на него, а на общий корень зоны с мировыми координатами: как child
+  модель унаследовала бы масштаб куба. Так сделаны шкафы, лампа, стекло и колонны
+  `BackgroundScale`; прямыми детьми становятся только prefab-владельцы с единичным
+  масштабом — столы, кресла и стойки.
+- Фоновый ряд `BackgroundScale` стоит за стенами зала, поэтому его vendor-модели
+  переводятся в `ShadowCastingMode.Off`: тени оттуда физически не попадают на
+  игровой пол, а caster'ы стоят кадров. Мебель на маршруте тени сохраняет.
 
 ### Палитра vendor-материалов
 
@@ -497,6 +532,9 @@ variants `Assets/Game/Episodes/Office/Art/Materials/M_Synty_*.mat`, которы
 
 | Дата | Ветка / задача | Изменение | Проверка |
 |---|---|---|---|
+| 2026-08-02 | `polish/office-synty-art-pass` | По запросу продюсера убрано напольное кольцо арены босса: `Boss Arena Marker` радиуса 8 и вложенный `Boss Arena Inner`. Маркер был чистым декором — на него не ссылались ни `OfficeBossEncounter`, ни другой офисный код, — и красный круг спорил с телеграфами боя. Границу арены держат сами стойки, `Boss Arena Seal` и общий телеграф кольца. `Boss Arena Marker` убран из списка объектов, которые art-pass не трогает | Rebuild `Jam/Office/Rebuild Prologue Office` (первая попытка упала на активном Play Mode — Editor остановлен, пересборка повторена); объектов `Boss Arena Marker`/`Boss Arena Inner` в сцене `0`; `Server Boss Encounter`, `Boss Racks`, `Boss Arena Seal` и `Closed Ring Links` на месте; greybox-коллайдеры `171/171` без изменений, vendor-коллайдеров `0`, нетонированных vendor-материалов `0`; scene validation — 0 issues; Console — 0 ошибок и предупреждений; визуал — capture `office-artpass-a4-reception-boss` |
+| 2026-08-02 | `polish/office-synty-art-pass` / `A4` + мебель `A3`/`A5`/`A7` | По запросу продюсера перенос пошёл не по границам слайсов, а по типам мебели: `ApplyRemainingFurnitureSlice` перевёл 10 серверных стоек, 12 стоек босса, стол переговорной с базой, 4 кресла переговорной и 2 стойки рецепции. Найден и закрыт дефект: `OfficeBossEncounter.SetRackColliders` берёт коллайдеры через `GetComponentsInChildren`, поэтому выключенный vendor-коллайдер стойки включался бы обратно прямо во время боя — vendor-коллайдеры теперь удаляются, а не выключаются, и критерий закрытия слайса ужесточён. Стойки рецепции переведены с `SM_Prop_Desk_06` на `SM_Prop_Kitchen_Counter_01`: две угловые модели рядом читались как случайный излом. Подложка `Void Floor` расширена с `42 × 76` до `400 × 400`, чтобы горизонт не обрывался краем этажа | Rebuild `Jam/Office/Rebuild Prologue Office`; scene validation — 0 issues/missing scripts/broken prefabs; Console — 0 ошибок и 0 предупреждений. По сохранённой сцене: 59 контейнеров `Synty Visual`, 98 vendor-инстансов, vendor-коллайдеров в сцене `0`, нетонированных vendor-материалов `0`, `Assets/PolygonOffice` — 0 изменённых файлов. Greybox-коллайдеры `171` из `171` включённых — точное совпадение с состоянием до слайса; промежуточный замер с выключенными (а не удалёнными) vendor-коллайдерами давал `159/171`, что и вскрыло дефект `SetRackColliders`. Габариты: стойка `1.40 × 2.60 × 1.40` @ y `1.30` — совпала с эталоном `A1`; стойка босса `1.40 × 2.60 × 1.40`, 12 стоек × 1 коллайдер, все включены; кресло переговорной `0.90 × 1.22 × 0.90`; стойка рецепции `5.00 × 1.30 × 1.40` @ `(±4.00, 0.65, 26.50)`; стол переговорной `5.60 × 0.79 × 1.60` @ `(0.00, 0.40, 0.50)` поверх greybox `5.60 × 0.18 × 1.60`. `Void Floor` — `(400, 0.2, 400)` без коллайдера, `Playable Floor` не изменён. Визуал проверен captures `office-artpass-a4-reception-boss`, `office-artpass-infinite-floor`, `office-artpass-reception-check` |
+| 2026-08-02 | `polish/office-synty-art-pass` / `A2` | Выполнен слайс `A2` open space. `OfficeArtPass.ApplyOpenSpaceSlice` переводит оставшиеся 4 стола и 4 кресла подов `z = -20.5` и `z = -9.5`, 12 фоновых столов и 12 колонн `BackgroundScale` на модели пака теми же правилами, что `A1`. Колонны получили `SM_Bld_Pillar_Interior_01`; их visual вешается на корень `BackgroundScale`, потому что greybox-колонна — масштабированный примитив. Фоновый ряд переведён в `ShadowCastingMode.Off`. `Builder` собирает объекты слайса списками, поиск по именам по-прежнему не используется. В roadmap добавлены два новых проверенных правила `OfficeArtPass` | Rebuild `Jam/Office/Rebuild Prologue Office`; scene validation — 0 issues/missing scripts/broken prefabs; Console — 0 ошибок и 0 предупреждений. По сохранённой сцене: 31 контейнер `Synty Visual`, 67 vendor-инстансов, включённых vendor-коллайдеров `0`, нетонированных vendor-материалов `0`, `Assets/PolygonOffice` — 0 изменённых файлов. Габариты `A2` совпали с эталоном `A1` до сотых: стол `3.40 × 1.71 × 1.60` @ y `0.86`, кресло `0.90 × 1.22 × 0.90` @ y `0.61`, колонна `0.70 × 3.60 × 0.70` @ `(-19.00, 1.80, -21.00)` — точное совпадение с greybox. Включённые greybox-коллайдеры не изменились: стол `6`, кресло `3`, фоновый стол и колонна `0`; все vendor-коллайдеры выключены (стол `2`, кресло `4`). Все 12 visual-колонн легли ровно на 12 greybox-позиций. Тени: фоновый стол `0` caster, стол маршрута `2`. Визуал проверен captures `office-artpass-a2-openspace-top`, `office-artpass-a2-background` |
 | 2026-08-02 | `polish/office-synty-art-pass` / `M7` | Зафиксирован открытый дефект `M7`: popup урона зависают при уничтожении противника и над героем. Причина разобрана по исходникам DNP, записаны направление исправления и критерий проверки; `M7` переведён из `Done` в `Done, есть открытый дефект`, задача заведена в `BACKLOG.md` на ветку `fix/office-dnp-popup-follow`. Runtime не изменялся | Сверено с `Assets/DamageNumbersPro/Scripts/Internal/DamageNumber.cs`: `SetFollowedTarget` ставит `enableFollowing = true` (строка `879`), сброс pooled-экземпляра восстанавливает `followedTarget`, `spamGroup`, `permanent` и тексты, но не `enableFollowing` (около `1704`), `HandleFollowing` при пустой цели выходит не двигая popup (`2348`). Подтверждено, что все три офисных preset авторятся с `enableFollowing = false`, а `DamageNumbersFeedbackAdapter` передаёт `Transform` во все ветки `Spawn` |
 | 2026-08-02 | `polish/office-synty-art-pass` | Исправлен `LiberationSans SDF - Fallback.asset`: в `main` был закоммичен выросший в Play Mode динамический атлас, и мировые TMP-надписи офиса падали с `UnassignedReferenceException`. Динамические данные сброшены, осиротевшие sub-asset текстуры удалены; правило хранения записано в `DECISIONS.md` и `CONTRACTS.md` | До: 16 записей `m_AtlasTextures` при 13 текстурах, 4 пустых слота. После: 1 запись, 1 текстура, 0 пустых, 0 глифов, `Clear Dynamic Data on Build = true`. Проверка сломанного места: сцена переоткрыта, 14 мировых TMP пересобраны принудительно, полный цикл Play Mode — все 11 активных надписей отрисовали глифы, Console — 0 ошибок. Прочие 34 `TMP_FontAsset` проекта проверены: пустых слотов нет |
 | 2026-08-02 | `polish/office-synty-art-pass` / `A2`–`A7` | В план визуального прохода добавлена опись оставшегося переноса: 127 объектов сцены разбиты на слайсы `A2` open space, `A3` переговорная, `A4` серверная, `A5` рецепция и EXIT, `A6` оболочка этажа, `A7` интерактив/враги/босс — с точными объектами, количествами и целевыми моделями пака. Отдельно зафиксирован список объектов, которые art-pass не трогает, и критерий закрытия слайса | Опись снята с собранной сцены перебором рендереров: исключены объекты под `Synty Visual` и уже переведённые владельцы; счётчики сверены с builder (4 стола и 4 кресла open space, 12 фоновых столов, 12 колонн, 10 оставшихся стоек, 12 стоек босса, 8 клавиатур, 4 принтера, 4 кресла-противника, 4 кресла переговорной, 4 турникета) |
