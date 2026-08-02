@@ -545,6 +545,10 @@ MonoBehaviour:
     m_Localized: TO BE CONTINUED
     m_Metadata:
       m_Items: []
+  - m_Id: 275370774355968
+    m_Localized: "Dialogue \u2022 NodeCanvas"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

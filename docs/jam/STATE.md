@@ -201,7 +201,13 @@
   `PhotoWhiteboxController`; production Dialogue Trees, графические hotspots,
   фоновые иллюстрации, портреты и DNP-feedback ещё не созданы.
 - Production-логика трёх сцен уже проходит до финального storyboard, но layout пока
-  программный white-box без финального арта, AudioCue и production Dialogue Trees.
+  программный white-box без финального арта.
+- В Photo подключены production NodeCanvas Dialogue Trees разговора с матерью и
+  паспортного контроля. Их subtitle/choice events отображаются существующим TMP UI,
+  а последствия по-прежнему применяются только через `PhotoPrologueRules`.
+- Для Photo созданы project-owned AudioCue комнаты/дождя, аэропорта, затвора,
+  двери и паспортного штампа. Сейчас они используют локально сгенерированные
+  прототипные WAV, которые требуется заменить финальным саунд-дизайном.
 - Веб-демо не связано с `Assets/` и не является Unity-сборкой. Его Three.js-модули
   загружаются локально, а Three.js и bloom при первом запуске запрашиваются с unpkg.
 - Сцена `HotelArrival` работает, но остаётся текстовой заглушкой: она читает
@@ -235,10 +241,10 @@
 
 ## Следующий шаг
 
-Добавить иллюстрации и звук в `PhotoIntroStoryboard`, затем заменить оставшиеся
-временные экраны `PhotoWhiteboxController` на production Dialogue Trees и
-компоненты `PhotoEpisodeController`/`PhotoCheckpointAdapter`, сохранив работающий
-FSM, checkpoint ID и маршрут из главного меню.
+Добавить иллюстрации и финальный звук в `PhotoIntroStoryboard`, заменить
+прототипные Photo WAV на production-записи и вынести оставшиеся временные экраны
+из `PhotoWhiteboxController` в компоненты `PhotoEpisodeController` при сохранении
+работающих Dialogue Trees, FSM, checkpoint ID и маршрута из главного меню.
 Следующий офисный срез `M5` собирает Windows x64 build, проходит в нём полный путь
 `Main → CharacterSelect → Prologue_Office → HotelArrival`, замеряет длительность
 цикла и подгоняет её к 5–10 минутам без soft lock, после чего записывает результат

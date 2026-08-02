@@ -96,6 +96,7 @@ namespace Jam.Core.Localization.Editor
             new("production.heroine", "ОНА", "HER"),
             new("production.scales", "Честность {0}/100  •  Признание {1}/100", "Honesty {0}/100  •  Recognition {1}/100"),
             new("production.scales.hidden", "Численные значения скрыты. Выборы меняют направление истории.", "Numeric values are hidden. Choices shape the direction of the story."),
+            new("production.dialogue.nodecanvas", "Диалог • NodeCanvas", "Dialogue • NodeCanvas"),
             new("production.room.phase", "СЦЕНА 1 • НЕОНОВАЯ КОМНАТА", "SCENE 1 • NEON ROOM"),
             new("production.room.secret.prompt", "Они же не узнают…", "They will never know…"),
             new("production.room.secret.deny", "Они не узнают.", "They will not know."),

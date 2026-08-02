@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e23e2b4af79abf04aa43b1cdd4bfa7d1, type: 3}
+  m_Name: PhotoShutter
+  m_EditorClassIdentifier: Assembly-CSharp::Jam.Core.Audio.AudioCue
+  stableId: photo.sfx.shutter
+  clips:
+  - {fileID: 8300000, guid: b4a8b0d3f01a2db4c941e01269d63f05, type: 3}
+  bus: 2
+  volumeRange: {x: 1, y: 1}
+  pitchRange: {x: 1, y: 1}
+  spatialBlend: 0
+  loop: 0
+  cooldownSeconds: 0.08
+  maxSimultaneous: 3
+  priority: 128
