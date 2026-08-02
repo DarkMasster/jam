@@ -5,6 +5,7 @@ using Jam.Core.Cutscenes;
 using Jam.Core.Flow;
 using Jam.Core.Localization;
 using Jam.Core.Save;
+using Jam.Core.UI;
 using NodeCanvas.Framework;
 using NodeCanvas.DialogueTrees;
 using NodeCanvas.StateMachines;
@@ -102,6 +103,7 @@ namespace Jam.Episodes.Photo
         private TMP_Text _honestyLabel;
         private TMP_Text _recognitionLabel;
         private PhotoRoomDioramaPresenter _roomDiorama;
+        private DarkUiTheme _darkUiTheme;
         private RawImage _roomDioramaImage;
         private float _actionButtonHeight = 64f;
         private PhotoWhiteboxPhase _phase;
@@ -1047,6 +1049,8 @@ namespace Jam.Episodes.Photo
 
         private void BuildInterface()
         {
+            _darkUiTheme = DarkUiTheme.Load();
+
             var canvasObject = new GameObject(
                 "PhotoWhiteboxCanvas",
                 typeof(RectTransform),
@@ -1068,9 +1072,11 @@ namespace Jam.Episodes.Photo
             Stretch(background.rectTransform);
 
             var topAccent = CreateImage("TopAccent", background.rectTransform, AccentColor);
+            ApplyDarkUiSprite(topAccent, _darkUiTheme != null ? _darkUiTheme.Divider : null);
             SetAnchoredRect(topAccent.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(0f, 6f));
 
             var panel = CreateImage("StoryPanel", background.rectTransform, PanelColor);
+            ApplyDarkUiPanel(panel);
             SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1740f, 980f));
 
             var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -1087,6 +1093,7 @@ namespace Jam.Episodes.Photo
             _speakerText = CreateLabel("Speaker", panel.rectTransform, string.Empty, 18, FontStyles.Bold, MutedTextColor, 26f);
 
             var stage = CreateImage("Stage", panel.rectTransform, StageColor);
+            ApplyDarkUiPanel(stage);
             _stageLayout = stage.gameObject.AddComponent<LayoutElement>();
             _stageLayout.preferredHeight = 480f;
             var roomImageObject = new GameObject("RoomDiorama", typeof(RectTransform), typeof(RawImage));
@@ -1106,7 +1113,9 @@ namespace Jam.Episodes.Photo
 
             var actions = new GameObject("DecisionBand", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
             actions.transform.SetParent(panel.rectTransform, false);
-            actions.GetComponent<Image>().color = new Color(0.28f, 0.02f, 0.15f, 0.82f);
+            var actionsImage = actions.GetComponent<Image>();
+            actionsImage.color = new Color(0.18f, 0.08f, 0.15f, 0.96f);
+            ApplyDarkUiPanel(actionsImage);
             _actionsLayout = actions.GetComponent<LayoutElement>();
             _actionsLayout.preferredHeight = 240f;
             _actionsPanelRect = actions.GetComponent<RectTransform>();
@@ -1131,6 +1140,8 @@ namespace Jam.Episodes.Photo
             _actionsGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             _actionsGrid.constraintCount = 1;
             _actionsGrid.cellSize = new Vector2(1596f, 64f);
+
+            _dialoguePortrait.transform.SetAsLastSibling();
 
             CreateLabel("Footer", panel.rectTransform, "REFLECTION / MOMENTUM  •  PHOTO", 13, FontStyles.Normal, MutedTextColor, 20f);
             ApplyPresentationLayout(PresentationLayout.Dialogue);
@@ -1195,7 +1206,7 @@ namespace Jam.Episodes.Photo
 
         }
 
-        private static void CreateGuideLine(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 size)
+        private void CreateGuideLine(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 size)
         {
             var line = CreateImage(name, parent.GetComponent<RectTransform>(), new Color(0.78f, 0.44f, 0.68f, 0.32f));
             line.rectTransform.anchorMin = anchorMin;
@@ -1294,6 +1305,7 @@ namespace Jam.Episodes.Photo
             var image = buttonObject.GetComponent<Image>();
             var tint = color ?? ButtonColor;
             image.color = Color.Lerp(BackgroundColor, tint, 0.42f);
+            ApplyDarkUiPanel(image);
             var outline = buttonObject.AddComponent<Outline>();
             outline.effectColor = new Color(tint.r, tint.g, tint.b, interactable ? 0.8f : 0.25f);
             outline.effectDistance = new Vector2(2f, -2f);
@@ -1339,13 +1351,29 @@ namespace Jam.Episodes.Photo
             return text;
         }
 
-        private static Image CreateImage(string name, RectTransform parent, Color color)
+        private Image CreateImage(string name, RectTransform parent, Color color)
         {
             var imageObject = new GameObject(name, typeof(RectTransform), typeof(Image));
             imageObject.transform.SetParent(parent, false);
             var image = imageObject.GetComponent<Image>();
             image.color = color;
             return image;
+        }
+
+        private void ApplyDarkUiPanel(Image image)
+        {
+            ApplyDarkUiSprite(image, _darkUiTheme != null ? _darkUiTheme.Button : null);
+        }
+
+        private static void ApplyDarkUiSprite(Image image, Sprite sprite)
+        {
+            if (image == null || sprite == null)
+            {
+                return;
+            }
+
+            image.sprite = sprite;
+            image.type = Image.Type.Sliced;
         }
 
         private static void Stretch(RectTransform rect, Vector2? min = null, Vector2? max = null)

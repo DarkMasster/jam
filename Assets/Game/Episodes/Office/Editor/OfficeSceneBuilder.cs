@@ -934,6 +934,11 @@ namespace Jam.Episodes.Office.Editor
 
         private static GameObject BuildHudTemplate()
         {
+            var darkPanelSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Dark UI/Free/BTN_A1.png");
+            var darkDividerSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Dark UI/Free/Divider.png");
+            var darkPanelColor = new Color(0.075f, 0.09f, 0.12f, 0.96f);
+            var darkSecondaryColor = new Color(0.10f, 0.12f, 0.16f, 0.96f);
+            var mainAccent = new Color(0.91f, 0.55f, 0.24f, 1f);
             var canvasObject = new GameObject("Office HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster), typeof(OfficeHudBinding));
             var canvas = canvasObject.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -945,9 +950,10 @@ namespace Jam.Episodes.Office.Editor
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
 
-            var topPanel = CreateUiPanel("Objective Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
+            var topPanel = CreateUiPanel("Objective Panel", canvasObject.transform, darkPanelColor);
+            topPanel.sprite = darkPanelSprite;
             SetRect(topPanel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(28f, -22f), new Vector2(720f, 250f), new Vector2(0f, 1f));
-            var accent = CreateUiPanel("Accent", topPanel.transform, Hex("D8241D"));
+            var accent = CreateUiPanel("Accent", topPanel.transform, mainAccent);
             SetRect(accent.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(6f, 0f), new Vector2(0f, 0.5f));
 
             var zone = CreateUiText("Zone", topPanel.transform, 22, FontStyles.Bold, Hex("D8241D"), TextAlignmentOptions.MidlineLeft);
@@ -960,33 +966,45 @@ namespace Jam.Episodes.Office.Editor
             SetRect(integrity.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(28f, -168f), new Vector2(-50f, 44f), new Vector2(0f, 1f));
             integrity.text = "РАБОТОСПОСОБНОСТЬ ■■■   ПОПЫТКА 1";
 
-            var statusPanel = CreateUiPanel("Status Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
+            var objectiveDivider = CreateUiPanel("Divider", topPanel.transform, new Color(1f, 1f, 1f, 0.18f));
+            objectiveDivider.sprite = darkDividerSprite;
+            SetRect(objectiveDivider.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(28f, 18f), new Vector2(-56f, 2f), new Vector2(0f, 0f));
+
+            var statusPanel = CreateUiPanel("Status Panel", canvasObject.transform, darkPanelColor);
+            statusPanel.sprite = darkPanelSprite;
             SetRect(statusPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 34f), new Vector2(1180f, 58f), new Vector2(0.5f, 0f));
             var status = CreateUiText("Status", statusPanel.transform, 18, FontStyles.Bold, Hex("CFCABC"), TextAlignmentOptions.Center);
             SetRect(status.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-24f, -10f), new Vector2(0.5f, 0.5f));
             status.text = "WASD / СТРЕЛКИ • ДВИГАЙСЯ К EXIT";
 
-            var coachPanel = CreateUiPanel("Coach Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
+            var coachPanel = CreateUiPanel("Coach Panel", canvasObject.transform, darkPanelColor);
+            coachPanel.sprite = darkPanelSprite;
             SetRect(coachPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 170f), new Vector2(1180f, 62f), new Vector2(0.5f, 0f));
             var coach = CreateUiText("Coach", coachPanel.transform, 21, FontStyles.Bold, Hex("EDE9DF"), TextAlignmentOptions.Center);
             SetRect(coach.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, new Vector2(-24f, -10f), new Vector2(0.5f, 0.5f));
             coach.text = "WASD / СТРЕЛКИ — ИДИ ВПЕРЁД";
 
-            var momentumPanel = CreateUiPanel("Momentum Panel", canvasObject.transform, new Color(0.03f, 0.03f, 0.04f, 0.94f));
+            var momentumPanel = CreateUiPanel("Momentum Panel", canvasObject.transform, darkPanelColor);
+            momentumPanel.sprite = darkPanelSprite;
             SetRect(momentumPanel.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 102f), new Vector2(1180f, 56f), new Vector2(0.5f, 0f));
             var momentumLabel = CreateUiText("Momentum", momentumPanel.transform, 18, FontStyles.Bold, Hex("FF5A3C"), TextAlignmentOptions.MidlineLeft);
             SetRect(momentumLabel.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(20f, 0f), new Vector2(320f, -14f), new Vector2(0f, 0.5f));
             momentumLabel.text = "ТЕМП 0%   ПРОСТОЙ";
 
-            var momentumTrack = CreateUiPanel("Momentum Track", momentumPanel.transform, new Color(0.08f, 0.08f, 0.1f, 1f));
+            var momentumTrack = CreateUiPanel("Momentum Track", momentumPanel.transform, darkSecondaryColor);
+            momentumTrack.sprite = darkPanelSprite;
             SetRect(momentumTrack.rectTransform, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(360f, 0f), new Vector2(-380f, 18f), new Vector2(0f, 0.5f));
             var momentumFill = CreateUiPanel("Momentum Fill", momentumTrack.transform, Hex("6E1512"));
             // Ширину задаёт якорь, поэтому полоса работает без sprite и Image.Type.Filled.
             SetRect(momentumFill.rectTransform, Vector2.zero, new Vector2(0f, 1f), Vector2.zero, Vector2.zero, new Vector2(0f, 0.5f));
 
-            var downPanel = CreateUiPanel("Down Panel", canvasObject.transform, new Color(0.02f, 0.02f, 0.03f, 0.86f));
+            var downPanel = CreateUiPanel("Down Panel", canvasObject.transform, new Color(0.02f, 0.025f, 0.04f, 0.90f));
             SetRect(downPanel.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f));
             var downText = CreateUiText("Down Text", downPanel.transform, 34, FontStyles.Bold, Hex("D8241D"), TextAlignmentOptions.Center);
+            var downFrame = CreateUiPanel("Down Frame", downPanel.transform, darkPanelColor);
+            downFrame.sprite = darkPanelSprite;
+            SetRect(downFrame.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1180f, 270f), new Vector2(0.5f, 0.5f));
+            downFrame.transform.SetAsFirstSibling();
             SetRect(downText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1100f, 220f), new Vector2(0.5f, 0.5f));
             downText.text = "ПРОИЗВОДИТЕЛЬНОСТЬ НЕУДОВЛЕТВОРИТЕЛЬНА";
             downPanel.gameObject.SetActive(false);
