@@ -24,6 +24,7 @@ namespace Jam.Core.UI
         private static readonly Color AccentColor = new(0.91f, 0.55f, 0.24f, 1f);
         private static readonly Color TextColor = new(0.94f, 0.93f, 0.89f, 1f);
         private static readonly Color MutedTextColor = new(0.62f, 0.66f, 0.72f, 1f);
+        private static DarkUiTheme _darkTheme;
 
         private Canvas _canvas;
         private GameObject _overlay;
@@ -205,6 +206,10 @@ namespace Jam.Core.UI
 
         private void BuildInterface()
         {
+            if (_darkTheme == null)
+            {
+                _darkTheme = DarkUiTheme.Load();
+            }
             var canvasObject = new GameObject(
                 "GlobalHudCanvas",
                 typeof(RectTransform),
@@ -242,7 +247,7 @@ namespace Jam.Core.UI
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 Vector2.zero,
-                new Vector2(580f, 520f));
+                new Vector2(620f, 640f));
 
             var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(56, 56, 46, 42);
@@ -283,6 +288,7 @@ namespace Jam.Core.UI
 
             var image = buttonObject.GetComponent<Image>();
             image.color = ButtonColor;
+            image.sprite = _darkTheme != null ? _darkTheme.Button : null;
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
             button.transition = Selectable.Transition.ColorTint;

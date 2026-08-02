@@ -412,6 +412,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Jam.Core.UI.MainMenuController
   newGameScene: CharacterSelect
+  darkButtonSprite: {fileID: 21300000, guid: 604d5ed6f532a5146bf48201437881ee, type: 3}
+  darkDividerSprite: {fileID: 21300000, guid: 3e33bda025a5e1d4eae51ae3933d9954, type: 3}
+  playIcon: {fileID: 21300000, guid: 82cc141cf0a983044b70b85573c5314d, type: 3}
+  continueIcon: {fileID: 21300000, guid: 097d531661742334fa8fa4dde46ff6b9, type: 3}
+  languageIcon: {fileID: 21300000, guid: a9f7b103cae6fe64dab8018e71186a2e, type: 3}
+  quitIcon: {fileID: 21300000, guid: 47fb37fd4beb26a48b394408b8e433f0, type: 3}
 --- !u!4 &1603503178
 Transform:
   m_ObjectHideFlags: 0

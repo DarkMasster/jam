@@ -18,6 +18,9 @@ namespace Jam.Core.UI
         [SerializeField] private string finaleScene = "Finale";
         [SerializeField] private string mainMenuScene = "Main";
         [SerializeField] private string temporaryGameplayScene = "SampleScene";
+        [SerializeField] private Sprite darkButtonSprite;
+        [SerializeField] private Sprite darkDividerSprite;
+        [SerializeField] private CharacterSelectPortraitRenderer portraitRenderer;
 
         private static readonly Color BackgroundColor = new(0.035f, 0.045f, 0.065f, 1f);
         private static readonly Color PanelColor = new(0.075f, 0.09f, 0.12f, 0.98f);
@@ -242,6 +245,9 @@ namespace Jam.Core.UI
 
         private void BuildInterface()
         {
+            var theme = DarkUiTheme.Load();
+            if (darkButtonSprite == null && theme != null) darkButtonSprite = theme.Button;
+            if (darkDividerSprite == null && theme != null) darkDividerSprite = theme.Divider;
             var canvasObject = new GameObject(
                 "CharacterSelectCanvas",
                 typeof(RectTransform),
@@ -277,10 +283,10 @@ namespace Jam.Core.UI
                 new Vector2(0.5f, 0.5f),
                 new Vector2(0.5f, 0.5f),
                 Vector2.zero,
-                new Vector2(1180f, 840f));
+                new Vector2(1420f, 920f));
 
             var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(70, 70, 42, 38);
+            layout.padding = new RectOffset(70, 70, 38, 32);
             layout.spacing = 10f;
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = true;
@@ -290,6 +296,9 @@ namespace Jam.Core.UI
 
             CreateLabel("Title", panel.rectTransform, "ВЫБЕРИТЕ ИСТОРИЮ", 42, FontStyles.Bold, TextColor, 64f, "ui.character.title");
             CreateLabel("Subtitle", panel.rectTransform, "ТРИ МАРШРУТА • ОДИН ДЕНЬ", 18, FontStyles.Normal, AccentColor, 30f, "ui.character.subtitle");
+            var divider = CreateImage("Divider", panel.rectTransform, new Color(1f, 1f, 1f, 0.22f));
+            divider.sprite = darkDividerSprite;
+            divider.gameObject.AddComponent<LayoutElement>().preferredHeight = 2f;
             CreateSpacer(panel.rectTransform, 8f);
             _progressText = CreateLabel("Progress", panel.rectTransform, string.Empty, 20, FontStyles.Bold, TextColor, 30f);
             CreateSpacer(panel.rectTransform, 8f);
@@ -328,13 +337,25 @@ namespace Jam.Core.UI
             UnityEngine.Events.UnityAction action,
             Color baseColor)
         {
-            var button = CreateButton(name, parent, string.Empty, action, 86f);
+            var button = CreateButton(name, parent, string.Empty, action, 160f);
             var colors = button.colors;
             colors.normalColor = baseColor;
             button.colors = colors;
             button.GetComponent<Image>().color = baseColor;
             _characterButtons[index] = button;
             _characterLabels[index] = button.transform.Find("Label").GetComponent<TMP_Text>();
+            _characterLabels[index].alignment = TextAlignmentOptions.MidlineLeft;
+            Stretch(_characterLabels[index].rectTransform, new Vector2(190f, 12f), new Vector2(-32f, -12f));
+
+            var portraitFrame = CreateImage("PortraitFrame", button.GetComponent<RectTransform>(), new Color(0.035f, 0.04f, 0.055f, 1f));
+            SetAnchoredRect(portraitFrame.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(82f, 0f), new Vector2(132f, 132f));
+            var portraitObject = new GameObject("Portrait", typeof(RectTransform), typeof(RawImage));
+            portraitObject.transform.SetParent(portraitFrame.rectTransform, false);
+            var portrait = portraitObject.GetComponent<RawImage>();
+            portrait.texture = portraitRenderer != null ? portraitRenderer.GetPortrait(index) : null;
+            portrait.color = Color.white;
+            portrait.raycastTarget = false;
+            Stretch(portrait.rectTransform, new Vector2(4f, 4f), new Vector2(-4f, -4f));
         }
 
         private Button CreateButton(
@@ -357,6 +378,7 @@ namespace Jam.Core.UI
 
             var image = buttonObject.GetComponent<Image>();
             image.color = ButtonColor;
+            image.sprite = darkButtonSprite;
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
