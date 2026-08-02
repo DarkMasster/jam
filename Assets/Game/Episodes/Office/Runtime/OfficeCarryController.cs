@@ -32,6 +32,7 @@ namespace Jam.Episodes.Office
         [SerializeField, Min(0f)] private float pickupLockout = 0.8f;
 
         private InputAction _primaryAction;
+        private OfficePlayerController _playerController;
         private bool _ownsPrimaryActionEnable;
         private OfficeCarryable _heldItem;
         private OfficeCarryable _highlightedItem;
@@ -40,6 +41,11 @@ namespace Jam.Episodes.Office
         public OfficeCarryable HeldItem => _heldItem;
 
         public bool IsControlLocked => _controlLocked;
+
+        private void Awake()
+        {
+            _playerController = GetComponent<OfficePlayerController>();
+        }
 
         private void OnEnable()
         {
@@ -148,7 +154,7 @@ namespace Jam.Episodes.Office
             var item = _heldItem;
             _heldItem = null;
 
-            var direction = (transform.forward + (Vector3.up * throwLift)).normalized;
+            var direction = (GetAimDirection() + (Vector3.up * throwLift)).normalized;
             var force = momentum != null ? throwForce * momentum.ThrowMultiplier : throwForce;
             item.Throw(direction, force, pickupLockout);
             episodeController?.ReportCarryThrow(item.DisplayName);
@@ -157,8 +163,8 @@ namespace Jam.Episodes.Office
 
         private OfficeCarryable FindCandidate(out float bestDistance)
         {
-            var origin = transform.position + (transform.forward * scanForwardOffset);
-            var forward = transform.forward;
+            var forward = GetAimDirection();
+            var origin = transform.position + (forward * scanForwardOffset);
 
             OfficeCarryable best = null;
             bestDistance = float.MaxValue;
@@ -192,6 +198,15 @@ namespace Jam.Episodes.Office
             }
 
             return best;
+        }
+
+        private Vector3 GetAimDirection()
+        {
+            var direction = _playerController != null
+                ? _playerController.AimDirection
+                : transform.forward;
+            direction.y = 0f;
+            return direction.sqrMagnitude > 0.001f ? direction.normalized : Vector3.forward;
         }
 
         private void Highlight(OfficeCarryable item)
