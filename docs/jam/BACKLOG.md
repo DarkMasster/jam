@@ -36,7 +36,8 @@
 | P0 | Офис `M3`: составной серверный босс и сюжетный финальный удар | ИИ-агент | `feature/office-m3-boss` | Done | Час 24 |
 | P1 | Импортировать Synty POLYGON Office как read-only vendor-каталог | ИИ-агент | `feature/office-assets-import` | Done | Готово |
 | P1 | Офис `M7`: визуальный feedback через Damage Numbers Pro | ИИ-агент | `polish/office-dnp-feedback-runtime` | Done | Готово |
-| P1 | Офис: art-pass на POLYGON Office без изменения gameplay-геометрии | TBD | `polish/office-synty-art-pass` | Todo | После M7 |
+| P1 | Офис: art-pass на POLYGON Office без изменения gameplay-геометрии | ИИ-агент | `polish/office-synty-art-pass` | Doing | После M7 |
+| P1 | Офис: починить зависающие DNP popup урона у противников и героя | TBD | `fix/office-dnp-popup-follow` | Todo | До финального билда |
 | P0 | Добавить победу, поражение и рестарт | TBD | `feature/game-flow` | Todo | Час 24 |
 | P0 | Получить проверенный финальный билд | TBD | `fix/final-build` | Todo | Час 42 |
 | P1 | Добавить ключевую визуальную и звуковую обратную связь | TBD | `polish/game-feel` | Todo | Час 34 |
