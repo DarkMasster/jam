@@ -46,14 +46,17 @@
 - Что сделано: schema v3, правила трёх сцен, runtime TMP-flow, ru/en-локализация,
   финальный storyboard «Продолжение следует» и возврат в `CharacterSelect` через
   общий `GameFlowService`.
-- Что осталось: два крайних пути, финальный layout по мокапам, AudioCue и
-  production Dialogue Trees.
-- Известные проблемы: текущий UI остаётся программным white-box.
+- Что осталось: два крайних пути, production-арт внутри готовых композиций,
+  AudioCue и production Dialogue Trees.
+- Известные проблемы: композиции диалога, камеры, матрицы и итога соответствуют
+  мокапам, но пока собираются программно и используют заглушки вместо фонов и
+  анимированных портретов.
 - Как проверено: Unity compilation без ошибок; rules/round-trip/v2 migration smoke;
   Play Mode Balance-state с `airportPhotoTaken=false` запускает
   `photo.prologue.to_be_continued`; пропуск возвращает в `CharacterSelect`, очищает
   активную линию и сохраняет завершённый payload в `photo.arrival`. Отдельно
   проверены `Main → Новая игра → CharacterSelect → Photo` и Continue из
   `photo.explore`, `photo.camera`, `photo.published`; исходный пользовательский save
-  после теста восстановлен. Console чиста.
+  после теста восстановлен. Presentation проверен Game View-снимками на диалоге,
+  видоискателе и трёхкарточной матрице при 1920×1080. Console чиста.
 - Реализационный commit: `0f25faf`

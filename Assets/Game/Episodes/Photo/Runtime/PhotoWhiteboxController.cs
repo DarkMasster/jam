@@ -34,6 +34,14 @@ namespace Jam.Episodes.Photo
     [RequireComponent(typeof(FSMOwner), typeof(Blackboard))]
     public sealed class PhotoWhiteboxController : MonoBehaviour, IGameModeSaveProvider
     {
+        private enum PresentationLayout
+        {
+            Dialogue,
+            Viewfinder,
+            ChoiceMatrix,
+            Summary
+        }
+
         private const string IntroCutsceneId = "photo.prologue.intro";
         private const string OutroCutsceneId = "photo.prologue.to_be_continued";
         private const string ExploreCheckpoint = "photo.explore";
@@ -66,6 +74,17 @@ namespace Jam.Episodes.Photo
         private TMP_Text _contentText;
         private TMP_Text _statusText;
         private RectTransform _actionsRoot;
+        private RectTransform _contentRect;
+        private LayoutElement _stageLayout;
+        private LayoutElement _actionsLayout;
+        private GridLayoutGroup _actionsGrid;
+        private GameObject _viewfinderOverlay;
+        private GameObject _dialoguePortrait;
+        private RectTransform _honestyFill;
+        private RectTransform _recognitionFill;
+        private TMP_Text _honestyLabel;
+        private TMP_Text _recognitionLabel;
+        private float _actionButtonHeight = 64f;
         private PhotoWhiteboxPhase _phase;
         private PhotoChoice _choice;
         private int _introIndex;
@@ -330,6 +349,9 @@ namespace Jam.Episodes.Photo
 
         private void RenderProductionStep()
         {
+            ApplyPresentationLayout(LayoutForStep(_saveData.prologue.step));
+            UpdateScaleRibbon();
+
             switch (_saveData.prologue.step)
             {
                 case PhotoPrologueStep.RoomSecret: RenderRoomSecret(); break;
@@ -865,42 +887,161 @@ namespace Jam.Episodes.Photo
             Stretch(background.rectTransform);
 
             var topAccent = CreateImage("TopAccent", background.rectTransform, AccentColor);
-            SetAnchoredRect(topAccent.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(0f, 8f));
+            SetAnchoredRect(topAccent.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(0f, 6f));
 
             var panel = CreateImage("StoryPanel", background.rectTransform, PanelColor);
-            SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1240f, 880f));
+            SetAnchoredRect(panel.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1740f, 980f));
 
             var layout = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.padding = new RectOffset(58, 58, 42, 36);
-            layout.spacing = 14f;
+            layout.padding = new RectOffset(48, 48, 26, 22);
+            layout.spacing = 10f;
             layout.childAlignment = TextAnchor.UpperCenter;
             layout.childControlWidth = true;
-            layout.childControlHeight = false;
+            layout.childControlHeight = true;
             layout.childForceExpandWidth = true;
             layout.childForceExpandHeight = false;
 
-            _phaseText = CreateLabel("Phase", panel.rectTransform, string.Empty, 22, FontStyles.Bold, AccentColor, 38f);
-            _speakerText = CreateLabel("Speaker", panel.rectTransform, string.Empty, 18, FontStyles.Bold, MutedTextColor, 30f);
+            _phaseText = CreateLabel("Phase", panel.rectTransform, string.Empty, 24, FontStyles.Bold, AccentColor, 36f);
+            CreateScaleRibbon(panel.rectTransform);
+            _speakerText = CreateLabel("Speaker", panel.rectTransform, string.Empty, 18, FontStyles.Bold, MutedTextColor, 26f);
 
             var stage = CreateImage("Stage", panel.rectTransform, StageColor);
-            stage.gameObject.AddComponent<LayoutElement>().preferredHeight = 300f;
+            _stageLayout = stage.gameObject.AddComponent<LayoutElement>();
+            _stageLayout.preferredHeight = 480f;
+            CreateStageDecorations(stage.rectTransform);
             _contentText = CreateText("Content", stage.rectTransform, string.Empty, 28, FontStyles.Normal, TextColor);
-            Stretch(_contentText.rectTransform, new Vector2(42f, 30f), new Vector2(-42f, -30f));
+            _contentRect = _contentText.rectTransform;
+            Stretch(_contentRect, new Vector2(56f, 36f), new Vector2(-56f, -36f));
 
-            _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 17, FontStyles.Normal, MutedTextColor, 34f);
+            _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 17, FontStyles.Normal, MutedTextColor, 32f);
 
-            var actions = new GameObject("Actions", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+            var actions = new GameObject("DecisionBand", typeof(RectTransform), typeof(Image), typeof(GridLayoutGroup), typeof(LayoutElement));
             actions.transform.SetParent(panel.rectTransform, false);
-            actions.GetComponent<LayoutElement>().preferredHeight = 340f;
-            var actionsLayout = actions.GetComponent<VerticalLayoutGroup>();
-            actionsLayout.spacing = 10f;
-            actionsLayout.childControlWidth = true;
-            actionsLayout.childControlHeight = false;
-            actionsLayout.childForceExpandWidth = true;
-            actionsLayout.childForceExpandHeight = false;
+            actions.GetComponent<Image>().color = new Color(0.28f, 0.02f, 0.15f, 0.82f);
+            _actionsLayout = actions.GetComponent<LayoutElement>();
+            _actionsLayout.preferredHeight = 240f;
+            _actionsGrid = actions.GetComponent<GridLayoutGroup>();
+            _actionsGrid.padding = new RectOffset(24, 24, 20, 20);
+            _actionsGrid.spacing = new Vector2(18f, 14f);
+            _actionsGrid.startAxis = GridLayoutGroup.Axis.Horizontal;
+            _actionsGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            _actionsGrid.constraintCount = 1;
+            _actionsGrid.cellSize = new Vector2(1596f, 64f);
             _actionsRoot = actions.GetComponent<RectTransform>();
 
-            CreateLabel("Footer", panel.rectTransform, "WHITE-BOX • PHOTO / CHARACTER 3", 14, FontStyles.Normal, MutedTextColor, 24f);
+            CreateLabel("Footer", panel.rectTransform, "REFLECTION / MOMENTUM  •  PHOTO", 13, FontStyles.Normal, MutedTextColor, 20f);
+            ApplyPresentationLayout(PresentationLayout.Dialogue);
+        }
+
+        private void CreateScaleRibbon(RectTransform parent)
+        {
+            var ribbon = CreateImage("InnerVector", parent, new Color(0.06f, 0.065f, 0.085f, 0.95f));
+            ribbon.gameObject.AddComponent<LayoutElement>().preferredHeight = 48f;
+
+            var honesty = CreateImage("HonestyFill", ribbon.rectTransform, new Color(0.32f, 0.82f, 0.68f, 0.92f));
+            honesty.rectTransform.anchorMin = Vector2.zero;
+            honesty.rectTransform.anchorMax = new Vector2(0.5f, 1f);
+            honesty.rectTransform.offsetMin = new Vector2(4f, 22f);
+            honesty.rectTransform.offsetMax = new Vector2(-2f, -6f);
+            _honestyFill = honesty.rectTransform;
+
+            var recognition = CreateImage("RecognitionFill", ribbon.rectTransform, AccentColor);
+            recognition.rectTransform.anchorMin = new Vector2(0.5f, 0f);
+            recognition.rectTransform.anchorMax = Vector2.one;
+            recognition.rectTransform.offsetMin = new Vector2(2f, 22f);
+            recognition.rectTransform.offsetMax = new Vector2(-4f, -6f);
+            _recognitionFill = recognition.rectTransform;
+
+            _honestyLabel = CreateText("HonestyLabel", ribbon.rectTransform, "ЧЕСТНОСТЬ", 14, FontStyles.Bold, new Color(0.32f, 0.82f, 0.68f, 1f));
+            SetAnchoredRect(_honestyLabel.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(76f, 11f), new Vector2(150f, 22f));
+            _honestyLabel.alignment = TextAlignmentOptions.MidlineLeft;
+
+            _recognitionLabel = CreateText("RecognitionLabel", ribbon.rectTransform, "ПРИЗНАНИЕ", 14, FontStyles.Bold, AccentColor);
+            SetAnchoredRect(_recognitionLabel.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 0f), new Vector2(-82f, 11f), new Vector2(164f, 22f));
+            _recognitionLabel.alignment = TextAlignmentOptions.MidlineRight;
+        }
+
+        private void CreateStageDecorations(RectTransform stage)
+        {
+            _viewfinderOverlay = new GameObject("ViewfinderOverlay", typeof(RectTransform));
+            _viewfinderOverlay.transform.SetParent(stage, false);
+            Stretch(_viewfinderOverlay.GetComponent<RectTransform>(), new Vector2(30f, 24f), new Vector2(-30f, -24f));
+
+            CreateGuideLine("ThirdLeft", _viewfinderOverlay.transform, new Vector2(0.333f, 0f), new Vector2(0.333f, 1f), new Vector2(2f, 0f));
+            CreateGuideLine("ThirdRight", _viewfinderOverlay.transform, new Vector2(0.666f, 0f), new Vector2(0.666f, 1f), new Vector2(2f, 0f));
+            CreateGuideLine("ThirdTop", _viewfinderOverlay.transform, new Vector2(0f, 0.666f), new Vector2(1f, 0.666f), new Vector2(0f, 2f));
+            CreateGuideLine("ThirdBottom", _viewfinderOverlay.transform, new Vector2(0f, 0.333f), new Vector2(1f, 0.333f), new Vector2(0f, 2f));
+            var shutter = CreateText("Shutter", _viewfinderOverlay.GetComponent<RectTransform>(), "O", 72, FontStyles.Bold, TextColor);
+            SetAnchoredRect(shutter.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-70f, 0f), new Vector2(100f, 100f));
+
+            _dialoguePortrait = new GameObject("AnimatedPortrait", typeof(RectTransform), typeof(Image));
+            _dialoguePortrait.transform.SetParent(stage, false);
+            var portraitRect = _dialoguePortrait.GetComponent<RectTransform>();
+            SetAnchoredRect(portraitRect, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(170f, 0f), new Vector2(250f, 320f));
+            _dialoguePortrait.GetComponent<Image>().color = new Color(0.055f, 0.06f, 0.08f, 1f);
+            var portraitLabel = CreateText("PortraitLabel", portraitRect, string.Empty, 96, FontStyles.Normal, new Color(0.72f, 0.75f, 0.52f, 1f));
+            Stretch(portraitLabel.rectTransform, new Vector2(16f, 16f), new Vector2(-16f, -16f));
+        }
+
+        private static void CreateGuideLine(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 size)
+        {
+            var line = CreateImage(name, parent.GetComponent<RectTransform>(), new Color(0.78f, 0.44f, 0.68f, 0.32f));
+            line.rectTransform.anchorMin = anchorMin;
+            line.rectTransform.anchorMax = anchorMax;
+            line.rectTransform.anchoredPosition = Vector2.zero;
+            line.rectTransform.sizeDelta = size;
+        }
+
+        private void ApplyPresentationLayout(PresentationLayout presentation)
+        {
+            var viewfinder = presentation == PresentationLayout.Viewfinder;
+            var matrix = presentation == PresentationLayout.ChoiceMatrix;
+            var dialogue = presentation == PresentationLayout.Dialogue;
+
+            _viewfinderOverlay?.SetActive(viewfinder);
+            _dialoguePortrait?.SetActive(dialogue);
+            _actionsGrid.constraintCount = matrix ? 3 : viewfinder ? 2 : 1;
+            _actionsGrid.cellSize = matrix
+                ? new Vector2(510f, 300f)
+                : viewfinder
+                    ? new Vector2(790f, 76f)
+                    : new Vector2(1596f, presentation == PresentationLayout.Summary ? 64f : 58f);
+            _stageLayout.preferredHeight = matrix ? 250f : viewfinder ? 520f : 450f;
+            _actionsLayout.preferredHeight = matrix ? 340f : viewfinder ? 210f : presentation == PresentationLayout.Summary ? 110f : 240f;
+            _actionButtonHeight = matrix ? 300f : viewfinder ? 76f : 64f;
+
+            _contentText.fontSize = matrix ? 25f : 29f;
+            _contentText.alignment = dialogue ? TextAlignmentOptions.MidlineLeft : TextAlignmentOptions.Center;
+            Stretch(
+                _contentRect,
+                dialogue ? new Vector2(340f, 42f) : new Vector2(70f, 42f),
+                viewfinder ? new Vector2(-160f, -42f) : new Vector2(-70f, -42f));
+        }
+
+        private void UpdateScaleRibbon()
+        {
+            if (_honestyFill == null || _recognitionFill == null)
+            {
+                return;
+            }
+
+            var total = Mathf.Max(1, _saveData.prologue.honesty + _saveData.prologue.recognition);
+            var split = Mathf.Clamp01((float)_saveData.prologue.honesty / total);
+            _honestyFill.anchorMax = new Vector2(split, 1f);
+            _recognitionFill.anchorMin = new Vector2(split, 0f);
+            _honestyLabel.text = Loc.Get(LocalizationTables.Photo, "production.path.honesty", "ЧЕСТНОСТЬ");
+            _recognitionLabel.text = Loc.Get(LocalizationTables.Photo, "production.path.recognition", "ПРИЗНАНИЕ");
+        }
+
+        private static PresentationLayout LayoutForStep(PhotoPrologueStep step)
+        {
+            return step switch
+            {
+                PhotoPrologueStep.RoomPhoto or PhotoPrologueStep.MailboxHunt or PhotoPrologueStep.AirportPhoto => PresentationLayout.Viewfinder,
+                PhotoPrologueStep.MailboxPublication => PresentationLayout.ChoiceMatrix,
+                PhotoPrologueStep.MailboxReaction or PhotoPrologueStep.Summary or PhotoPrologueStep.Complete => PresentationLayout.Summary,
+                _ => PresentationLayout.Dialogue
+            };
         }
 
         private void EnsureEventSystem()
@@ -931,10 +1072,14 @@ namespace Jam.Episodes.Photo
         {
             var buttonObject = new GameObject("Action", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
             buttonObject.transform.SetParent(_actionsRoot, false);
-            buttonObject.GetComponent<LayoutElement>().preferredHeight = 58f;
+            buttonObject.GetComponent<LayoutElement>().preferredHeight = _actionButtonHeight;
 
             var image = buttonObject.GetComponent<Image>();
-            image.color = color ?? ButtonColor;
+            var tint = color ?? ButtonColor;
+            image.color = Color.Lerp(BackgroundColor, tint, 0.42f);
+            var outline = buttonObject.AddComponent<Outline>();
+            outline.effectColor = new Color(tint.r, tint.g, tint.b, interactable ? 0.8f : 0.25f);
+            outline.effectDistance = new Vector2(2f, -2f);
 
             var button = buttonObject.GetComponent<Button>();
             button.targetGraphic = image;
@@ -942,7 +1087,7 @@ namespace Jam.Episodes.Photo
             button.onClick.AddListener(action);
 
             var colors = button.colors;
-            colors.normalColor = color ?? ButtonColor;
+            colors.normalColor = Color.white;
             colors.highlightedColor = AccentColor;
             colors.selectedColor = AccentColor;
             colors.pressedColor = TextColor;

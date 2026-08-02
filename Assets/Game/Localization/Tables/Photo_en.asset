@@ -355,15 +355,42 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 246071048527894
-    m_Localized: "WINGS MASK  \u2022  +50 Recognition"
+    m_Localized: 'WINGS MASK
+
+
+      +50 Recognition
+
+
+      Fast audience growth.
+
+      Reality
+      stays outside the frame.'
     m_Metadata:
       m_Items: []
   - m_Id: 246071048527895
-    m_Localized: "HONEST DRAFT-NOTICE PHOTO  \u2022  +50 Honesty"
+    m_Localized: 'HONEST PHOTO
+
+
+      +50 Honesty
+
+
+      Risk of rejection.
+
+      High
+      trust from those close to her.'
     m_Metadata:
       m_Items: []
   - m_Id: 246071048527896
-    m_Localized: "FRAMING / BALANCE  \u2022  +25 / +25"
+    m_Localized: 'FRAMING / BALANCE
+
+
+      +25 / +25
+
+
+      No hard lock.
+
+      Flexibility
+      remains.'
     m_Metadata:
       m_Items: []
   - m_Id: 246071048527897
