@@ -219,6 +219,23 @@ MonoBehaviour:
       the phone screen.
     m_Metadata:
       m_Items: []
+  - m_Id: 350454767673344
+    m_Localized: "EPILOGUE \u2022 LOCKED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 350454847365120
+    m_Localized: "EPILOGUE \u2022 UNLOCKED"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 350454847365121
+    m_Localized: The second and third character stories are complete. The epilogue
+      is available.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 350454847365122
+    m_Localized: Could not open the epilogue in the browser.
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
