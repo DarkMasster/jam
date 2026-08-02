@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e23e2b4af79abf04aa43b1cdd4bfa7d1, type: 3}
+  m_Name: PhotoDoor
+  m_EditorClassIdentifier: Assembly-CSharp::Jam.Core.Audio.AudioCue
+  stableId: photo.sfx.door
+  clips:
+  - {fileID: 8300000, guid: c14e1ffb1434d8948813846473a69324, type: 3}
+  bus: 2
+  volumeRange: {x: 1, y: 1}
+  pitchRange: {x: 1, y: 1}
+  spatialBlend: 0
+  loop: 0
+  cooldownSeconds: 0.08
+  maxSimultaneous: 3
+  priority: 128

@@ -487,6 +487,10 @@ MonoBehaviour:
     m_Key: production.outro.002.text
     m_Metadata:
       m_Items: []
+  - m_Id: 275370774355968
+    m_Key: production.dialogue.nodecanvas
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

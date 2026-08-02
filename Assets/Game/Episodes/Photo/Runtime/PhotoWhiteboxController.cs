@@ -1,9 +1,12 @@
 using System;
+using System.Linq;
+using Jam.Core.Audio;
 using Jam.Core.Cutscenes;
 using Jam.Core.Flow;
 using Jam.Core.Localization;
 using Jam.Core.Save;
 using NodeCanvas.Framework;
+using NodeCanvas.DialogueTrees;
 using NodeCanvas.StateMachines;
 using TMPro;
 using UnityEngine;
@@ -31,7 +34,7 @@ namespace Jam.Episodes.Photo
         Butterfly
     }
 
-    [RequireComponent(typeof(FSMOwner), typeof(Blackboard))]
+    [RequireComponent(typeof(FSMOwner), typeof(Blackboard), typeof(DialogueTreeController))]
     public sealed class PhotoWhiteboxController : MonoBehaviour, IGameModeSaveProvider
     {
         private enum PresentationLayout
@@ -49,6 +52,17 @@ namespace Jam.Episodes.Photo
         private const string PublishedCheckpoint = "photo.published";
         private const string ArrivalCheckpoint = "photo.arrival";
         private const int RequiredInspectionMask = PhotoCheckpointAdapter.RequiredInspectionMask;
+
+        [Header("Production Dialogue Trees")]
+        [SerializeField] private DialogueTree motherDialogue;
+        [SerializeField] private DialogueTree borderDialogue;
+
+        [Header("Production Audio Cues")]
+        [SerializeField] private AudioCue roomAmbienceCue;
+        [SerializeField] private AudioCue airportAmbienceCue;
+        [SerializeField] private AudioCue shutterCue;
+        [SerializeField] private AudioCue doorCue;
+        [SerializeField] private AudioCue passportStampCue;
 
         private static readonly Color BackgroundColor = new(0.075f, 0.085f, 0.11f, 1f);
         private static readonly Color PanelColor = new(0.13f, 0.14f, 0.18f, 0.98f);
@@ -69,6 +83,7 @@ namespace Jam.Episodes.Photo
 
         private FSMOwner _fsmOwner;
         private Blackboard _blackboard;
+        private DialogueTreeController _dialogueController;
         private TMP_Text _phaseText;
         private TMP_Text _speakerText;
         private TMP_Text _contentText;
@@ -94,6 +109,11 @@ namespace Jam.Episodes.Photo
         private bool _introCutsceneRunning;
         private bool _outroCutsceneRunning;
         private bool _episodeHandedOff;
+        private bool _dialogueRunning;
+        private bool _isShuttingDown;
+        private PhotoPrologueStep _dialogueStep;
+        private int _dialogueChoiceIndex = -1;
+        private AudioPlaybackHandle _ambienceHandle;
         private PhotoCharacterSaveData _saveData = PhotoCheckpointAdapter.CreateNew();
 
         public bool CanSave => isActiveAndEnabled;
@@ -103,6 +123,7 @@ namespace Jam.Episodes.Photo
         {
             _fsmOwner = GetComponent<FSMOwner>();
             _blackboard = GetComponent<Blackboard>();
+            _dialogueController = GetComponent<DialogueTreeController>();
             EnsureEventSystem();
             BuildInterface();
         }
@@ -114,12 +135,20 @@ namespace Jam.Episodes.Photo
 
         private void OnEnable()
         {
+            _isShuttingDown = false;
             Loc.LocaleChanged += HandleLocaleChanged;
+            DialogueTree.OnSubtitlesRequest += HandleDialogueSubtitle;
+            DialogueTree.OnMultipleChoiceRequest += HandleDialogueChoices;
         }
 
         private void OnDisable()
         {
+            _isShuttingDown = true;
             Loc.LocaleChanged -= HandleLocaleChanged;
+            DialogueTree.OnSubtitlesRequest -= HandleDialogueSubtitle;
+            DialogueTree.OnMultipleChoiceRequest -= HandleDialogueChoices;
+            if (_dialogueRunning) _dialogueController?.StopDialogue();
+            StopAmbience();
             UnsubscribeFromCutsceneDirector();
             UnsubscribeFromOutroCutscene();
             _introCutsceneRunning = false;
@@ -128,7 +157,7 @@ namespace Jam.Episodes.Photo
 
         private void HandleLocaleChanged()
         {
-            if (_introCutsceneRunning)
+            if (_introCutsceneRunning || _dialogueRunning)
             {
                 return;
             }
@@ -344,6 +373,7 @@ namespace Jam.Episodes.Photo
                 SaveCheckpoint(CheckpointForProductionStep(step));
             }
 
+            UpdateAmbience(step);
             RenderProductionStep();
         }
 
@@ -356,12 +386,12 @@ namespace Jam.Episodes.Photo
             {
                 case PhotoPrologueStep.RoomSecret: RenderRoomSecret(); break;
                 case PhotoPrologueStep.RoomPhoto: RenderRoomPhoto(); break;
-                case PhotoPrologueStep.MotherDialogue: RenderMotherDialogue(); break;
+                case PhotoPrologueStep.MotherDialogue: StartProductionDialogue(motherDialogue, PhotoPrologueStep.MotherDialogue, RenderMotherDialogue); break;
                 case PhotoPrologueStep.MailboxHunt: RenderMailboxHunt(); break;
                 case PhotoPrologueStep.MailboxPublication: RenderMailboxPublication(); break;
                 case PhotoPrologueStep.MailboxReaction: RenderMailboxReaction(); break;
                 case PhotoPrologueStep.AirportPhoto: RenderAirportPhoto(); break;
-                case PhotoPrologueStep.BorderControl: RenderBorderControl(); break;
+                case PhotoPrologueStep.BorderControl: StartProductionDialogue(borderDialogue, PhotoPrologueStep.BorderControl, RenderBorderControl); break;
                 case PhotoPrologueStep.Summary: RenderProductionSummary(); break;
                 case PhotoPrologueStep.Complete: RenderProductionSummary(); break;
                 default:
@@ -406,6 +436,7 @@ namespace Jam.Episodes.Photo
         {
             if (PhotoPrologueRules.ApplyRoomShot(_saveData.prologue, choice))
             {
+                PlayCue(shutterCue);
                 EnterProductionStep(PhotoPrologueStep.MotherDialogue, true);
             }
         }
@@ -425,6 +456,7 @@ namespace Jam.Episodes.Photo
         {
             if (PhotoPrologueRules.ApplyMotherReply(_saveData.prologue, choice))
             {
+                PlayCue(doorCue);
                 EnterProductionStep(PhotoPrologueStep.MailboxHunt, true);
             }
         }
@@ -455,6 +487,7 @@ namespace Jam.Episodes.Photo
         {
             if (PhotoPrologueRules.BeginMailboxPublication(_saveData.prologue))
             {
+                PlayCue(shutterCue);
                 EnterProductionStep(PhotoPrologueStep.MailboxPublication, true);
             }
         }
@@ -518,6 +551,7 @@ namespace Jam.Episodes.Photo
         {
             if (PhotoPrologueRules.ResolveAirportPhoto(_saveData.prologue, takePhoto))
             {
+                if (takePhoto) PlayCue(shutterCue);
                 EnterProductionStep(PhotoPrologueStep.BorderControl, true);
             }
         }
@@ -537,7 +571,147 @@ namespace Jam.Episodes.Photo
         {
             if (PhotoPrologueRules.ApplyBorderReply(_saveData.prologue, reply))
             {
+                PlayCue(passportStampCue);
                 EnterProductionStep(PhotoPrologueStep.Summary, true);
+            }
+        }
+
+        private void StartProductionDialogue(DialogueTree tree, PhotoPrologueStep step, Action fallback)
+        {
+            if (_dialogueRunning)
+            {
+                return;
+            }
+
+            if (tree == null || _dialogueController == null)
+            {
+                fallback();
+                return;
+            }
+
+            _dialogueRunning = true;
+            _dialogueStep = step;
+            _dialogueChoiceIndex = -1;
+            ApplyPresentationLayout(PresentationLayout.Dialogue);
+            ClearActions();
+            _dialogueController.StartDialogue(tree, _dialogueController, HandleDialogueFinished);
+        }
+
+        private void HandleDialogueSubtitle(SubtitlesRequestInfo request)
+        {
+            if (!_dialogueRunning || request?.statement == null)
+            {
+                return;
+            }
+
+            SetPhase(_dialogueStep == PhotoPrologueStep.MotherDialogue
+                ? Loc.Get(LocalizationTables.Photo, "production.mother.phase", "КОМНАТА • МАТЬ В ДВЕРНОМ ПРОЁМЕ")
+                : Loc.Get(LocalizationTables.Photo, "production.border.phase", "ПАСПОРТНЫЙ КОНТРОЛЬ"));
+            SetSpeaker(_dialogueStep == PhotoPrologueStep.MotherDialogue
+                ? Loc.Get(LocalizationTables.Photo, "production.mother.speaker", "МАТЬ")
+                : Loc.Get(LocalizationTables.Photo, "production.border.officer", "ПОГРАНИЧНИК"));
+            SetContent(LocalizeDialogueStatement(request.statement));
+            SetStatus(Loc.Get(LocalizationTables.Photo, "production.dialogue.nodecanvas", "Dialogue Tree • NodeCanvas"));
+            ClearActions();
+            CreateActionButton(Loc.Get(LocalizationTables.Photo, "action.next", "ДАЛЕЕ"), () => request.Continue(), true, AccentColor);
+        }
+
+        private void HandleDialogueChoices(MultipleChoiceRequestInfo request)
+        {
+            if (!_dialogueRunning || request == null)
+            {
+                return;
+            }
+
+            ClearActions();
+            foreach (var option in request.options.OrderBy(pair => pair.Value))
+            {
+                var index = option.Value;
+                var available = IsDialogueChoiceAvailable(_dialogueStep, index);
+                var color = index == 0 ? new Color(0.32f, 0.82f, 0.68f, 1f) : AccentColor;
+                CreateActionButton(LocalizeDialogueStatement(option.Key), () =>
+                {
+                    _dialogueChoiceIndex = index;
+                    request.SelectOption(index);
+                }, available, color);
+            }
+        }
+
+        private void HandleDialogueFinished(bool succeeded)
+        {
+            if (_isShuttingDown)
+            {
+                _dialogueRunning = false;
+                _dialogueChoiceIndex = -1;
+                return;
+            }
+
+            var step = _dialogueStep;
+            var choice = _dialogueChoiceIndex;
+            _dialogueRunning = false;
+            _dialogueChoiceIndex = -1;
+
+            if (!succeeded || choice < 0)
+            {
+                if (step == PhotoPrologueStep.MotherDialogue) RenderMotherDialogue();
+                else RenderBorderControl();
+                return;
+            }
+
+            if (step == PhotoPrologueStep.MotherDialogue)
+            {
+                ChooseMotherReply(choice == 0 ? PhotoMotherReply.Honest : PhotoMotherReply.ProtectiveLie);
+                return;
+            }
+
+            ChooseBorderReply(choice == 0 ? PhotoBorderReply.Honest : PhotoBorderReply.Recognition);
+        }
+
+        private bool IsDialogueChoiceAvailable(PhotoPrologueStep step, int index)
+        {
+            if (step == PhotoPrologueStep.MotherDialogue)
+            {
+                return index != 0 || _saveData.prologue.honesty >= 20;
+            }
+
+            var reply = index == 0 ? PhotoBorderReply.Honest : PhotoBorderReply.Recognition;
+            return PhotoPrologueRules.IsBorderReplyAvailable(_saveData.prologue, reply);
+        }
+
+        private static string LocalizeDialogueStatement(NodeCanvas.DialogueTrees.IStatement statement)
+        {
+            var key = statement.text;
+            return string.IsNullOrWhiteSpace(key)
+                ? string.Empty
+                : Loc.Get(LocalizationTables.Photo, key, key);
+        }
+
+        private void UpdateAmbience(PhotoPrologueStep step)
+        {
+            var target = step >= PhotoPrologueStep.AirportPhoto ? airportAmbienceCue : roomAmbienceCue;
+            if (target == null)
+            {
+                return;
+            }
+
+            StopAmbience();
+            _ambienceHandle = AudioService.Instance?.Play(target) ?? default;
+        }
+
+        private void StopAmbience()
+        {
+            if (_ambienceHandle.IsValid)
+            {
+                AudioService.Instance?.Stop(_ambienceHandle, 0.25f);
+                _ambienceHandle = default;
+            }
+        }
+
+        private static void PlayCue(AudioCue cue)
+        {
+            if (cue != null)
+            {
+                AudioService.Instance?.Play(cue);
             }
         }
 

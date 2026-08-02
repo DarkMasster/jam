@@ -133,6 +133,7 @@ GameObject:
   - component: {fileID: 903484228}
   - component: {fileID: 903484232}
   - component: {fileID: 903484233}
+  - component: {fileID: 903484234}
   m_Layer: 0
   m_Name: PhotoWhiteboxRoot
   m_TagString: Untagged
@@ -152,6 +153,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6f9ad0d190298304ab36184fca9837ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Jam.Episodes.Photo.PhotoWhiteboxController
+  motherDialogue: {fileID: 11400000, guid: fa8e33d8f36fbb04381ee3c046a560f2, type: 2}
+  borderDialogue: {fileID: 11400000, guid: 87199f64daa11ba40a5061c57faa97e8, type: 2}
+  roomAmbienceCue: {fileID: 11400000, guid: bc618adb4b56812479478374971cde8e, type: 2}
+  airportAmbienceCue: {fileID: 11400000, guid: e5fb8844fbdcfca4fa26581ae3d0f256, type: 2}
+  shutterCue: {fileID: 11400000, guid: 5134b86548b8aed49b622888810d35db, type: 2}
+  doorCue: {fileID: 11400000, guid: c72da232b9f578c46962859fb67c0c36, type: 2}
+  passportStampCue: {fileID: 11400000, guid: e97df306b4ef3c242b9fcc26dd5e8c8d, type: 2}
 --- !u!114 &903484229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -272,6 +280,35 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Jam.Core.Cutscenes.UiStoryboardPresentation
   cutsceneId: photo.prologue.to_be_continued
   sequence: {fileID: 11400000, guid: eb685344941bd724c909250be3ac3af1, type: 2}
+--- !u!114 &903484234
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 903484227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c32e4b851ebd8fa4ea0645b99be1cf97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: NodeCanvas::NodeCanvas.DialogueTrees.DialogueTreeController
+  _serializedExposedParameters: []
+  _boundGraphSerialization: '{"type":"NodeCanvas.DialogueTrees.DialogueTree","nodes":[],"connections":[],"canvasGroups":[],"localBlackboard":{"_variables":{}},"derivedData":{"actorParameters":[],"$type":"NodeCanvas.DialogueTrees.DialogueTree+DerivedSerializationData"}}'
+  _boundGraphObjectReferences: []
+  _boundGraphSource:
+    _version: 3.42
+    _category: 
+    _comments: 
+    _translation: {x: 0, y: 0}
+    _zoomFactor: 1
+  _firstActivation: 0
+  _enableAction: 1
+  _disableAction: 2
+  _lockBoundGraphPrefabOverrides: 1
+  _preInitializeSubGraphs: 0
+  _updateMode: 0
+  _graph: {fileID: 0}
+  _blackboard: {fileID: 903484230}
 --- !u!1 &1078604462
 GameObject:
   m_ObjectHideFlags: 0
