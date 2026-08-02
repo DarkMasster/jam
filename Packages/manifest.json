@@ -2,6 +2,7 @@
   "dependencies": {
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#a4c2d0a8457340c9db2226ff9cd9470e48f8a409",
     "com.unity.ai.navigation": "2.0.14",
+    "com.unity.cinemachine": "3.1.7",
     "com.unity.collab-proxy": "2.13.3",
     "com.unity.ide.rider": "3.0.38",
     "com.unity.ide.visualstudio": "2.0.26",

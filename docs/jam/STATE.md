@@ -6,6 +6,22 @@
 Последний проверенный билд: отсутствует
 Последняя проверенная веб-демка: [office](../../web-demos/office/) — 2026-08-01
 
+## Photo PolygonOffice room vertical slice
+
+- `Prologue_Photo` contains a project-owned `PhotoRoomDiorama` wrapper built from read-only PolygonOffice prefabs.
+- `RoomSecret`, `RoomPhoto` and `MotherDialogue` use separate authored Cinemachine cameras rendered into the existing TMP stage through a runtime RenderTexture.
+- Cinemachine 3.1.7 owns three room virtual cameras and one portrait virtual camera. Two channel-isolated CinemachineBrains drive the room and portrait RenderTexture output cameras.
+- Existing `PhotoPrologueRules`, checkpoints, AudioCue and NodeCanvas Dialogue Trees remain authoritative and unchanged.
+- No characters are rendered in the 3D room diorama. A separate off-stage 3D portrait rig renders a head-and-shoulders view of the current speaker on a dark background at the left of the lower dialogue panel.
+- Heroine and mother have separate Cinemachine portrait cameras and warm/cool key-fill lighting setups, allowing independent framing without moving the room camera or sharing actor transforms.
+- Project-owned `PhotoPortraitPose` applies lightweight static humanoid poses in `LateUpdate`, removing the visible T-pose without adding Animator Controllers. Room camera transitions use a 0.2-second Cinemachine EaseInOut; portrait speaker changes remain cuts.
+- A second project-owned entrance diorama now covers `MailboxHunt`, `MailboxPublication` and `MailboxReaction`, using custom mailbox, marked summons and butterfly props plus three dedicated Cinemachine shots.
+- A third project-owned airport diorama covers `AirportPhoto`, `BorderControl` and `Summary`: terminal seating and board, glass passport booth, stamped passport, three Cinemachine shots and a separate security-officer portrait RenderTexture. No characters are placed inside the stage diorama.
+- A manual UI smoke run passed the complete Photo Prologue route from `Main` and returned to `CharacterSelect`. A separate pause-menu save at `photo.explore` restored the exact `RoomPhoto` step through `Main -> Continue`.
+- Photo smoke testing still logs intermittent `referenced script (Unknown) ... missing` during scene transitions despite no null component in a live loaded-scene scan; URP also reports additional-light shadow-atlas downscaling. Neither issue blocked the tested route, but both need a focused cleanup pass before final build.
+- `Jam/Photo/Create Polygon Room Diorama` deterministically rebuilds the wrapper prefab and scene instance without modifying `Assets/PolygonOffice/**`.
+- Unity 6000.5.3f1 compiled without errors; scene validation reported 0 missing scripts and 0 broken prefabs. Final portrait framing and poses are still pending.
+
 ## Сейчас
 
 - Unity 6000.5.3f1 проект существует и использует URP 17.5.0.

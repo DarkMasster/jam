@@ -45,6 +45,8 @@
 | P1 | Провести три коротких build review | TBD | `feature/build-review` | Todo | 12/24/42 |
 | P1 | Подготовить страницу, описание и скриншоты | TBD | `feature/submission` | Todo | Час 46 |
 | P2 | Дополнительный контент | TBD | TBD | Todo | Только после P0 |
+| P1 | Photo: PolygonOffice room/entrance/airport dioramas and authored camera shots | AI / Photo team | `feature/photo-polygon-room` | Done | Готово |
+| P1 | Photo: locate missing-script transition log and reduce diorama shadow-atlas pressure | AI / Photo team | `fix/photo-scene-warnings` | Todo | Before final build |
 
 ## WIP-лимит
 
