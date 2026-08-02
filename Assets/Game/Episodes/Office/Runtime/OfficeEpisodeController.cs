@@ -420,7 +420,7 @@ namespace Jam.Episodes.Office
             }
         }
 
-        private static string LocalizeRuntimeName(string value)
+        internal static string LocalizeRuntimeName(string value)
         {
             return value switch
             {

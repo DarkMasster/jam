@@ -91,7 +91,7 @@ namespace Jam.Episodes.Office
 
             momentum?.AddBreak();
             episodeController?.RegisterBreakableDestroyed(displayName);
-            OfficeFeedback.Instance?.ReportBreak(transform.position);
+            OfficeFeedback.Instance?.ReportDestroyed(transform.position);
             return true;
         }
 

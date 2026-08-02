@@ -140,6 +140,7 @@ namespace Jam.Episodes.Office
             _heldItem = item;
             item.Attach(handAnchor);
             episodeController?.ReportCarryPickup(item.DisplayName);
+            OfficeFeedback.Instance?.ReportPickup(transform, item.DisplayName);
         }
 
         private void ThrowHeldItem()

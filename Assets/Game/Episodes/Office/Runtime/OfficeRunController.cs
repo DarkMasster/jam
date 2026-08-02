@@ -105,7 +105,7 @@ namespace Jam.Episodes.Office
 
             if (player != null)
             {
-                OfficeFeedback.Instance?.ReportPlayerHit(player.position);
+                OfficeFeedback.Instance?.ReportPlayerHit(player);
             }
 
             if (Integrity > 0)

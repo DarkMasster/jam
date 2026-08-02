@@ -430,6 +430,22 @@ MonoBehaviour:
     m_Localized: Saving is unavailable right now.
     m_Metadata:
       m_Items: []
+  - m_Id: 262876127289344
+    m_Localized: BROKEN
+    m_Metadata:
+      m_Items: []
+  - m_Id: 262876139872256
+    m_Localized: LAPTOP
+    m_Metadata:
+      m_Items: []
+  - m_Id: 262876139872257
+    m_Localized: MUG
+    m_Metadata:
+      m_Items: []
+  - m_Id: 262876139872258
+    m_Localized: PERSONAL ITEMS COLLECTED
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
