@@ -89,16 +89,20 @@ namespace Jam.Episodes.Photo
         private TMP_Text _contentText;
         private TMP_Text _statusText;
         private RectTransform _actionsRoot;
+        private RectTransform _actionsPanelRect;
         private RectTransform _contentRect;
         private LayoutElement _stageLayout;
         private LayoutElement _actionsLayout;
         private GridLayoutGroup _actionsGrid;
         private GameObject _viewfinderOverlay;
         private GameObject _dialoguePortrait;
+        private RawImage _dialoguePortraitImage;
         private RectTransform _honestyFill;
         private RectTransform _recognitionFill;
         private TMP_Text _honestyLabel;
         private TMP_Text _recognitionLabel;
+        private PhotoRoomDioramaPresenter _roomDiorama;
+        private RawImage _roomDioramaImage;
         private float _actionButtonHeight = 64f;
         private PhotoWhiteboxPhase _phase;
         private PhotoChoice _choice;
@@ -124,6 +128,7 @@ namespace Jam.Episodes.Photo
             _fsmOwner = GetComponent<FSMOwner>();
             _blackboard = GetComponent<Blackboard>();
             _dialogueController = GetComponent<DialogueTreeController>();
+            _roomDiorama = FindFirstObjectByType<PhotoRoomDioramaPresenter>();
             EnsureEventSystem();
             BuildInterface();
         }
@@ -219,6 +224,7 @@ namespace Jam.Episodes.Photo
 
         private void EnterPhase(PhotoWhiteboxPhase phase, bool save)
         {
+            SetRoomDioramaVisible(false);
             _phase = phase;
             SyncNodeCanvas();
 
@@ -374,6 +380,7 @@ namespace Jam.Episodes.Photo
             }
 
             UpdateAmbience(step);
+            SetRoomDioramaVisible(_roomDiorama != null && _roomDiorama.Present(step));
             RenderProductionStep();
         }
 
@@ -1082,6 +1089,14 @@ namespace Jam.Episodes.Photo
             var stage = CreateImage("Stage", panel.rectTransform, StageColor);
             _stageLayout = stage.gameObject.AddComponent<LayoutElement>();
             _stageLayout.preferredHeight = 480f;
+            var roomImageObject = new GameObject("RoomDiorama", typeof(RectTransform), typeof(RawImage));
+            roomImageObject.transform.SetParent(stage.rectTransform, false);
+            _roomDioramaImage = roomImageObject.GetComponent<RawImage>();
+            _roomDioramaImage.texture = _roomDiorama != null ? _roomDiorama.OutputTexture : null;
+            _roomDioramaImage.color = Color.white;
+            _roomDioramaImage.raycastTarget = false;
+            Stretch(_roomDioramaImage.rectTransform);
+            _roomDioramaImage.gameObject.SetActive(false);
             CreateStageDecorations(stage.rectTransform);
             _contentText = CreateText("Content", stage.rectTransform, string.Empty, 28, FontStyles.Normal, TextColor);
             _contentRect = _contentText.rectTransform;
@@ -1089,22 +1104,52 @@ namespace Jam.Episodes.Photo
 
             _statusText = CreateLabel("Status", panel.rectTransform, string.Empty, 17, FontStyles.Normal, MutedTextColor, 32f);
 
-            var actions = new GameObject("DecisionBand", typeof(RectTransform), typeof(Image), typeof(GridLayoutGroup), typeof(LayoutElement));
+            var actions = new GameObject("DecisionBand", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
             actions.transform.SetParent(panel.rectTransform, false);
             actions.GetComponent<Image>().color = new Color(0.28f, 0.02f, 0.15f, 0.82f);
             _actionsLayout = actions.GetComponent<LayoutElement>();
             _actionsLayout.preferredHeight = 240f;
-            _actionsGrid = actions.GetComponent<GridLayoutGroup>();
+            _actionsPanelRect = actions.GetComponent<RectTransform>();
+
+            _dialoguePortrait = new GameObject("RenderedPortrait", typeof(RectTransform), typeof(RawImage));
+            _dialoguePortrait.transform.SetParent(_actionsPanelRect, false);
+            var portraitRect = _dialoguePortrait.GetComponent<RectTransform>();
+            SetAnchoredRect(portraitRect, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(132f, 0f), new Vector2(190f, 190f));
+            _dialoguePortraitImage = _dialoguePortrait.GetComponent<RawImage>();
+            _dialoguePortraitImage.color = Color.white;
+            _dialoguePortraitImage.raycastTarget = false;
+            _dialoguePortraitImage.texture = _roomDiorama != null ? _roomDiorama.PortraitTexture : null;
+
+            var decisions = new GameObject("Choices", typeof(RectTransform), typeof(GridLayoutGroup));
+            decisions.transform.SetParent(_actionsPanelRect, false);
+            _actionsRoot = decisions.GetComponent<RectTransform>();
+            Stretch(_actionsRoot, new Vector2(24f, 20f), new Vector2(-24f, -20f));
+            _actionsGrid = decisions.GetComponent<GridLayoutGroup>();
             _actionsGrid.padding = new RectOffset(24, 24, 20, 20);
             _actionsGrid.spacing = new Vector2(18f, 14f);
             _actionsGrid.startAxis = GridLayoutGroup.Axis.Horizontal;
             _actionsGrid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             _actionsGrid.constraintCount = 1;
             _actionsGrid.cellSize = new Vector2(1596f, 64f);
-            _actionsRoot = actions.GetComponent<RectTransform>();
 
             CreateLabel("Footer", panel.rectTransform, "REFLECTION / MOMENTUM  •  PHOTO", 13, FontStyles.Normal, MutedTextColor, 20f);
             ApplyPresentationLayout(PresentationLayout.Dialogue);
+        }
+
+        private void SetRoomDioramaVisible(bool visible)
+        {
+            if (_roomDioramaImage != null)
+            {
+                _roomDioramaImage.texture = _roomDiorama != null ? _roomDiorama.OutputTexture : null;
+                _roomDioramaImage.gameObject.SetActive(visible && _roomDioramaImage.texture != null);
+            }
+
+            if (_dialoguePortraitImage != null)
+            {
+                _dialoguePortraitImage.texture = visible && _roomDiorama != null ? _roomDiorama.PortraitTexture : null;
+            }
+
+            if (!visible) _roomDiorama?.Hide();
         }
 
         private void CreateScaleRibbon(RectTransform parent)
@@ -1148,13 +1193,6 @@ namespace Jam.Episodes.Photo
             var shutter = CreateText("Shutter", _viewfinderOverlay.GetComponent<RectTransform>(), "O", 72, FontStyles.Bold, TextColor);
             SetAnchoredRect(shutter.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-70f, 0f), new Vector2(100f, 100f));
 
-            _dialoguePortrait = new GameObject("AnimatedPortrait", typeof(RectTransform), typeof(Image));
-            _dialoguePortrait.transform.SetParent(stage, false);
-            var portraitRect = _dialoguePortrait.GetComponent<RectTransform>();
-            SetAnchoredRect(portraitRect, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(170f, 0f), new Vector2(250f, 320f));
-            _dialoguePortrait.GetComponent<Image>().color = new Color(0.055f, 0.06f, 0.08f, 1f);
-            var portraitLabel = CreateText("PortraitLabel", portraitRect, string.Empty, 96, FontStyles.Normal, new Color(0.72f, 0.75f, 0.52f, 1f));
-            Stretch(portraitLabel.rectTransform, new Vector2(16f, 16f), new Vector2(-16f, -16f));
         }
 
         private static void CreateGuideLine(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 size)
@@ -1174,12 +1212,17 @@ namespace Jam.Episodes.Photo
 
             _viewfinderOverlay?.SetActive(viewfinder);
             _dialoguePortrait?.SetActive(dialogue);
+            if (_actionsRoot != null)
+            {
+                _actionsRoot.offsetMin = new Vector2(dialogue ? 250f : 24f, 20f);
+                _actionsRoot.offsetMax = new Vector2(-24f, -20f);
+            }
             _actionsGrid.constraintCount = matrix ? 3 : viewfinder ? 2 : 1;
             _actionsGrid.cellSize = matrix
                 ? new Vector2(510f, 300f)
                 : viewfinder
                     ? new Vector2(790f, 76f)
-                    : new Vector2(1596f, presentation == PresentationLayout.Summary ? 64f : 58f);
+                    : new Vector2(dialogue ? 1370f : 1596f, presentation == PresentationLayout.Summary ? 64f : 58f);
             _stageLayout.preferredHeight = matrix ? 250f : viewfinder ? 520f : 450f;
             _actionsLayout.preferredHeight = matrix ? 340f : viewfinder ? 210f : presentation == PresentationLayout.Summary ? 110f : 240f;
             _actionButtonHeight = matrix ? 300f : viewfinder ? 76f : 64f;
