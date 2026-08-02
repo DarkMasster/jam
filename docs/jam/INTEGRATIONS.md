@@ -11,10 +11,36 @@
 |---|---:|---|---|
 | NodeCanvas | 3.42 | `Assets/ParadoxNotion/NodeCanvas`, `Assets/ParadoxNotion/CanvasCore` | `NodeCanvas`, `ParadoxNotion` |
 | Damage Numbers Pro | 4.55 | `Assets/DamageNumbersPro` | `DamageNumbersPro` |
+| Synty POLYGON Office | source snapshot `6034246` | `Assets/PolygonOffice` | content-only |
 | Unity Localization | 1.5.12 | `Packages/com.unity.localization` | `Unity.Localization` |
 | TextMeshPro | UGUI 2.5.0 | `Assets/TextMesh Pro`, package UGUI | `Unity.TextMeshPro` |
 
 Версии подтверждены по установленным исходникам, а перечисленные ниже типы и методы — через reflection загруженных Unity-сборок.
+
+`POLYGON Office` импортирован из `eyetengu/2024_March_Office` с сохранением
+исходных `.meta`. В проект перенесён только vendor-каталог `Assets/PolygonOffice`;
+сцены и настройки вне этого каталога, внешний demo-код и остальные наборы не
+импортированы. Вложенные vendor sample-сцены сохранены как часть неизменённого
+snapshot, но не являются зависимостями игры. Каталог считается read-only,
+production-prefab'ы должны ссылаться на него из project-owned каталогов.
+
+### POLYGON Office: структура и паттерн внедрения
+
+- Unity 6000.5.6f1 распознаёт в каталоге 808 prefab'ов без ошибок импорта.
+- Основные группы: `Buildings`, `Characters`, `Props`; для текущего эпизода нужны
+  прежде всего модульная архитектура, Furniture, Desk Props, Misc, Roof Props и
+  Wall Props. Персонажи из пака в офисный бой не добавляются.
+- Существующие project-owned prefab'ы остаются владельцами gameplay-компонентов,
+  Rigidbody, collider, trigger, pickup/break/reset-состояний и точек привязки.
+- Synty-prefab подключается внутрь них как visual child. Прямая замена корневого
+  prefab'а vendor-объектом запрещена: она сделает игровой контракт зависимым от
+  структуры стороннего ассета.
+- Для стен и пола сохраняются текущие непрерывные greybox-коллайдеры, а модульная
+  геометрия Synty становится presentation-слоем. Это защищает ширину проходов,
+  line of sight, броски и арену босса.
+- Материалы vendor-каталога не перекрашиваются на месте. Если потребуется особая
+  nightmare-палитра, создаются project-owned material variants или Material
+  Property Block в `Assets/Game/Episodes/Office/**`.
 
 ## Общие правила vendor-ассетов
 
