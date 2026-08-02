@@ -147,6 +147,10 @@
   с retries, ноутбуком, кружкой и разрушенной техникой, а возврат восстанавливает
   checkpoint офиса на `Prologue_Office`, поэтому повторный выбор героя снова
   начинает забег с `Setup`.
+- Проверен отдельный путь возврата: из Office общий HUD открывает `Main` и
+  сохраняет Continue на `Prologue_Office`; из `HotelArrival` две явные кнопки
+  ведут в `CharacterSelect` или `Main`, причём Continue после Main указывает на
+  `CharacterSelect`, а runtime-only результат прибытия очищается.
 - Ручное сохранение работает и в офисе: общий pause-overlay сохраняет забег через
   `OfficeStoryDirector`, но только пока забег действительно идёт.
 - Базовая гибридная система катсцен включает persistent `CutsceneDirector`,
