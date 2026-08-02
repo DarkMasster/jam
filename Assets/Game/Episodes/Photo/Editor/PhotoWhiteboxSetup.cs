@@ -17,6 +17,8 @@ namespace Jam.Episodes.Photo.Editor
         private const string CutsceneFolder = "Assets/Game/Episodes/Photo/Cutscenes";
         private const string IntroCutscenePath = CutsceneFolder + "/PhotoIntroStoryboard.asset";
         private const string IntroCutsceneId = "photo.prologue.intro";
+        private const string OutroCutscenePath = CutsceneFolder + "/PhotoOutroStoryboard.asset";
+        private const string OutroCutsceneId = "photo.prologue.to_be_continued";
         private const string ScenePath = "Assets/Game/Scenes/Prologue_Photo.unity";
 
         private static readonly (string speaker, string text)[] IntroFrames =
@@ -25,6 +27,12 @@ namespace Jam.Episodes.Photo.Editor
             ("РЕДАКТОР", "Агентство закрывает российский офис. Проекты остановлены. Команда распущена."),
             ("ТЕЛЕФОН", "Forbidgram недоступен. Клиенты молчат. В телефоне остаются архив, незакрытые счета и билет в один конец."),
             ("ОНА", "Перед отъездом нужен ещё один кадр — достаточно честный, чтобы не предать себя, и достаточно заметный, чтобы оплатить дорогу.")
+        };
+
+        private static readonly (string speaker, string text)[] OutroFrames =
+        {
+            ("ДУБАЙ", "Дверь транзитного номера закрывается. Впервые за день уведомления молчат."),
+            ("ОТРАЖЕНИЕ / ИМПУЛЬС", "ПРОДОЛЖЕНИЕ СЛЕДУЕТ")
         };
 
         private static readonly string[] PhaseNames =
@@ -47,6 +55,7 @@ namespace Jam.Episodes.Photo.Editor
             EnsureFolder(CutsceneFolder);
 
             var introCutscene = EnsureIntroCutsceneAsset();
+            var outroCutscene = EnsureOutroCutsceneAsset();
 
             var graph = AssetDatabase.LoadAssetAtPath<FSM>(GraphPath);
             if (graph == null)
@@ -82,6 +91,7 @@ namespace Jam.Episodes.Photo.Editor
                 owner.enableAction = GraphOwner.EnableAction.EnableBehaviour;
                 root.AddComponent<PhotoWhiteboxController>();
                 ConfigureIntroPresentation(root, introCutscene);
+                ConfigureOutroPresentation(root, outroCutscene);
 
                 EditorSceneManager.MarkSceneDirty(scene);
                 EditorSceneManager.SaveScene(scene, ScenePath);
@@ -93,6 +103,7 @@ namespace Jam.Episodes.Photo.Editor
                 var root = GameObject.Find("PhotoWhiteboxRoot");
                 blackboard = root != null ? root.GetComponent<Blackboard>() : null;
                 ConfigureIntroPresentation(root, introCutscene);
+                ConfigureOutroPresentation(root, outroCutscene);
             }
 
             EnsureBlackboardVariables(blackboard);
@@ -172,6 +183,36 @@ namespace Jam.Episodes.Photo.Editor
             return asset;
         }
 
+        private static StoryboardCutsceneAsset EnsureOutroCutsceneAsset()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<StoryboardCutsceneAsset>(OutroCutscenePath);
+            if (asset == null)
+            {
+                asset = ScriptableObject.CreateInstance<StoryboardCutsceneAsset>();
+                asset.name = "PhotoOutroStoryboard";
+                AssetDatabase.CreateAsset(asset, OutroCutscenePath);
+            }
+
+            var serialized = new SerializedObject(asset);
+            serialized.FindProperty("skippable").boolValue = true;
+            var frames = serialized.FindProperty("frames");
+            frames.arraySize = OutroFrames.Length;
+            for (var index = 0; index < OutroFrames.Length; index++)
+            {
+                var frame = frames.GetArrayElementAtIndex(index);
+                frame.FindPropertyRelative("localizationTable").stringValue = "Photo";
+                frame.FindPropertyRelative("speakerKey").stringValue = $"production.outro.{index + 1:000}.speaker";
+                frame.FindPropertyRelative("textKey").stringValue = $"production.outro.{index + 1:000}.text";
+                frame.FindPropertyRelative("speaker").stringValue = OutroFrames[index].speaker;
+                frame.FindPropertyRelative("text").stringValue = OutroFrames[index].text;
+                frame.FindPropertyRelative("autoAdvanceSeconds").floatValue = 0f;
+            }
+
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
         private static void ConfigureIntroPresentation(GameObject root, StoryboardCutsceneAsset sequence)
         {
             if (root == null)
@@ -180,7 +221,8 @@ namespace Jam.Episodes.Photo.Editor
                 return;
             }
 
-            var presentation = root.GetComponent<UiStoryboardPresentation>();
+            var presentation = root.GetComponents<UiStoryboardPresentation>()
+                .FirstOrDefault(candidate => candidate.CutsceneId == IntroCutsceneId);
             if (presentation == null)
             {
                 presentation = root.AddComponent<UiStoryboardPresentation>();
@@ -188,6 +230,28 @@ namespace Jam.Episodes.Photo.Editor
 
             var serialized = new SerializedObject(presentation);
             serialized.FindProperty("cutsceneId").stringValue = IntroCutsceneId;
+            serialized.FindProperty("sequence").objectReferenceValue = sequence;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(presentation);
+        }
+
+        private static void ConfigureOutroPresentation(GameObject root, StoryboardCutsceneAsset sequence)
+        {
+            if (root == null)
+            {
+                Debug.LogError("PhotoWhiteboxRoot is missing; outro cutscene cannot be configured.");
+                return;
+            }
+
+            var presentation = root.GetComponents<UiStoryboardPresentation>()
+                .FirstOrDefault(candidate => candidate.CutsceneId == OutroCutsceneId);
+            if (presentation == null)
+            {
+                presentation = root.AddComponent<UiStoryboardPresentation>();
+            }
+
+            var serialized = new SerializedObject(presentation);
+            serialized.FindProperty("cutsceneId").stringValue = OutroCutsceneId;
             serialized.FindProperty("sequence").objectReferenceValue = sequence;
             serialized.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(presentation);

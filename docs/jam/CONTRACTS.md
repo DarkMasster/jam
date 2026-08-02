@@ -78,6 +78,10 @@
 - `GameFlowService.FinishArrivalToMainMenu(result)` выполняет ту же финализацию,
   но открывает `Main`. Сохранённой Continue-сценой остаётся `CharacterSelect`,
   потому что runtime-only `PendingResult` нельзя восстановить после перезапуска.
+- `GameFlowService.CompleteEpisodeAndReturnToCharacterSelect(EpisodeResult)`
+  применяется эпизодом, который уже показал собственную arrival/outro-катсцену:
+  сохраняет checkpoint, закрывает активную линию и загружает `CharacterSelect`,
+  не создавая runtime-only `PendingResult`.
 - Эпизод не загружает напрямую ни сцену другого эпизода, ни `HotelArrival`, ни
   главное меню. Он отдаёт один `EpisodeResult` и не знает имени сцены прибытия.
 - `PendingResult` переносит результат через загрузку сцены; `IsSceneInBuild`
@@ -141,9 +145,10 @@
   возвращает игрока к устойчивой границе до или после короткой катсцены.
 - Стабильный ID вступления героини — `photo.prologue.intro`; границы сохранения:
   до показа — `photo.intro`, после `Completed` или `Skipped` — `photo.explore`.
-- `Prologue_Photo` содержит ровно один `UiStoryboardPresentation` для этого ID;
-  его данные принадлежат `PhotoIntroStoryboard.asset`, а контроллер только
-  применяет результат к FSM и checkpoint.
+- `Prologue_Photo` содержит отдельные `UiStoryboardPresentation` для вступления
+  `photo.prologue.intro` и финала `photo.prologue.to_be_continued`; данные принадлежат
+  соответствующим storyboard-ассетам, а контроллер только применяет результат к
+  FSM, checkpoint и общему flow.
 
 ## Ввод
 
@@ -229,6 +234,19 @@
   без payload; завершение всей линии происходит только после Photo-финала.
 - До реализации production-компонентов white-box контроллер временно владеет
   Photo-state и UI, но сохраняет те же checkpoint ID и JSON payload схемы `2`.
+- Production-срез использует payload схемы `3`: `PhotoPrologueStep`, шкалы
+  `honesty/recognition` со стартом `20/20`, выборы трёх сцен и авторитетный
+  `PhotoProloguePath`. Числовой порог не определяет доступность пограничных реплик.
+- `PhotoProloguePath.Honesty` открывает только честную реплику,
+  `Recognition` — только защитную, `Balance` — обе. Это правило принадлежит
+  `PhotoPrologueRules`, а не NodeCanvas или UI.
+- Checkpoint ID остаются `photo.intro`, `photo.explore`, `photo.camera`,
+  `photo.published`, `photo.arrival`; шаг внутри сцены хранится в episode payload.
+- `photo.arrival` запускает storyboard `photo.prologue.to_be_continued`. После его
+  завершения или пропуска Photo передаёт один `EpisodeResult` методу
+  `CompleteEpisodeAndReturnToCharacterSelect`; имя целевой сцены остаётся в Core.
+- Численные значения `honesty/recognition` показываются только на обучающем экране
+  первого снимка; далее UI использует качественные формулировки и итоговый путь.
 - `PhotoCharacterSaveData` хранит всю линию героини по актам: `prologue`,
   `mainAct`, `finale`; Core продолжает считать payload непрозрачным.
 - `PhotoCheckpointAdapter` единолично сериализует, проверяет инварианты и
