@@ -70,4 +70,4 @@ AudioMixer asset, поэтому runtime обязан иметь рабочий 
   Play Mode smoke подтвердил один сервис, cue/handle, cooldown/concurrency,
   music/voice, round-trip громкости и цепочку
   `Default -> Cutscene -> Paused -> Cutscene -> Default`; EditMode tests `1/1`.
-- Последний commit: `не выполнялся`
+- Последний commit реализации: `ee6d1bf`
