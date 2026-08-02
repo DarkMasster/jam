@@ -446,6 +446,34 @@ MonoBehaviour:
     m_Localized: PERSONAL ITEMS COLLECTED
     m_Metadata:
       m_Items: []
+  - m_Id: 329133199450112
+    m_Localized: MONITOR
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615936
+    m_Localized: SERVER RACK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615937
+    m_Localized: DESK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615938
+    m_Localized: CABINET
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615939
+    m_Localized: RECEPTION DESK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615940
+    m_Localized: MEETING ROOM GLASS
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615941
+    m_Localized: "DESTROYED: {0} \u2022 MOMENTUM RISING"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

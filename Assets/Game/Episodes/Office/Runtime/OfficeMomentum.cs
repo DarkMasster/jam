@@ -59,6 +59,17 @@ namespace Jam.Episodes.Office
             Value = Mathf.Clamp01(Value + breakGain);
         }
 
+        /// <summary>
+        /// Разрушение с собственным вкладом объекта. Общая константа рассчитана на
+        /// четыре принтера: на всех разрушаемых объектах маршрута шкала заполнялась
+        /// бы с первых секунд и перестала быть ресурсом темпа. Неположительный
+        /// <paramref name="gain"/> означает «взять значение по умолчанию».
+        /// </summary>
+        public void AddBreak(float gain)
+        {
+            Value = Mathf.Clamp01(Value + (gain > 0f ? gain : breakGain));
+        }
+
         public void AddEnemyDefeated()
         {
             Value = Mathf.Clamp01(Value + enemyGain);

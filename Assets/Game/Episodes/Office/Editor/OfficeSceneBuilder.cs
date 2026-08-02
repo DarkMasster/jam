@@ -20,6 +20,8 @@ namespace Jam.Episodes.Office.Editor
 {
     public static class OfficeSceneBuilder
     {
+        private static readonly System.Collections.Generic.Dictionary<string, GameObject> RebuiltPrefabs = new();
+
         private const string ScenePath = "Assets/Game/Scenes/Prologue_Office.unity";
         private const string ArtPath = "Assets/Game/Episodes/Office/Art";
         private const string MaterialPath = ArtPath + "/Materials";
@@ -36,9 +38,24 @@ namespace Jam.Episodes.Office.Editor
         private const string SetupCutsceneId = "office.prologue.setup";
         private const string AwakeningCutsceneId = "office.prologue.awakening";
 
+        // Разрушаемость `M8`. Порог удара растёт с массой объекта, вклад в Momentum —
+        // наоборот: общая константа `0.26` рассчитана на четыре принтера и на 36 целях
+        // заполняла бы шкалу с первых секунд.
+        private const float MonitorBreakSpeed = 6f;
+        private const float MonitorMomentumGain = 0.08f;
+        private const float DeskBreakSpeed = 9f;
+        private const float FurnitureBreakSpeed = 8f;
+        private const float FurnitureMomentumGain = 0.14f;
+        private const float RackBreakSpeed = 13f;
+        private const float RackMomentumGain = 0.2f;
+        private const float GlassBreakSpeed = 8f;
+        private const float GlassMomentumGain = 0.24f;
+        private const float PrinterBreakSpeed = 10f;
+
         [MenuItem("Jam/Office/Rebuild Prologue Office")]
         public static void Build()
         {
+            RebuiltPrefabs.Clear();
             EnsureFolder(ArtPath);
             EnsureFolder(MaterialPath);
             EnsureFolder(PrefabPath);
@@ -118,6 +135,8 @@ namespace Jam.Episodes.Office.Editor
                 episodeController,
                 momentum,
                 artTargets);
+
+            WireBreakables(sceneRoot, episodeController, momentum);
 
             // Стойки босса создаются позже архитектуры и мебели, поэтому оставшаяся
             // статичная мебель переводится на модели пака уже после них.
@@ -465,7 +484,12 @@ namespace Jam.Episodes.Office.Editor
             CreateCube("Hall Wall Right", new Vector3(12.15f, 1.4f, 9f), new Vector3(0.3f, 2.8f, 66f), p.wall, root);
 
             art.MeetingGlassLeft = CreateCube("Meeting Glass Left", new Vector3(-8.05f, 1.25f, 0.5f), new Vector3(0.18f, 2.5f, 13f), p.glass, root);
-            CreateCube("Meeting Glass Right", new Vector3(8.05f, 1.25f, 0.5f), new Vector3(0.18f, 2.5f, 13f), p.glass, root);
+            var meetingGlassRight = CreateCube("Meeting Glass Right", new Vector3(8.05f, 1.25f, 0.5f), new Vector3(0.18f, 2.5f, 13f), p.glass, root);
+
+            // По решению продюсера разбитое стекло становится проходимым и открывает
+            // короткий путь через переговорную; Reflection beat остаётся на месте.
+            MakeScaledPrimitiveBreakable(art.MeetingGlassLeft, "СТЕКЛО ПЕРЕГОВОРНОЙ", GlassBreakSpeed, GlassMomentumGain, broken => BuildBrokenGlass(p, broken));
+            MakeScaledPrimitiveBreakable(meetingGlassRight, "СТЕКЛО ПЕРЕГОВОРНОЙ", GlassBreakSpeed, GlassMomentumGain, broken => BuildBrokenGlass(p, broken));
             CreateSplitWall("Meeting Entry", -6f, 16f, 3.8f, 2.5f, p.glass, root);
             CreateSplitWall("Meeting Exit", 7f, 16f, 3.8f, 2.5f, p.glass, root);
 
@@ -489,6 +513,8 @@ namespace Jam.Episodes.Office.Editor
             art.StartChair = CreateChair("Start Chair", new Vector3(1.6f, 0f, -31f), 180f, p, root);
             art.StartCabinetLeft = CreateCube("Start Cabinet L", new Vector3(-4.8f, 1f, -31.6f), new Vector3(1.2f, 2f, 1.2f), p.panel, root);
             art.StartCabinetRight = CreateCube("Start Cabinet R", new Vector3(-4.8f, 1f, -27.8f), new Vector3(1.2f, 2f, 1.2f), p.panel, root);
+            MakeScaledPrimitiveBreakable(art.StartCabinetLeft, "ШКАФ", FurnitureBreakSpeed, FurnitureMomentumGain, broken => BuildBrokenCabinet(p, broken));
+            MakeScaledPrimitiveBreakable(art.StartCabinetRight, "ШКАФ", FurnitureBreakSpeed, FurnitureMomentumGain, broken => BuildBrokenCabinet(p, broken));
             art.StartLamp = CreateCube("Warm Desk Lamp", new Vector3(2.6f, 1.25f, -29f), new Vector3(0.25f, 0.55f, 0.25f), p.warm, root, false);
 
             // Под на `z = -15` пришёл из проверочного среза `A1`, два остальных
@@ -802,7 +828,6 @@ namespace Jam.Episodes.Office.Editor
             bossObject.transform.SetParent(parent, false);
             var bossRoot = bossObject.transform;
 
-            var rackPrefab = GetOrCreatePrefab("ServerRack", () => BuildServerRackTemplate(p));
             var rackRoot = CreateGroup("Boss Racks", bossRoot);
             var assemblyRoot = CreateGroup("Assembly Anchors", bossRoot);
             var ringRoot = CreateGroup("Ring Anchors", bossRoot);
@@ -817,7 +842,9 @@ namespace Jam.Episodes.Office.Editor
                 var side = i < rackCount / 2 ? -1f : 1f;
                 var row = i % (rackCount / 2);
                 var source = new Vector3(side * 10.25f, 0f, 28.6f + (row * 2.25f));
-                var rack = InstantiatePrefab(rackPrefab, $"Boss Rack {i + 1:00}", source, rackRoot);
+                // Стойки босса берут неразрушаемый шаблон: ими владеет
+                // `OfficeBossEncounter`, и сломать их до сборки нельзя.
+                var rack = CreateBossRack($"Boss Rack {i + 1:00}", source, p, rackRoot);
                 racks[i] = rack.transform;
                 art.BossRacks.Add(rack);
 
@@ -1250,13 +1277,15 @@ namespace Jam.Episodes.Office.Editor
             collider.center = new Vector3(0f, 0.5f, 0f);
 
             root.GetComponent<OfficeBreakable>()
-                .Configure("ПРИНТЕР", intact.gameObject, broken.gameObject, collider, flash, null);
+                .Configure("ПРИНТЕР", intact.gameObject, broken.gameObject, collider, flash, null, PrinterBreakSpeed);
             return root;
         }
 
         private static GameObject CreateDesk(string name, Vector3 position, Palette p, Transform parent, bool colliders)
         {
-            var prefab = GetOrCreatePrefab(colliders ? "Desk" : "Desk_Background", () => BuildDeskTemplate(p, colliders));
+            // Шаблон пересобирается, а не берётся с диска: слайсы `D1` и `D3` изменили
+            // структуру стола, добавив состояния монитора и столешницы.
+            var prefab = RebuildPrefabOnce(colliders ? "Desk" : "Desk_Background", () => BuildDeskTemplate(p, colliders));
             return InstantiatePrefab(prefab, name, position, parent);
         }
 
@@ -1273,10 +1302,141 @@ namespace Jam.Episodes.Office.Editor
                 }
             }
 
-            var monitor = CreateCube("Monitor", Vector3.zero, new Vector3(1.25f, 0.72f, 0.08f), p.player, t, colliders);
-            monitor.transform.localPosition = new Vector3(0f, 1.35f, 0.15f);
-            CreateCube("Monitor Glow", Vector3.zero, new Vector3(1.08f, 0.54f, 0.025f), p.playerRim, monitor.transform, false).transform.localPosition = new Vector3(0f, 0f, -0.055f);
+            // Монитор стал группой с единичным масштабом: он разрушается отдельно от
+            // стола, поэтому и коллайдер, и visual art-pass должны висеть на объекте,
+            // который не наследует масштаб куба. Габарит и число коллайдеров прежние.
+            var monitor = CreateGroup("Monitor", t);
+            monitor.localPosition = new Vector3(0f, 1.35f, 0.15f);
+            var screen = CreateCube("Screen", Vector3.zero, new Vector3(1.25f, 0.72f, 0.08f), p.player, monitor, false);
+            screen.transform.localPosition = Vector3.zero;
+            CreateCube("Monitor Glow", Vector3.zero, new Vector3(1.08f, 0.54f, 0.025f), p.playerRim, screen.transform, false).transform.localPosition = new Vector3(0f, 0f, -0.055f);
+
+            var monitorBroken = BuildBrokenMonitor(p, monitor);
+            var deskBroken = BuildBrokenDesk(p, t);
+
+            if (!colliders)
+            {
+                // Фоновый ряд стоит за стенами зала: попасть в него броском нельзя,
+                // поэтому он получает ту же структуру, но не становится целью.
+                return root;
+            }
+
+            var monitorCollider = monitor.gameObject.AddComponent<BoxCollider>();
+            monitorCollider.size = new Vector3(1.25f, 0.72f, 0.08f);
+            monitor.gameObject.AddComponent<OfficeBreakable>()
+                .ConfigureVisualState("МОНИТОР", monitor.gameObject, monitorBroken.gameObject, MonitorBreakSpeed, MonitorMomentumGain, false);
+
+            root.AddComponent<OfficeBreakable>()
+                .ConfigureVisualState("РАБОЧИЙ СТОЛ", root, deskBroken.gameObject, DeskBreakSpeed, FurnitureMomentumGain, false);
             return root;
+        }
+
+        private static Transform BuildBrokenMonitor(Palette p, Transform monitor)
+        {
+            var broken = CreateGroup("Broken", monitor);
+            var shell = CreateCube("Cracked Screen", Vector3.zero, new Vector3(1.25f, 0.72f, 0.08f), p.wall, broken, false);
+            shell.transform.SetLocalPositionAndRotation(new Vector3(0.04f, -0.03f, 0f), Quaternion.Euler(0f, 0f, -6f));
+            CreateCube("Crack", Vector3.zero, new Vector3(0.08f, 0.62f, 0.03f), p.shadow, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(-0.1f, -0.02f, -0.055f), Quaternion.Euler(0f, 0f, 18f));
+            CreateCube("Shard", Vector3.zero, new Vector3(0.34f, 0.2f, 0.03f), p.metal, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(0.36f, 0.14f, -0.06f), Quaternion.Euler(0f, 0f, -27f));
+            broken.gameObject.SetActive(false);
+            return broken;
+        }
+
+        private static Transform BuildBrokenDesk(Palette p, Transform desk)
+        {
+            // Broken-состояние остаётся низким и читаемым после отключения коллайдеров:
+            // перекошенная столешница и заранее собранный лёгкий мусор.
+            var broken = CreateGroup("Broken", desk);
+            var top = CreateCube("Buckled Top", Vector3.zero, new Vector3(3.4f, 0.16f, 1.6f), p.wall, broken, false);
+            top.transform.SetLocalPositionAndRotation(new Vector3(0f, 0.86f, 0f), Quaternion.Euler(0f, 0f, 3.5f));
+            CreateCube("Split", Vector3.zero, new Vector3(0.1f, 0.2f, 1.62f), p.shadow, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(0.55f, 0.88f, 0f), Quaternion.Euler(0f, 0f, 3.5f));
+            foreach (var x in new[] { -1.45f, 1.45f })
+            {
+                foreach (var z in new[] { -0.6f, 0.6f })
+                {
+                    CreateCube("Bent Leg", Vector3.zero, new Vector3(0.16f, 0.82f, 0.16f), p.metal, broken, false)
+                        .transform.SetLocalPositionAndRotation(
+                            new Vector3(x, 0.41f, z),
+                            Quaternion.Euler(0f, 0f, x > 0f ? 4f : -4f));
+                }
+            }
+
+            CreateCube("Paper Debris", Vector3.zero, new Vector3(0.62f, 0.03f, 0.5f), p.paper, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(-1.05f, 0.03f, -0.85f), Quaternion.Euler(0f, 28f, 0f));
+            broken.gameObject.SetActive(false);
+            return broken;
+        }
+
+        /// <summary>
+        /// Делает разрушаемым масштабированный примитив. Обломки не могут быть его
+        /// детьми — они унаследовали бы масштаб куба, — поэтому broken-состояние
+        /// встаёт соседом в мировых координатах, как это делает art-pass со своими
+        /// visual. При разрушении runtime отключает коллайдер примитива.
+        /// </summary>
+        private static void MakeScaledPrimitiveBreakable(
+            GameObject greybox,
+            string displayName,
+            float breakSpeed,
+            float momentumGain,
+            System.Action<Transform> buildBroken)
+        {
+            var broken = CreateGroup($"{greybox.name} Broken", greybox.transform.parent);
+            broken.SetPositionAndRotation(greybox.transform.position, greybox.transform.rotation);
+            buildBroken(broken);
+            broken.gameObject.SetActive(false);
+
+            greybox.AddComponent<OfficeBreakable>()
+                .ConfigureVisualState(displayName, greybox, broken.gameObject, breakSpeed, momentumGain, false);
+        }
+
+        private static void BuildBrokenCabinet(Palette p, Transform broken)
+        {
+            var body = CreateCube("Leaning Body", Vector3.zero, new Vector3(1.2f, 2f, 1.2f), p.wall, broken, false);
+            body.transform.SetLocalPositionAndRotation(new Vector3(0.05f, -0.02f, 0f), Quaternion.Euler(0f, 0f, -3.5f));
+            CreateCube("Pulled Drawer", Vector3.zero, new Vector3(1.02f, 0.3f, 0.62f), p.metal, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(0f, 0.18f, -0.62f), Quaternion.Euler(-6f, 0f, -3.5f));
+            CreateCube("Paper Spill", Vector3.zero, new Vector3(0.72f, 0.03f, 0.58f), p.paper, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(-0.15f, -0.98f, -0.92f), Quaternion.Euler(0f, 24f, 0f));
+        }
+
+        private static void BuildBrokenGlass(Palette p, Transform broken)
+        {
+            // Верхняя и нижняя рамы обозначают прежнюю границу стены, а крупный
+            // разрыв между осколками читается как новый проходимый проход.
+            CreateCube("Frame Top", Vector3.zero, new Vector3(0.2f, 0.14f, 13f), p.metal, broken, false)
+                .transform.localPosition = new Vector3(0f, 1.18f, 0f);
+            CreateCube("Frame Bottom", Vector3.zero, new Vector3(0.2f, 0.14f, 13f), p.metal, broken, false)
+                .transform.localPosition = new Vector3(0f, -1.18f, 0f);
+
+            var shardZ = new[] { -5.2f, -2.4f, 0.3f, 3.1f, 5.4f };
+            var shardHeight = new[] { 1.9f, 1.35f, 2.05f, 1.15f, 1.75f };
+            for (var i = 0; i < shardZ.Length; i++)
+            {
+                CreateCube("Jagged Pane", Vector3.zero, new Vector3(0.16f, shardHeight[i], 1.5f), p.glass, broken, false)
+                    .transform.SetLocalPositionAndRotation(
+                        new Vector3(0f, 1.1f - (shardHeight[i] * 0.5f), shardZ[i]),
+                        Quaternion.Euler(0f, 0f, i % 2 == 0 ? 1.5f : -1.5f));
+                CreateCube("Shard Debris", Vector3.zero, new Vector3(0.6f, 0.03f, 0.45f), p.glass, broken, false)
+                    .transform.SetLocalPositionAndRotation(
+                        new Vector3(i % 2 == 0 ? 0.45f : -0.45f, -1.23f, shardZ[i] + 0.6f),
+                        Quaternion.Euler(0f, 18f * i, 0f));
+            }
+        }
+
+        /// <summary>
+        /// Раздаёт ссылки сцены всем разрушаемым объектам. Архитектура и мебель
+        /// строятся до контроллера эпизода, а разрушаемых объектов теперь 36, а не
+        /// четыре, поэтому проще один проход, чем ссылка в каждом месте создания.
+        /// </summary>
+        private static void WireBreakables(Transform sceneRoot, OfficeEpisodeController controller, OfficeMomentum momentum)
+        {
+            foreach (var breakable in sceneRoot.GetComponentsInChildren<OfficeBreakable>(true))
+            {
+                breakable.SetSceneReferences(controller, momentum);
+            }
         }
 
         private static GameObject CreateChair(string name, Vector3 position, float yRotation, Palette p, Transform parent)
@@ -1295,16 +1455,30 @@ namespace Jam.Episodes.Office.Editor
             return root;
         }
 
+        /// <summary>
+        /// Стойка серверной. Она разрушаема, поэтому у неё отдельный prefab: шаблон
+        /// <c>ServerRack</c> используют ещё и двенадцать стоек босса, и компонент в
+        /// общем шаблоне позволил бы сломать босса до сборки.
+        /// </summary>
         private static GameObject CreateServerRack(string name, Vector3 position, Palette p, Transform parent)
         {
-            var prefab = GetOrCreatePrefab("ServerRack", () => BuildServerRackTemplate(p));
+            var prefab = RebuildPrefabOnce("ServerRack_Breakable", () => BuildServerRackTemplate(p, true));
             return InstantiatePrefab(prefab, name, position, parent);
         }
 
-        private static GameObject BuildServerRackTemplate(Palette p)
+        private static GameObject CreateBossRack(string name, Vector3 position, Palette p, Transform parent)
+        {
+            var prefab = GetOrCreatePrefab("ServerRack", () => BuildServerRackTemplate(p, false));
+            return InstantiatePrefab(prefab, name, position, parent);
+        }
+
+        private static GameObject BuildServerRackTemplate(Palette p, bool breakable)
         {
             var root = new GameObject("Server Rack");
             var t = root.transform;
+
+            // Один коллайдер остаётся владельцем intact-состояния стойки. После
+            // разрушения runtime отключает его вместе с остальной проходимой мебелью.
             CreateCube("Rack", Vector3.zero, new Vector3(1.4f, 2.6f, 1.4f), p.panel, t).transform.localPosition = new Vector3(0f, 1.3f, 0f);
             for (var i = 0; i < 4; i++)
             {
@@ -1312,12 +1486,47 @@ namespace Jam.Episodes.Office.Editor
                 CreateCube("Status LED", Vector3.zero, new Vector3(0.08f, 0.08f, 0.035f), p.red, t, false).transform.localPosition = new Vector3(0.43f, 0.55f + (i * 0.48f), -0.775f);
             }
 
+            if (!breakable)
+            {
+                return root;
+            }
+
+            var broken = CreateGroup("Broken", t);
+            var shell = CreateCube("Dented Frame", Vector3.zero, new Vector3(1.4f, 2.6f, 1.4f), p.wall, broken, false);
+            shell.transform.SetLocalPositionAndRotation(new Vector3(0.06f, 1.28f, 0f), Quaternion.Euler(0f, 0f, 2.5f));
+            for (var i = 0; i < 4; i++)
+            {
+                CreateCube("Dead Slot", Vector3.zero, new Vector3(1.12f, 0.32f, 0.06f), p.shadow, broken, false)
+                    .transform.SetLocalPositionAndRotation(
+                        new Vector3(0.06f, 0.55f + (i * 0.48f), -0.73f),
+                        Quaternion.Euler(0f, 0f, 2.5f));
+            }
+
+            CreateCube("Torn Panel", Vector3.zero, new Vector3(0.75f, 0.05f, 1.2f), p.metal, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(-0.95f, 0.03f, 0.35f), Quaternion.Euler(0f, 16f, 0f));
+            CreateCube("Ember", Vector3.zero, new Vector3(0.5f, 0.06f, 0.45f), p.red, broken, false)
+                .transform.localPosition = new Vector3(0f, 0.06f, -0.5f);
+            broken.gameObject.SetActive(false);
+
+            var flashObject = new GameObject("Impact Flash", typeof(Light));
+            flashObject.transform.SetParent(t, false);
+            flashObject.transform.localPosition = new Vector3(0f, 1.6f, -0.6f);
+            var flash = flashObject.GetComponent<Light>();
+            flash.type = LightType.Point;
+            flash.color = Hex("D8241D");
+            flash.range = 7f;
+            flash.intensity = 0f;
+            flash.shadows = LightShadows.None;
+
+            var component = root.AddComponent<OfficeBreakable>();
+            component.ConfigureVisualState("СЕРВЕРНАЯ СТОЙКА", root, broken.gameObject, RackBreakSpeed, RackMomentumGain, true);
+            component.SetImpactFlash(flash);
             return root;
         }
 
         private static GameObject CreateReceptionDesk(string name, Vector3 position, Palette p, Transform parent)
         {
-            var prefab = GetOrCreatePrefab("ReceptionDesk", () => BuildReceptionDeskTemplate(p));
+            var prefab = RebuildPrefabOnce("ReceptionDesk", () => BuildReceptionDeskTemplate(p));
             return InstantiatePrefab(prefab, name, position, parent);
         }
 
@@ -1327,6 +1536,20 @@ namespace Jam.Episodes.Office.Editor
             var t = root.transform;
             CreateCube("Desk", Vector3.zero, new Vector3(5f, 1.3f, 1.4f), p.panel, t).transform.localPosition = new Vector3(0f, 0.65f, 0f);
             CreateCube("Light", Vector3.zero, new Vector3(4.6f, 0.08f, 0.05f), p.redDim, t, false).transform.localPosition = new Vector3(0f, 1.15f, -0.72f);
+
+            var broken = CreateGroup("Broken", t);
+            var counter = CreateCube("Cracked Counter", Vector3.zero, new Vector3(5f, 1.3f, 1.4f), p.wall, broken, false);
+            counter.transform.SetLocalPositionAndRotation(new Vector3(0f, 0.64f, 0f), Quaternion.Euler(0f, 0f, 1.6f));
+            CreateCube("Split", Vector3.zero, new Vector3(0.12f, 1.2f, 1.42f), p.shadow, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(1.15f, 0.66f, 0f), Quaternion.Euler(0f, 0f, -7f));
+            CreateCube("Dead Light", Vector3.zero, new Vector3(4.6f, 0.08f, 0.05f), p.shadow, broken, false)
+                .transform.localPosition = new Vector3(0f, 1.13f, -0.72f);
+            CreateCube("Debris", Vector3.zero, new Vector3(0.7f, 0.05f, 0.5f), p.metal, broken, false)
+                .transform.SetLocalPositionAndRotation(new Vector3(-1.9f, 0.04f, -1.05f), Quaternion.Euler(0f, -22f, 0f));
+            broken.gameObject.SetActive(false);
+
+            root.AddComponent<OfficeBreakable>()
+                .ConfigureVisualState("СТОЙКА РЕЦЕПЦИИ", root, broken.gameObject, DeskBreakSpeed, FurnitureMomentumGain, false);
             return root;
         }
 
@@ -1371,6 +1594,17 @@ namespace Jam.Episodes.Office.Editor
             var template = buildTemplate();
             var prefab = PrefabUtility.SaveAsPrefabAsset(template, path);
             Object.DestroyImmediate(template);
+            return prefab;
+        }
+
+        private static GameObject RebuildPrefabOnce(string name, System.Func<GameObject> buildTemplate)
+        {
+            if (!RebuiltPrefabs.TryGetValue(name, out var prefab) || prefab == null)
+            {
+                prefab = CreateOrUpdatePrefab(name, buildTemplate);
+                RebuiltPrefabs[name] = prefab;
+            }
+
             return prefab;
         }
 

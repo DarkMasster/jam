@@ -431,6 +431,34 @@ MonoBehaviour:
     m_Key: feedback.personal_items
     m_Metadata:
       m_Items: []
+  - m_Id: 329133199450112
+    m_Key: item.monitor
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615936
+    m_Key: item.server_rack
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615937
+    m_Key: item.desk
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615938
+    m_Key: item.cabinet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615939
+    m_Key: item.reception_desk
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615940
+    m_Key: item.meeting_glass
+    m_Metadata:
+      m_Items: []
+  - m_Id: 329133224615941
+    m_Key: status.destroyed_extra
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:
